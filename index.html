@@ -102,6 +102,112 @@
             color: white;
         }
 
+        /* Due Dates Section Styles */
+        .due-dates-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            color: white;
+        }
+
+        .due-dates-section h3 {
+            color: white;
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .due-dates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .due-date-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .due-date-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .due-date-card h4 {
+            color: #1e3c72;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .due-date-card .category-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-gst {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .badge-income-tax {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .badge-tds {
+            background-color: #8b5cf6;
+            color: white;
+        }
+
+        .due-date-card .date {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #dc2626;
+            margin: 0.75rem 0;
+        }
+
+        .due-date-card .description {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .update-info {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.85rem;
+            margin-top: 1.5rem;
+            font-style: italic;
+        }
+
+        .urgent-notice {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .urgent-notice strong {
+            color: #92400e;
+        }
+
+        .urgent-notice p {
+            color: #78350f;
+            margin: 0.5rem 0 0 0;
+        }
+
         .content {
             background-color: white;
             margin: 2rem auto;
@@ -120,6 +226,30 @@
             margin-bottom: 1.5rem;
             padding-bottom: 0.5rem;
             border-bottom: 3px solid #1e3c72;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .section h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 3px;
+        }
+
+        .section h2::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, #f59e0b 0%, #10b981 100%);
+            border-radius: 3px;
         }
 
         .section h3 {
@@ -127,6 +257,16 @@
             font-size: 1.4rem;
             margin-top: 1.5rem;
             margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3::before {
+            content: '▸';
+            color: #f59e0b;
+            font-size: 1.6rem;
+            font-weight: bold;
         }
 
         .contact-info {
@@ -241,13 +381,107 @@
         .footer {
             background-color: #1e3c72;
             color: white;
-            text-align: center;
-            padding: 2rem 0;
+            padding: 3rem 0 1rem 0;
             margin-top: 3rem;
         }
 
-        .footer p {
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            color: #ffd700;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .footer-section h3::before {
+            display: none;
+        }
+
+        .footer-section p,
+        .footer-section ul {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.75rem;
+            padding-left: 0;
+        }
+
+        .footer-section ul li::before {
+            content: '▸ ';
+            color: #ffd700;
+            margin-right: 8px;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: #ffd700;
+        }
+
+        .footer-contact-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .footer-contact-item svg {
+            margin-right: 10px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 1.5rem;
+            text-align: center;
+        }
+
+        .footer-bottom p {
             margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .social-links a:hover {
+            background-color: #ffd700;
+            color: #1e3c72;
+            transform: translateY(-3px);
         }
 
         .disclaimer {
@@ -258,6 +492,86 @@
             margin-top: 1rem;
             font-size: 0.9rem;
             color: #856404;
+        }
+
+        /* WhatsApp Chat Button */
+        .whatsapp-float {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            bottom: 40px;
+            right: 40px;
+            background-color: #25d366;
+            color: #FFF;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 30px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .whatsapp-float:hover {
+            background-color: #128c7e;
+            transform: scale(1.1);
+            box-shadow: 2px 2px 15px rgba(0,0,0,0.4);
+        }
+
+        .whatsapp-icon {
+            margin-top: 3px;
+        }
+
+        .whatsapp-tooltip {
+            position: absolute;
+            right: 70px;
+            background-color: #ffffff;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            white-space: nowrap;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .whatsapp-float:hover .whatsapp-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .whatsapp-tooltip::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid #ffffff;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+        }
+
+        @media (max-width: 768px) {
+            .whatsapp-float {
+                width: 50px;
+                height: 50px;
+                bottom: 20px;
+                right: 20px;
+                font-size: 26px;
+            }
+
+            .whatsapp-tooltip {
+                display: none;
+            }
         }
 
         @media (max-width: 768px) {
@@ -293,7 +607,7 @@
                 <h1>Kamal Kuldeep & Associates</h1>
                 <p>Chartered Accountants</p>
                 <p style="font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0; color: #ffd700;">ICAI Peer Reviewed Firm</p>
-                <p class="firm-reg">Firm Registration No: 018226N | CAG Empanelment No: NR1805 |</p>
+                <p class="firm-reg">Firm Registration No: 018226N</p>
             </div>
         </div>
     </header>
@@ -305,6 +619,7 @@
             <li><a href="#partners">Our Partners</a></li>
             <li><a href="#services">Services</a></li>
             <li><a href="#experience">Experience</a></li>
+            <li><a href="#due-dates">Due Dates</a></li>
             <li><a href="#contact">Contact</a></li>
         </ul>
     </nav>
@@ -333,14 +648,6 @@
                     <p><strong>Status:</strong> Partnership Firm</p>
                     <p><strong>Peer Review:</strong> ICAI Peer Reviewed Firm</p>
                 </div>
-
-                <h3>Our Credentials</h3>
-                <ul class="experience-list">
-                    <li>ICAI Peer Reviewed Firm</li>
-                    <li>Firm Registration Number: 018226N</li>
-                    <li>RBI Unique Code Number (UCN): 282332</li>
-                    <li>CAG Empanelment Number: NR1805</li>
-                </ul>
 
                 <h3>Office Infrastructure</h3>
                 <p>Our office is strategically located in the heart of Jalandhar with approximately 1000 sq. ft. of well-furnished space. We are equipped with modern facilities including:</p>
@@ -449,12 +756,13 @@
                 <h3>Banking Sector Experience</h3>
                 <p>We have conducted statutory audits, concurrent audits, and specialized assignments for:</p>
                 <ul class="experience-list">
-                    <li><strong>Union Bank of India</strong> - Statutory audits of multiple branches (2021-2024)</li>
-                    <li><strong>Punjab National Bank</strong> - Statutory audits across Punjab, Himachal Pradesh, Jammu (2011-2019)</li>
-                    <li><strong>Central Bank of India</strong> - Concurrent audits of unauthorized operations (2022-2025)</li>
-                    <li><strong>Punjab & Sind Bank</strong> - Concurrent audits of various branches (2009-2025)</li>
-                    <li><strong>Indian Bank</strong> - Concurrent audit of Phagwara Branch (2021-2023)</li>
-                    <li><strong>Andhra Bank</strong> - Statutory audits across multiple states (2006-2010)</li>
+                    <li><strong>State Bank of India</strong> - Concurrent audits</li>
+                    <li><strong>Union Bank of India</strong> - Statutory audits of multiple branches</li>
+                    <li><strong>Punjab National Bank</strong> - Statutory audits across Punjab, Himachal Pradesh, Jammu</li>
+                    <li><strong>Central Bank of India</strong> - Concurrent audits of unauthorized operations</li>
+                    <li><strong>Punjab & Sind Bank</strong> - Concurrent audits of various branches</li>
+                    <li><strong>Indian Bank</strong> - Concurrent audit of Phagwara Branch</li>
+                    <li><strong>Andhra Bank</strong> - Statutory audits across multiple states</li>
                 </ul>
 
                 <h3>Stock & Revenue Audit Experience</h3>
@@ -462,6 +770,136 @@
 
                 <h3>Corporate Audit Services</h3>
                 <p>We conduct statutory audits of private limited companies under Companies Act 2013, audits of non-profit organizations, and tax audits for various business entities. Our firm has been trusted by numerous corporations for over 23 years.</p>
+            </section>
+
+            <section id="due-dates" class="section">
+                <div class="due-dates-section">
+                    <h3>📅 Important Due Dates - November 2025</h3>
+                    
+                    <div class="urgent-notice">
+                        <strong>⚠️ Upcoming Deadlines:</strong>
+                        <p>Stay compliant with the latest GST and Income Tax filing deadlines. Contact us for assistance.</p>
+                    </div>
+
+                    <div class="due-dates-grid">
+                        <!-- GST Due Dates -->
+                        <div class="due-date-card">
+                            <h4>
+                                GSTR-1
+                                <span class="category-badge badge-gst">GST</span>
+                            </h4>
+                            <div class="date">11th November 2025</div>
+                            <div class="description">
+                                Monthly return for outward supplies (Oct 2025). Applicable for taxpayers with turnover above ₹5 crore.
+                            </div>
+                        </div>
+
+                        <div class="due-date-card">
+                            <h4>
+                                GSTR-3B
+                                <span class="category-badge badge-gst">GST</span>
+                            </h4>
+                            <div class="date">20th November 2025</div>
+                            <div class="description">
+                                Monthly summary return with tax payment for October 2025. Mandatory for all regular taxpayers.
+                            </div>
+                        </div>
+
+                        <div class="due-date-card">
+                            <h4>
+                                GSTR-5 / GSTR-5A
+                                <span class="category-badge badge-gst">GST</span>
+                            </h4>
+                            <div class="date">20th November 2025</div>
+                            <div class="description">
+                                Return for Non-Resident/OIDAR service providers for October 2025.
+                            </div>
+                        </div>
+
+                        <!-- TDS Due Dates -->
+                        <div class="due-date-card">
+                            <h4>
+                                TDS Payment
+                                <span class="category-badge badge-tds">TDS</span>
+                            </h4>
+                            <div class="date">7th November 2025</div>
+                            <div class="description">
+                                Deposit TDS/TCS deducted/collected in October 2025 (for Government deductors).
+                            </div>
+                        </div>
+
+                        <div class="due-date-card">
+                            <h4>
+                                TDS/TCS Payment
+                                <span class="category-badge badge-tds">TDS</span>
+                            </h4>
+                            <div class="date">30th November 2025</div>
+                            <div class="description">
+                                Deposit TDS/TCS deducted/collected in October 2025 (for non-Government deductors).
+                            </div>
+                        </div>
+
+                        <div class="due-date-card">
+                            <h4>
+                                TDS Certificate (Form 16)
+                                <span class="category-badge badge-tds">TDS</span>
+                            </h4>
+                            <div class="date">15th November 2025</div>
+                            <div class="description">
+                                Issue TDS Certificate for tax deducted in Q2 (July-Sep 2025) on salary.
+                            </div>
+                        </div>
+
+                        <!-- Income Tax Due Dates -->
+                        <div class="due-date-card">
+                            <h4>
+                                Advance Tax (Q3)
+                                <span class="category-badge badge-income-tax">Income Tax</span>
+                            </h4>
+                            <div class="date">15th December 2025</div>
+                            <div class="description">
+                                Third installment of Advance Tax for FY 2025-26 (75% of total tax liability).
+                            </div>
+                        </div>
+
+                        <div class="due-date-card">
+                            <h4>
+                                Belated/Revised ITR
+                                <span class="category-badge badge-income-tax">Income Tax</span>
+                            </h4>
+                            <div class="date">31st December 2025</div>
+                            <div class="description">
+                                Last date for filing belated or revised Income Tax Return for AY 2025-26.
+                            </div>
+                        </div>
+
+                        <div class="due-date-card">
+                            <h4>
+                                TDS Return (Q2)
+                                <span class="category-badge badge-tds">TDS</span>
+                            </h4>
+                            <div class="date">31st October 2025</div>
+                            <div class="description">
+                                Quarterly TDS/TCS return for Q2 (July-Sep 2025). Forms 24Q, 26Q, 27Q, 27EQ.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="update-info">
+                        📌 Due dates are subject to change. Please verify with official GST and Income Tax portals.<br>
+                        💼 For assistance with compliance, contact us at +91-98156-81778
+                    </div>
+                </div>
+
+                <div class="highlight-box" style="margin-top: 2rem;">
+                    <h3>📢 Important Links</h3>
+                    <ul class="experience-list">
+                        <li><strong>GST Portal:</strong> <a href="https://www.gst.gov.in" target="_blank" style="color: #1e3c72;">www.gst.gov.in</a></li>
+                        <li><strong>Income Tax e-Filing:</strong> <a href="https://www.incometax.gov.in" target="_blank" style="color: #1e3c72;">www.incometax.gov.in</a></li>
+                        <li><strong>TDS/TCS Payment:</strong> <a href="https://onlineservices.tin.egov-nsdl.com" target="_blank" style="color: #1e3c72;">NSDL TIN Portal</a></li>
+                        <li><strong>TRACES Portal:</strong> <a href="https://www.tdscpc.gov.in" target="_blank" style="color: #1e3c72;">www.tdscpc.gov.in</a></li>
+                    </ul>
+                </div>
             </section>
 
             <section id="contact" class="section">
@@ -491,11 +929,117 @@
 
     <footer class="footer">
         <div class="container">
-            <p><strong>Kamal Kuldeep & Associates</strong></p>
-            <p>Chartered Accountants | Firm Registration No: 018226N</p>
-            <p>E.G. 1068, Mohalla Gobind Garh, Jalandhar - 144001, Punjab</p>
-            <p style="margin-top: 1rem; font-size: 0.9rem;">© 2025 Kamal Kuldeep & Associates. All rights reserved.</p>
+            <div class="footer-content">
+                <!-- About Section -->
+                <div class="footer-section">
+                    <h3>About Us</h3>
+                    <p><strong>Kamal Kuldeep & Associates</strong></p>
+                    <p>ICAI Peer Reviewed Firm</p>
+                    <p>Firm Registration No: 018226N</p>
+                    <p style="margin-top: 1rem;">With over 23 years of professional excellence, we provide comprehensive auditing, taxation, and financial advisory services.</p>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#about">About Us</a></li>
+                        <li><a href="#partners">Our Partners</a></li>
+                        <li><a href="#services">Services</a></li>
+                        <li><a href="#experience">Experience</a></li>
+                        <li><a href="#due-dates">Due Dates</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Services -->
+                <div class="footer-section">
+                    <h3>Our Services</h3>
+                    <ul>
+                        <li>Statutory Audit</li>
+                        <li>Bank Audits</li>
+                        <li>Tax Audit</li>
+                        <li>Stock & Revenue Audit</li>
+                        <li>Concurrent Audit</li>
+                        <li>Due Diligence</li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    
+                    <div class="footer-contact-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        <div>
+                            E.G. 1068, Mohalla Gobind Garh,<br>
+                            Jalandhar City, Punjab - 144001
+                        </div>
+                    </div>
+
+                    <div class="footer-contact-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                        <div>
+                            <a href="tel:01812455917">0181-2455917</a><br>
+                            <a href="tel:+919815681778">+91-98156-81778</a>
+                        </div>
+                    </div>
+
+                    <div class="footer-contact-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        <div>
+                            <a href="mailto:kamal_ca72@rediffmail.com">kamal_ca72@rediffmail.com</a><br>
+                            <a href="mailto:jain.hitesh95@gmail.com">jain.hitesh95@gmail.com</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <p><strong>Kamal Kuldeep & Associates</strong> - Chartered Accountants</p>
+                <p>© 2025 All rights reserved. | ICAI Peer Reviewed Firm</p>
+                
+                <div class="social-links">
+                    <a href="https://wa.me/919815681778" target="_blank" aria-label="WhatsApp">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                    </a>
+                    <a href="mailto:kamal_ca72@rediffmail.com" target="_blank" aria-label="Email">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </a>
+                    <a href="tel:+919815681778" target="_blank" aria-label="Phone">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
         </div>
     </footer>
+
+    <!-- WhatsApp Chat Button -->
+    <a href="https://wa.me/919815681778?text=Hello%2C%20I%20would%20like%20to%20inquire%20about%20your%20CA%20services." 
+       class="whatsapp-float" 
+       target="_blank"
+       aria-label="Chat on WhatsApp">
+        <span class="whatsapp-tooltip">Chat with us on WhatsApp</span>
+        <svg class="whatsapp-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="white">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+    </a>
 </body>
 </html>
