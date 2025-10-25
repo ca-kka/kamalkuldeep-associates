@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kamal Kuldeep & Associates - Chartered Accountants in Jalandhar, Punjab. ICAI Peer Reviewed Firm with 23+ years of experience in statutory audits, bank audits, and tax services.">
+    <meta name="keywords" content="Chartered Accountants, CA Firm, Jalandhar, Punjab, Audit Services, Tax Audit, Bank Audit">
+    <title>Kamal Kuldeep & Associates - Chartered Accountants, Jalandhar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .logo-container {
+            margin-bottom: 1rem;
+        }
+
+        .ca-logo {
+            width: 120px;
+            height: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .header-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .header-content p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .firm-reg {
+            margin-top: 0.5rem;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .nav {
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav li {
+            margin: 0;
+        }
+
+        .nav a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: #1e3c72;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .nav a:hover {
+            background-color: #1e3c72;
+            color: white;
+        }
+
+        .content {
+            background-color: white;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section h2 {
+            color: #1e3c72;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #1e3c72;
+        }
+
+        .section h3 {
+            color: #2a5298;
+            font-size: 1.4rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-info {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info p {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .contact-info strong {
+            color: #1e3c72;
+            min-width: 120px;
+        }
+
+        .partners-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .partner-card {
+            background-color: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .partner-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .partner-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 1rem;
+            border: 4px solid #1e3c72;
+        }
+
+        .partner-card h3 {
+            color: #1e3c72;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .partner-card .designation {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .partner-card .qualifications {
+            text-align: left;
+            margin-top: 1rem;
+        }
+
+        .partner-card .qualifications li {
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .service-card {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 5px;
+            border-left: 4px solid #1e3c72;
+        }
+
+        .service-card h4 {
+            color: #1e3c72;
+            margin-bottom: 0.75rem;
+        }
+
+        .experience-list {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+
+        .experience-list li {
+            margin-bottom: 0.75rem;
+            padding-left: 1rem;
+            color: #555;
+        }
+
+        .highlight-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #1e3c72;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .footer {
+            background-color: #1e3c72;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .footer p {
+            margin-bottom: 0.5rem;
+        }
+
+        .disclaimer {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .header-content h1 {
+                font-size: 1.8rem;
+            }
+
+            .nav ul {
+                flex-direction: column;
+            }
+
+            .nav a {
+                padding: 0.75rem;
+            }
+
+            .section h2 {
+                font-size: 1.5rem;
+            }
+
+            .partners-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-container">
+                    <img src="images/ca-logo.png" alt="CA India Logo" class="ca-logo" onerror="this.style.display='none'">
+                </div>
+                <h1>Kamal Kuldeep & Associates</h1>
+                <p>Chartered Accountants</p>
+                <p style="font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0; color: #ffd700;">ICAI Peer Reviewed Firm</p>
+                <p class="firm-reg">Firm Registration No: 018226N | CAG Empanelment No: NR1805 | RBI UCN: 282332</p>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About Us</a></li>
+            <li><a href="#partners">Our Partners</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#experience">Experience</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="content">
+            <section id="home" class="section">
+                <h2>Welcome</h2>
+                <p>Welcome to Kamal Kuldeep & Associates, a reputed firm of Chartered Accountants based in Jalandhar, Punjab. With over 23 years of professional experience, we provide comprehensive auditing, taxation, and financial advisory services to our clients across various sectors.</p>
+                
+                <div class="highlight-box">
+                    <h3>Our Expertise</h3>
+                    <p>We specialize in statutory audits, bank audits, concurrent audits, stock audits, tax audits, and due diligence services. Our firm is empanelled with leading banks and financial institutions including Punjab National Bank, Union Bank of India, Central Bank of India, and Punjab & Sind Bank.</p>
+                </div>
+            </section>
+
+            <section id="about" class="section">
+                <h2>About Our Firm</h2>
+                
+                <div class="contact-info">
+                    <p><strong>Address:</strong> E.G. 1068, Mohalla Gobind Garh, Jalandhar City, Punjab - 144001</p>
+                    <p><strong>Phone:</strong> 0181-2455917</p>
+                    <p><strong>Mobile:</strong> +91-98156-81778</p>
+                    <p><strong>Email:</strong> kamal_ca72@rediffmail.com</p>
+                    <p><strong>Established:</strong> 2002</p>
+                    <p><strong>Status:</strong> Partnership Firm</p>
+                    <p><strong>Peer Review:</strong> ICAI Peer Reviewed Firm</p>
+                </div>
+
+                <h3>Our Credentials</h3>
+                <ul class="experience-list">
+                    <li>ICAI Peer Reviewed Firm</li>
+                    <li>Firm Registration Number: 018226N</li>
+                    <li>RBI Unique Code Number (UCN): 282332</li>
+                    <li>CAG Empanelment Number: NR1805</li>
+                </ul>
+
+                <h3>Office Infrastructure</h3>
+                <p>Our office is strategically located in the heart of Jalandhar with approximately 1000 sq. ft. of well-furnished space. We are equipped with modern facilities including:</p>
+                <ul class="experience-list">
+                    <li>Latest computers with online connectivity</li>
+                    <li>Laser printers with scanning facility</li>
+                    <li>24-hour broadband internet</li>
+                    <li>Backup power with inverter and generator</li>
+                    <li>Professional and cooperative work environment</li>
+                </ul>
+
+                <h3>Our Team</h3>
+                <ul class="experience-list">
+                    <li>Two Partner Chartered Accountants</li>
+                    <li>Five Support Staff (including 2 Ex-Bankers)</li>
+                    <li>Two Article Assistants</li>
+                    <li>Two Computer Operators</li>
+                </ul>
+            </section>
+
+            <section id="partners" class="section">
+                <h2>Our Partners</h2>
+                
+                <div class="partners-grid">
+                    <div class="partner-card">
+                        <img src="images/kamal-jain.jpg" alt="CA Kamal Jain" class="partner-img" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\'%3E%3Crect width=\'150\' height=\'150\' fill=\'%231e3c72\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' font-size=\'48\' fill=\'white\' text-anchor=\'middle\' dy=\'.3em\'%3EKJ%3C/text%3E%3C/svg%3E'">
+                        <h3>CA. Kamal Jain</h3>
+                        <p class="designation">FCA | ICAI Peer Reviewer</p>
+                        <p><strong>Membership No:</strong> 099744</p>
+                        
+                        <div class="qualifications">
+                            <strong>Qualifications:</strong>
+                            <ul>
+                                <li>B.Com</li>
+                                <li>Fellow Member of ICAI (FCA)</li>
+                                <li>Certificate Course on Concurrent Audit of Banks (2013)</li>
+                                <li>ICAI Peer Reviewer</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="partner-card">
+                        <img src="images/hitesh-jain.jpg" alt="CA Hitesh Jain" class="partner-img" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\'%3E%3Crect width=\'150\' height=\'150\' fill=\'%232a5298\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' font-size=\'48\' fill=\'white\' text-anchor=\'middle\' dy=\'.3em\'%3EHJ%3C/text%3E%3C/svg%3E'">
+                        <h3>CA. Hitesh Jain</h3>
+                        <p class="designation">FCA | DISA | FAFD</p>
+                        <p><strong>Membership No:</strong> 550616</p>
+                        
+                        <div class="qualifications">
+                            <strong>Qualifications:</strong>
+                            <ul>
+                                <li>B.Com (Honours)</li>
+                                <li>Fellow Member of ICAI (FCA)</li>
+                                <li>Certificate Course on Concurrent Audit of Banks (2019)</li>
+                                <li>DISA - Information System Audit (2021)</li>
+                                <li>Certificate Course on Forensic Accounting and Fraud Detection (2022)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="services" class="section">
+                <h2>Our Services</h2>
+                
+                <div class="services-grid">
+                    <div class="service-card">
+                        <h4>Statutory Audit</h4>
+                        <p>Comprehensive statutory audits for banks, companies, and organizations under applicable laws and regulations.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Bank Audits</h4>
+                        <p>Specialized audits for various banking institutions including statutory and concurrent audits.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Tax Audit</h4>
+                        <p>Tax audits for corporates, partnership firms, and proprietorship concerns under Income Tax Act, 1961.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Stock & Revenue Audit</h4>
+                        <p>Detailed stock and revenue audits for borrowers of various banks and financial institutions.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Concurrent Audit</h4>
+                        <p>Regular concurrent audits to ensure compliance and detect irregularities in banking operations.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Due Diligence</h4>
+                        <p>Comprehensive due diligence services for businesses, acquisitions, and loan assessments.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="experience" class="section">
+                <h2>Our Experience</h2>
+                
+                <div class="highlight-box">
+                    <h3>Over 23 Years of Professional Excellence</h3>
+                    <p>Since 2002, we have been providing quality audit and assurance services to leading banks and corporations.</p>
+                </div>
+
+                <h3>Banking Sector Experience</h3>
+                <p>We have conducted statutory audits, concurrent audits, and specialized assignments for:</p>
+                <ul class="experience-list">
+                    <li><strong>Union Bank of India</strong> - Statutory audits of multiple branches (2021-2024)</li>
+                    <li><strong>Punjab National Bank</strong> - Statutory audits across Punjab, Himachal Pradesh, Jammu (2011-2019)</li>
+                    <li><strong>Central Bank of India</strong> - Concurrent audits of unauthorized operations (2022-2025)</li>
+                    <li><strong>Punjab & Sind Bank</strong> - Concurrent audits of various branches (2009-2025)</li>
+                    <li><strong>Indian Bank</strong> - Concurrent audit of Phagwara Branch (2021-2023)</li>
+                    <li><strong>Andhra Bank</strong> - Statutory audits across multiple states (2006-2010)</li>
+                    <li><strong>Imperial Urban Co-op Bank</strong> - Audit assignments (2019-2021)</li>
+                </ul>
+
+                <h3>Stock & Revenue Audit Experience</h3>
+                <p>We have successfully completed numerous stock and revenue audits for borrowers of leading banks including Union Bank of India, Punjab National Bank, Oriental Bank of Commerce, Punjab & Sind Bank, and Central Bank of India across Punjab, Haryana, Jammu & Kashmir, and other states.</p>
+
+                <h3>Corporate Audit Services</h3>
+                <p>We conduct statutory audits of private limited companies under Companies Act 2013, audits of non-profit organizations, and tax audits for various business entities. Our firm has been trusted by numerous corporations for over 23 years.</p>
+            </section>
+
+            <section id="contact" class="section">
+                <h2>Contact Us</h2>
+                
+                <div class="contact-info">
+                    <h3>Office Address</h3>
+                    <p>E.G. 1068, Mohalla Gobind Garh</p>
+                    <p>Jalandhar City, Punjab - 144001</p>
+                    <p>India</p>
+                    
+                    <h3 style="margin-top: 1.5rem;">Contact Details</h3>
+                    <p><strong>Phone:</strong> 0181-2455917</p>
+                    <p><strong>Mobile:</strong> +91-98156-81778</p>
+                    
+                    <h3 style="margin-top: 1.5rem;">Email</h3>
+                    <p><strong>CA. Kamal Jain:</strong> kamal_ca72@rediffmail.com</p>
+                    <p><strong>CA. Hitesh Jain:</strong> jain.hitesh95@gmail.com</p>
+                </div>
+
+                <div class="disclaimer">
+                    <strong>Disclaimer:</strong> This website is for informational purposes only and complies with ICAI guidelines for chartered accountant websites. The information provided does not constitute professional advice. For specific professional services, please contact us directly.
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p><strong>Kamal Kuldeep & Associates</strong></p>
+            <p>Chartered Accountants | Firm Registration No: 018226N</p>
+            <p>E.G. 1068, Mohalla Gobind Garh, Jalandhar - 144001, Punjab</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">© 2025 Kamal Kuldeep & Associates. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
