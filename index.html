@@ -77,6 +77,124 @@
             z-index: 100;
         }
 
+        .nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-brand {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e3c72;
+            display: none;
+            line-height: 1.3;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 1rem;
+            z-index: 101;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background-color: #1e3c72;
+            margin: 3px 0;
+            transition: all 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(8px, 8px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+
+        /* Hide nav on scroll down, show on scroll up - Mobile only */
+        @media (max-width: 768px) {
+            .nav {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                transition: transform 0.3s ease-in-out;
+            }
+
+            .nav.hide-on-scroll {
+                transform: translateY(-100%);
+            }
+
+            .nav-brand {
+                display: block;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav ul {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 70%;
+                height: 100vh;
+                background-color: #fff;
+                flex-direction: column;
+                justify-content: flex-start;
+                padding-top: 80px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                transition: right 0.3s ease-in-out;
+                overflow-y: auto;
+            }
+
+            .nav ul.active {
+                right: 0;
+            }
+
+            .nav li {
+                width: 100%;
+            }
+
+            .nav a {
+                width: 100%;
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid #e9ecef;
+                font-size: 1.1rem;
+            }
+
+            /* Add padding to body to compensate for fixed nav */
+            body {
+                padding-top: 0;
+            }
+
+            /* Overlay when menu is open */
+            .nav-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100vh;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 99;
+            }
+
+            .nav-overlay.active {
+                display: block;
+            }
+        }
+
         .nav ul {
             list-style: none;
             display: flex;
@@ -100,6 +218,21 @@
         .nav a:hover {
             background-color: #1e3c72;
             color: white;
+        }
+
+        .admin-login {
+            background-color: #f59e0b;
+            color: white !important;
+            border-radius: 5px;
+            padding: 0.5rem 1.5rem !important;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .admin-login:hover {
+            background-color: #d97706 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         /* Due Dates Section Styles */
@@ -494,6 +627,75 @@
             color: #856404;
         }
 
+        .office-locations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .office-card {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .office-card h4 {
+            color: #1e3c72;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .office-card h4::before {
+            content: '📍';
+            font-size: 1.5rem;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 1rem;
+            border: 2px solid #e9ecef;
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .office-details {
+            margin-top: 1rem;
+            line-height: 1.8;
+        }
+
+        .office-details p {
+            color: #555;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .office-details a {
+            color: #1e3c72;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .office-details a:hover {
+            color: #2a5298;
+            text-decoration: underline;
+        }
+
+        .office-details strong {
+            color: #1e3c72;
+        }
+
         /* WhatsApp Chat Button */
         .whatsapp-float {
             position: fixed;
@@ -613,16 +815,26 @@
     </header>
 
     <nav class="nav">
-        <ul>
-            <li><a href="#home">Home</a></li>
-            <li><a href="#about">About Us</a></li>
-            <li><a href="#partners">Our Partners</a></li>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#experience">Experience</a></li>
-            <li><a href="#due-dates">Due Dates</a></li>
-            <li><a href="#contact">Contact</a></li>
-        </ul>
+        <div class="container">
+            <span class="nav-brand">Kamal Kuldeep & Associates</span>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About Us</a></li>
+                <li><a href="#partners">Our Partners</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#experience">Experience</a></li>
+                <li><a href="#due-dates">Due Dates</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="https://mail.zoho.com/" target="_blank" class="admin-login">Admin Login</a></li>
+            </ul>
+        </div>
     </nav>
+    <div class="nav-overlay"></div>
 
     <div class="container">
         <div class="content">
@@ -647,6 +859,7 @@
                     <p><strong>Established:</strong> 2002</p>
                     <p><strong>Status:</strong> Partnership Firm</p>
                     <p><strong>Peer Review:</strong> ICAI Peer Reviewed Firm</p>
+                    <p><strong>Branch Office:</strong> 53 Golf Link Extension, Hambran Road, Ludhiana, Punjab - 141008</p>
                 </div>
 
                 <h3>Office Infrastructure</h3>
@@ -725,7 +938,7 @@
 
                     <div class="service-card">
                         <h4>Tax Audit</h4>
-                        <p>Tax audits for corporates, partnership firms, and proprietorship concerns under Income Tax Act, 1961.</p>
+                        <p>Tax audits under Section 44AB of Income Tax Act for corporates, partnership firms, and proprietorship concerns. Expert assistance in statutory compliance and tax audit report preparation.</p>
                     </div>
 
                     <div class="service-card">
@@ -741,6 +954,36 @@
                     <div class="service-card">
                         <h4>Due Diligence</h4>
                         <p>Comprehensive due diligence services for businesses, acquisitions, and loan assessments.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>ITR Filing</h4>
+                        <p>Complete Income Tax Return filing services for individuals, businesses, and companies. Expert guidance on deductions, exemptions, and tax planning to minimize liabilities.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>GST Filing & Compliance</h4>
+                        <p>End-to-end GST registration, monthly/quarterly return filing (GSTR-1, GSTR-3B), GST compliance, and advisory services for businesses of all sizes.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Business Registration</h4>
+                        <p>Complete business registration services including Company Incorporation, LLP registration, Partnership Firm registration, Proprietorship setup, and all statutory registrations.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Regulatory & Compliance Filing</h4>
+                        <p>Comprehensive regulatory compliance services including ROC filings, annual returns, MCA compliance, FEMA compliance, RBI reporting, and all statutory filings under various laws.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>TDS/TCS Returns</h4>
+                        <p>TDS/TCS return filing, certificate issuance (Form 16, 16A), payment compliance, and handling of TDS defaults and rectifications.</p>
+                    </div>
+
+                    <div class="service-card">
+                        <h4>Financial Accounting</h4>
+                        <p>Complete bookkeeping, accounting services, financial statement preparation, MIS reporting, and management accounting for businesses.</p>
                     </div>
                 </div>
             </section>
@@ -906,18 +1149,55 @@
                 <h2>Contact Us</h2>
                 
                 <div class="contact-info">
-                    <h3>Office Address</h3>
-                    <p>E.G. 1068, Mohalla Gobind Garh</p>
-                    <p>Jalandhar City, Punjab - 144001</p>
-                    <p>India</p>
-                    
-                    <h3 style="margin-top: 1.5rem;">Contact Details</h3>
+                    <h3>Head Office - Jalandhar</h3>
+                    <p><strong>Address:</strong> E.G. 1068, Mohalla Gobind Garh, Jalandhar City, Punjab - 144001</p>
                     <p><strong>Phone:</strong> 0181-2455917</p>
+                    <p><strong>Mobile:</strong> +91-98156-81778</p>
+                    
+                    <h3 style="margin-top: 1.5rem;">Branch Office - Ludhiana</h3>
+                    <p><strong>Address:</strong> 53 Golf Link Extension, Hambran Road, Ludhiana, Punjab - 141008</p>
                     <p><strong>Mobile:</strong> +91-98156-81778</p>
                     
                     <h3 style="margin-top: 1.5rem;">Email</h3>
                     <p><strong>CA. Kamal Jain:</strong> kamal_ca72@rediffmail.com</p>
                     <p><strong>CA. Hitesh Jain:</strong> jain.hitesh95@gmail.com</p>
+                </div>
+
+                <div class="office-locations">
+                    <!-- Jalandhar Office -->
+                    <div class="office-card">
+                        <h4>Head Office - Jalandhar</h4>
+                        <div class="office-details">
+                            <p><strong>Address:</strong> <a href="https://maps.app.goo.gl/np3ZycaSeJgfULbEA" target="_blank">E.G. 1068, Mohalla Gobind Garh, Jalandhar City, Punjab - 144001</a></p>
+                            <p><strong>Phone:</strong> <a href="tel:01812455917">0181-2455917</a></p>
+                            <p><strong>Mobile:</strong> <a href="tel:+919815681778">+91-98156-81778</a></p>
+                        </div>
+                        <div class="map-container">
+                            <iframe src="https://www.google.com/maps/embed?pb=!1m22!1m8!1m3!1d3408.159700388916!2d75.59146462560388!3d31.326962374303072!3m2!1i1024!2i768!4f13.1!4m11!3e6!4m3!3m2!1d31.3270043!2d75.5939992!4m5!1s0x391a5b111a8d66d5%3A0xb7a922aa8b9894!2sKAMAL%20KULDEEP%20%26%20ASSOCIATES%2C%201068%20MOHALLA%2C%20E.G%2C%20Gobind%20Garh%2C%20Jalandhar%2C%20Punjab%20144001!3m2!1d31.326980499999998!2d75.5940639!5e0!3m2!1sen!2sin!4v1761455638876!5m2!1sen!2sin" 
+                                    allowfullscreen="" 
+                                    loading="lazy" 
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    title="Kamal Kuldeep & Associates - Jalandhar Office Location">
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <!-- Ludhiana Office -->
+                    <div class="office-card">
+                        <h4>Branch Office - Ludhiana</h4>
+                        <div class="office-details">
+                            <p><strong>Address:</strong> <a href="https://maps.app.goo.gl/nGAKnDEsUXavGwPJ7" target="_blank">53 Golf Link Extension, Hambran Road, Ludhiana, Punjab - 141008</a></p>
+                            <p><strong>Mobile:</strong> <a href="tel:+919815681778">+91-98156-81778</a></p>
+                        </div>
+                        <div class="map-container">
+                            <iframe src="https://www.google.com/maps/embed?pb=!1m26!1m12!1m3!1d1017.5537660193312!2d75.76666344257634!3d30.924985503723885!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m11!3e6!4m3!3m2!1d31.326932099999997!2d75.59387509999999!4m5!1s0x391a817af4ecc6cf%3A0x84586ee64ddfa1df!2sKAMAL%20KULDEEP%20%26%20ASSOCIATES%2C%20GOLD%20LINK%20EXTENSION%2C%2053%2C%20Main%20Hambran%20Rd%2C%20Ludhiana%2C%20Punjab%20141008!3m2!1d30.9252917!2d75.7669465!5e0!3m2!1sen!2sin!4v1761455564128!5m2!1sen!2sin" 
+                                    allowfullscreen="" 
+                                    loading="lazy" 
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    title="Kamal Kuldeep & Associates - Ludhiana Office Location">
+                            </iframe>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="disclaimer">
@@ -960,6 +1240,10 @@
                         <li>Statutory Audit</li>
                         <li>Bank Audits</li>
                         <li>Tax Audit</li>
+                        <li>ITR Filing</li>
+                        <li>GST Filing & Compliance</li>
+                        <li>Business Registration</li>
+                        <li>Regulatory & Compliance Filing</li>
                         <li>Stock & Revenue Audit</li>
                         <li>Concurrent Audit</li>
                         <li>Due Diligence</li>
@@ -970,6 +1254,7 @@
                 <div class="footer-section">
                     <h3>Contact Us</h3>
                     
+                    <p><strong>Head Office - Jalandhar</strong></p>
                     <div class="footer-contact-item">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -978,6 +1263,18 @@
                         <div>
                             E.G. 1068, Mohalla Gobind Garh,<br>
                             Jalandhar City, Punjab - 144001
+                        </div>
+                    </div>
+
+                    <p style="margin-top: 1rem;"><strong>Branch Office - Ludhiana</strong></p>
+                    <div class="footer-contact-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        <div>
+                            53 Golf Link Extension, Hambran Road,<br>
+                            Ludhiana, Punjab - 141008
                         </div>
                     </div>
 
@@ -1008,6 +1305,7 @@
             <div class="footer-bottom">
                 <p><strong>Kamal Kuldeep & Associates</strong> - Chartered Accountants</p>
                 <p>© 2025 All rights reserved. | ICAI Peer Reviewed Firm</p>
+                <p style="font-size: 0.85rem; margin-top: 0.5rem; opacity: 0.8;">Last Updated: October 25, 2025</p>
                 
                 <div class="social-links">
                     <a href="https://wa.me/919815681778" target="_blank" aria-label="WhatsApp">
@@ -1041,5 +1339,66 @@
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
         </svg>
     </a>
+
+    <script>
+        // Hamburger menu toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav ul');
+        const navOverlay = document.querySelector('.nav-overlay');
+        const navLinks = document.querySelectorAll('.nav a');
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+            navOverlay.classList.toggle('active');
+            document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : '';
+        });
+
+        // Close menu when clicking overlay
+        navOverlay.addEventListener('click', () => {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+            navOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        // Close menu when clicking a link
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+                navOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        });
+
+        // Auto-hide navigation on scroll down, show on scroll up (mobile only)
+        if (window.innerWidth <= 768) {
+            let lastScrollTop = 0;
+            const nav = document.querySelector('.nav');
+            let scrollTimeout;
+
+            window.addEventListener('scroll', function() {
+                // Don't hide nav if menu is open
+                if (navMenu.classList.contains('active')) return;
+
+                clearTimeout(scrollTimeout);
+                
+                scrollTimeout = setTimeout(function() {
+                    let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    if (scrollTop > lastScrollTop && scrollTop > 100) {
+                        // Scrolling down & past header
+                        nav.classList.add('hide-on-scroll');
+                    } else {
+                        // Scrolling up
+                        nav.classList.remove('hide-on-scroll');
+                    }
+                    
+                    lastScrollTop = scrollTop;
+                }, 10);
+            });
+        }
+    </script>
 </body>
 </html>
