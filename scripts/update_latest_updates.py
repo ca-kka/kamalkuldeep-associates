@@ -217,7 +217,16 @@ def main():
     final_items = dedupe(items)
     if not final_items:
         raise RuntimeError('All official sources returned no usable verified items. Existing data was left unchanged. ' + '; '.join(failures))
-    OUT.write_text(json.dumps({'generatedAt': datetime.now(timezone.utc).isoformat(), 'items': final_items, 'sourceFailures': failures}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+    existing = {}
+    if OUT.exists():
+        try:
+            existing = json.loads(OUT.read_text(encoding='utf-8'))
+        except Exception:
+            existing = {}
+    if existing.get('items') != final_items:
+        OUT.write_text(json.dumps({'generatedAt': datetime.now(timezone.utc).isoformat(), 'items': final_items}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
     update_index()
     subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'], check=True)
     subprocess.run(['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], check=True)
