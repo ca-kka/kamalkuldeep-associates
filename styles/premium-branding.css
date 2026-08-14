@@ -1,0 +1,42 @@
+/* KKA premium branding — keeps images/ca-logo.png as the source inside the premium SVG */
+
+.ca-logo {
+    width: 118px !important;
+    height: 118px !important;
+    object-fit: contain;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 24px !important;
+    filter: drop-shadow(0 10px 22px rgba(6, 24, 48, 0.20));
+    transition: transform 220ms ease, filter 220ms ease;
+}
+
+.ca-logo:hover {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 14px 28px rgba(6, 24, 48, 0.24));
+}
+
+.logo-container {
+    margin-bottom: 1.15rem !important;
+    padding: 4px;
+}
+
+@media (max-width: 768px) {
+    .ca-logo {
+        width: 92px !important;
+        height: 92px !important;
+        border-radius: 20px !important;
+    }
+
+    .logo-container {
+        margin-bottom: 0.85rem !important;
+    }
+}
+
+@media (max-width: 390px) {
+    .ca-logo {
+        width: 82px !important;
+        height: 82px !important;
+    }
+}
