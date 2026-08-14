@@ -5,6 +5,7 @@ on:
     paths:
       - 'styles/mobile-enhancements.css'
       - 'styles/mobile-hamburger.css'
+      - 'styles/premium-branding.css'
       - '.github/workflows/mobile-css.yml'
 
 permissions:
@@ -19,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Link mobile stylesheets
+      - name: Link mobile and premium stylesheets
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -27,7 +28,8 @@ jobs:
           text = p.read_text(encoding='utf-8')
           links = [
               '<link rel="stylesheet" href="styles/mobile-enhancements.css?v=20260814-3">',
-              '<link rel="stylesheet" href="styles/mobile-hamburger.css?v=20260814-2">'
+              '<link rel="stylesheet" href="styles/mobile-hamburger.css?v=20260814-2">',
+              '<link rel="stylesheet" href="styles/premium-branding.css?v=20260814-1">'
           ]
           marker = '</head>'
           if marker not in text:
@@ -38,11 +40,19 @@ jobs:
               if href not in text:
                   text = text.replace(marker, '    ' + link + '\n' + marker, 1)
                   changed = True
+
+          # Use the premium framed asset wherever the site's CA logo source is used.
+          old = 'images/ca-logo.png'
+          new = 'images/ca-logo-premium.svg'
+          if old in text:
+              text = text.replace(old, new)
+              changed = True
+
           if changed:
               p.write_text(text, encoding='utf-8')
-              print('Mobile styles linked.')
+              print('Premium branding linked and logo source updated.')
           else:
-              print('Mobile styles already linked.')
+              print('Premium branding already applied.')
           PY
 
       - name: Commit index.html
@@ -53,6 +63,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No index.html changes required.'
           else
-            git commit -m 'Refine mobile navigation styling'
+            git commit -m 'Apply premium logo and branding'
             git push
           fi
