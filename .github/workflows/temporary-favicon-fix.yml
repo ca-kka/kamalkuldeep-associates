@@ -13,8 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Replace favicon reference only
+        with:
+          fetch-depth: 0
+      - name: Restore index and apply favicon reference
         run: |
+          git checkout 0b747701b5fc2fc7ede2997a35fee60113460ec0 -- index.html
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
