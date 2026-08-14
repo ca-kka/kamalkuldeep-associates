@@ -1,9 +1,23 @@
-/* KKA — polished mobile navigation */
+/* KKA — polished, centered navigation */
+
+/* Desktop: keep the navigation links optically centered */
+@media (min-width: 769px) {
+    .nav .container {
+        justify-content: center !important;
+        position: relative;
+    }
+
+    .nav ul {
+        margin: 0 auto !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+}
 
 @media (max-width: 768px) {
     .nav {
         height: 64px;
-        background: rgba(255,255,255,.96);
+        background: rgba(255,255,255,.97);
         border-bottom: 1px solid rgba(23,58,112,.08);
         box-shadow: 0 4px 18px rgba(15,23,42,.08);
         backdrop-filter: blur(14px);
@@ -13,23 +27,32 @@
     .nav .container {
         height: 64px;
         min-height: 64px;
+        width: 100%;
         padding: 0 14px;
-        justify-content: flex-end !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: relative;
     }
 
-    /* The firm name is already displayed in the main header. Keep the mobile navigation clean. */
+    /* The firm name is already displayed in the main header. */
     .nav-brand {
         display: none !important;
     }
 
+    /* Small button, vertically centered and pinned to the right */
     .hamburger {
+        position: absolute !important;
+        right: 14px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
         width: 44px !important;
         height: 44px !important;
         min-width: 44px !important;
         min-height: 44px !important;
         padding: 0 !important;
         margin: 0 !important;
-        display: flex;
+        display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         gap: 5px !important;
@@ -47,7 +70,7 @@
     }
 
     .hamburger:active {
-        transform: scale(.96);
+        transform: translateY(-50%) scale(.96) !important;
     }
 
     .hamburger span {
@@ -66,6 +89,7 @@
         background: #173a70 !important;
         border-color: #173a70 !important;
         box-shadow: 0 4px 12px rgba(23,58,112,.18) !important;
+        transform: translateY(-50%) !important;
     }
 
     .hamburger.active span {
@@ -84,6 +108,7 @@
         transform: translateY(-7px) rotate(-45deg) !important;
     }
 
+    /* Mobile menu drawer */
     .nav ul {
         width: min(88vw, 360px);
         padding: 76px 14px 24px;
@@ -91,6 +116,7 @@
         border-left: 1px solid rgba(23,58,112,.08);
         box-shadow: -12px 0 32px rgba(15,23,42,.14);
         gap: 4px;
+        align-items: stretch !important;
     }
 
     .nav a {
@@ -150,6 +176,7 @@
     .nav .container { padding: 0 12px; }
 
     .hamburger {
+        right: 12px !important;
         width: 42px !important;
         height: 42px !important;
         min-width: 42px !important;
