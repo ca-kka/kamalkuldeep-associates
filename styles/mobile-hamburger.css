@@ -1,1 +1,44 @@
-/* Reserved for future mobile navigation refinements. */
+/* KKA mobile navigation refinement */
+@media (max-width: 768px) {
+    .hamburger {
+        padding: 0 !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border: 1px solid #dbe3ee !important;
+        border-radius: 10px !important;
+        background: #fff !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px !important;
+        box-shadow: 0 2px 8px rgba(15,23,42,.08) !important;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .hamburger span {
+        display: block !important;
+        width: 20px !important;
+        height: 2px !important;
+        margin: 0 !important;
+        background: #173a70 !important;
+        border-radius: 999px !important;
+        transform: none !important;
+        opacity: 1 !important;
+        transition: width .2s ease, background-color .2s ease !important;
+    }
+
+    .hamburger:hover,
+    .hamburger:focus-visible {
+        background: #f7f9fc !important;
+        outline: none !important;
+    }
+
+    .hamburger:active {
+        transform: scale(.96);
+    }
+
+    .hamburger.active span:nth-child(2) {
+        width: 14px !important;
+    }
+}
