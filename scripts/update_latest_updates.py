@@ -15,23 +15,18 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'data' / 'latest-updates.json'
 INDEX = ROOT / 'index.html'
 
-HEADERS = {
-    'User-Agent': 'KKA-Official-Updates/1.0 (+https://ca-kka.com/)'
-}
-
+HEADERS = {'User-Agent': 'KKA-Official-Updates/1.0 (+https://ca-kka.com/)'}
 ALLOWED_HOSTS = {
     'www.incometax.gov.in', 'incometax.gov.in',
     'www.icai.org', 'icai.org', 'resource.cdn.icai.org',
     'www.rbi.org.in', 'rbi.org.in',
     'www.sebi.gov.in', 'sebi.gov.in'
 }
-
 RSS_SOURCES = [
     ('RBI', 'https://www.rbi.org.in/pressreleases_rss.xml'),
     ('RBI', 'https://www.rbi.org.in/notifications_rss.xml'),
     ('SEBI', 'https://www.sebi.gov.in/sebirss.xml'),
 ]
-
 HTML_SOURCES = [
     ('Income Tax Department', 'https://www.incometax.gov.in/iec/foportal/latest-news', 'income-tax'),
     ('ICAI', 'https://www.icai.org/category/notifications', 'icai'),
@@ -96,8 +91,7 @@ def income_tax_items(url: str):
     soup = BeautifulSoup(get(url), 'html.parser')
     items = []
     for anchor in soup.find_all('a'):
-        label = anchor.get_text(' ', strip=True)
-        if label.lower() != 'click here':
+        if anchor.get_text(' ', strip=True).lower() != 'click here':
             continue
         href = urljoin(url, anchor.get('href') or '')
         if not valid_url(href):
@@ -159,9 +153,7 @@ def update_index():
         section = '''    <section id="latest-updates" class="latest-updates-section" aria-labelledby="latest-updates-title">\n        <div class="container">\n            <div class="latest-updates-panel">\n                <div class="latest-updates-heading" id="latest-updates-title">\n                    <span class="latest-updates-dot" aria-hidden="true"></span>\n                    LATEST UPDATES\n                </div>\n                <div class="latest-updates-window" aria-live="polite">\n                    <div class="latest-updates-track"></div>\n                </div>\n            </div>\n            <p class="latest-updates-disclaimer">Information displayed here is for general information only and is sourced from official government/regulatory publications. Click an update to view the original source. Please verify the complete notification, circular, order or announcement on the official website before relying on it.</p>\n        </div>\n    </section>\n\n'''
         if section_marker not in text:
             raise RuntimeError('Could not find the existing footer marker; refusing to modify index.html.')
-        text = text.replace(section_marker, section_marker if False else section, 1) + ''
-        # The replacement above intentionally inserts the section immediately before the footer.
-        text = text.replace(section + section_marker, section + section_marker, 1) if section + section_marker in text else text
+        text = text.replace(section_marker, section + section_marker, 1)
 
     script_tag = '    <script src="scripts/latest-updates.js" defer></script>'
     if script_tag not in text:
@@ -183,15 +175,11 @@ def main():
             failures.append(f'{source} RSS: {exc}')
     for source, url, kind in HTML_SOURCES:
         try:
-            if kind == 'income-tax':
-                items.extend(income_tax_items(url))
-            else:
-                items.extend(icai_items(url))
+            items.extend(income_tax_items(url) if kind == 'income-tax' else icai_items(url))
         except Exception as exc:
             failures.append(f'{source} HTML: {exc}')
 
     final_items = dedupe(items)
-    # Fail closed: do not erase known-good published data if every official source failed.
     if not final_items:
         raise RuntimeError('All official sources returned no usable verified items. Existing data was left unchanged. ' + '; '.join(failures))
 
