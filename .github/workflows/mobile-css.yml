@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'styles/mobile-enhancements.css'
+      - 'styles/mobile-hamburger.css'
       - '.github/workflows/mobile-css.yml'
 
 permissions:
@@ -18,22 +19,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Link mobile stylesheet
+      - name: Link mobile stylesheets
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           text = p.read_text(encoding='utf-8')
-          link = '<link rel="stylesheet" href="styles/mobile-enhancements.css?v=20260814">'
-          if link not in text:
-              marker = '</head>'
-              if marker not in text:
-                  raise SystemExit('Could not find </head> in index.html')
-              text = text.replace(marker, '    ' + link + '\n' + marker, 1)
+          links = [
+              '<link rel="stylesheet" href="styles/mobile-enhancements.css?v=20260814-2">',
+              '<link rel="stylesheet" href="styles/mobile-hamburger.css?v=20260814-1">'
+          ]
+          marker = '</head>'
+          if marker not in text:
+              raise SystemExit('Could not find </head> in index.html')
+          changed = False
+          for link in links:
+              href = link.split('href="', 1)[1].split('"', 1)[0]
+              if href not in text:
+                  text = text.replace(marker, '    ' + link + '\n' + marker, 1)
+                  changed = True
+          if changed:
               p.write_text(text, encoding='utf-8')
-              print('Mobile stylesheet linked.')
+              print('Mobile styles linked.')
           else:
-              print('Mobile stylesheet already linked.')
+              print('Mobile styles already linked.')
           PY
 
       - name: Commit index.html
@@ -44,6 +53,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No index.html changes required.'
           else
-            git commit -m 'Enable responsive mobile styling'
+            git commit -m 'Refine mobile navigation styling'
             git push
           fi
