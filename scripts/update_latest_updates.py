@@ -19,17 +19,14 @@ HEADERS = {'User-Agent': 'KKA-Official-Updates/1.0 (+https://ca-kka.com/)'}
 ALLOWED_HOSTS = {
     'www.incometax.gov.in', 'incometax.gov.in', 'eportal.incometax.gov.in',
     'www.icai.org', 'icai.org', 'resource.cdn.icai.org',
-    'www.rbi.org.in', 'rbi.org.in', 'www.sebi.gov.in', 'sebi.gov.in'
+    'www.sebi.gov.in', 'sebi.gov.in'
 }
-RSS_SOURCES = [
-    ('RBI', 'https://www.rbi.org.in/pressreleases_rss.xml'),
-    ('RBI', 'https://www.rbi.org.in/notifications_rss.xml'),
-    ('SEBI', 'https://www.sebi.gov.in/sebirss.xml'),
-]
+RSS_SOURCES = []
 HTML_SOURCES = [
     ('Income Tax Department', 'https://www.incometax.gov.in/iec/foportal/latest-news', 'income-tax'),
     ('ICAI', 'https://www.icai.org/category/notifications', 'icai'),
     ('ICAI', 'https://www.icai.org/category/announcements', 'icai'),
+    ('SEBI', 'https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListing=yes&sid=1&ssid=7', 'sebi'),
 ]
 
 
@@ -57,7 +54,7 @@ def parse_date(value: str):
     if not value:
         return None
     value = value.strip()
-    for fmt in ('%d-%b-%Y', '%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y'):
+    for fmt in ('%d-%b-%Y', '%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y', '%b %d, %Y'):
         try:
             return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
         except ValueError:
@@ -79,11 +76,7 @@ def xml_text(node, names):
 def rss_items(source: str, url: str):
     root = ET.fromstring(get(url))
     items = []
-    nodes = []
-    for node in root.iter():
-        if node.tag.rsplit('}', 1)[-1].lower() in ('item', 'entry'):
-            nodes.append(node)
-    for node in nodes[:12]:
+    for node in [n for n in root.iter() if n.tag.rsplit('}', 1)[-1].lower() in ('item', 'entry')][:12]:
         title = clean_title(xml_text(node, {'title'}))
         link = xml_text(node, {'link'})
         if not link:
@@ -92,8 +85,7 @@ def rss_items(source: str, url: str):
                     link = child.attrib['href']
                     break
         link = urljoin(url, link)
-        date_value = xml_text(node, {'pubdate', 'published', 'updated'})
-        published = parse_date(date_value)
+        published = parse_date(xml_text(node, {'pubdate', 'published', 'updated'}))
         if title and valid_url(link):
             items.append({'title': title, 'url': link, 'source': source, '_date': published})
     return items
@@ -109,7 +101,7 @@ def income_tax_items(url: str):
             continue
         published = parse_date(date_match.group(0))
         container = text_node.parent
-        for _ in range(6):
+        for _ in range(8):
             if not container:
                 break
             for anchor in container.find_all('a', href=True):
@@ -140,6 +132,31 @@ def icai_items(url: str):
         title = clean_title(raw_title[:date_match.start()])
         if len(title) >= 20:
             items.append({'title': title, 'url': href, 'source': 'ICAI', '_date': published})
+    return items
+
+
+def sebi_items(url: str):
+    soup = BeautifulSoup(get(url), 'html.parser')
+    items = []
+    date_re = re.compile(r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}\b')
+    for text_node in soup.find_all(string=date_re):
+        match = date_re.search(str(text_node))
+        if not match:
+            continue
+        published = parse_date(match.group(0))
+        container = text_node.parent
+        for _ in range(6):
+            if not container:
+                break
+            for anchor in container.find_all('a', href=True):
+                href = urljoin(url, anchor.get('href') or '')
+                title = clean_title(anchor.get_text(' ', strip=True))
+                if not valid_url(href) or len(title) < 25 or len(title) > 240:
+                    continue
+                if title.lower() in {'next', 'last', 'go', 'reset'}:
+                    continue
+                items.append({'title': title, 'url': href, 'source': 'SEBI', '_date': published})
+            container = container.parent
     return items
 
 
@@ -189,7 +206,12 @@ def main():
             failures.append(f'{source} RSS: {exc}')
     for source, url, kind in HTML_SOURCES:
         try:
-            items.extend(income_tax_items(url) if kind == 'income-tax' else icai_items(url))
+            if kind == 'income-tax':
+                items.extend(income_tax_items(url))
+            elif kind == 'icai':
+                items.extend(icai_items(url))
+            elif kind == 'sebi':
+                items.extend(sebi_items(url))
         except Exception as exc:
             failures.append(f'{source} HTML: {exc}')
     final_items = dedupe(items)
