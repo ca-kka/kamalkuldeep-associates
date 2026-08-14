@@ -124,6 +124,67 @@ body {
     background: linear-gradient(145deg, #132f5b 0%, #1e467f 100%);
 }
 
+/* Conservative public presentation of experience information.
+   Client/bank names are intentionally not displayed on the public site. */
+#experience > h3:nth-of-type(1),
+#experience > h3:nth-of-type(2) {
+    margin-top: 2rem;
+    padding: 14px 18px;
+    background: #f7f9fc;
+    border: 1px solid var(--kka-border);
+    border-left: 4px solid var(--kka-navy);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(15,23,42,.04);
+}
+
+/* Banking client-name list removed from public presentation. */
+#experience > h3:nth-of-type(1) + p {
+    margin: 0;
+    padding: 14px 18px 4px;
+    color: var(--kka-muted);
+    font-size: 0;
+}
+
+#experience > h3:nth-of-type(1) + p::after {
+    content: 'Experience includes statutory, concurrent and specialised audit assignments in the banking sector across multiple locations.';
+    display: block;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--kka-muted);
+}
+
+#experience > h3:nth-of-type(1) + p + .experience-list {
+    display: none;
+}
+
+/* Stock/revenue work is described by nature of assignment rather than client names. */
+#experience > h3:nth-of-type(2) + p {
+    margin-top: 0;
+    padding: 14px 18px;
+    background: #fbfcfe;
+    border: 1px solid var(--kka-border);
+    border-radius: 10px;
+    color: var(--kka-muted);
+    font-size: 0;
+}
+
+#experience > h3:nth-of-type(2) + p::after {
+    content: 'Experience includes stock and revenue audit assignments for borrowers and banking-sector engagements across Punjab, Haryana, Jammu & Kashmir and other locations.';
+    display: block;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--kka-muted);
+}
+
+/* Remove promotional wording from the corporate experience paragraph. */
+#experience > h3:nth-of-type(3) + p {
+    color: var(--kka-muted);
+}
+
+#experience > h3:nth-of-type(3) + p::first-line {
+    color: var(--kka-ink);
+}
+
 /* Tablet */
 @media (max-width: 900px) {
     .header-content h1 {
@@ -287,6 +348,16 @@ body {
 
     .due-date-card .category-badge {
         margin-left: 0;
+    }
+
+    #experience > h3:nth-of-type(1),
+    #experience > h3:nth-of-type(2) {
+        padding: 12px 14px;
+    }
+
+    #experience > h3:nth-of-type(1) + p,
+    #experience > h3:nth-of-type(2) + p {
+        padding: 10px 14px;
     }
 
     .footer {
