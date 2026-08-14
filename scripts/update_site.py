@@ -17,6 +17,25 @@ text = re.sub(
     count=1,
 )
 
+# Add the professional firm overview and its stylesheet once.
+overview_css = '<link rel="stylesheet" href="styles/firm-overview.css?v=20260814-2">'
+if overview_css not in text:
+    text = text.replace('</head>', '    ' + overview_css + '\n</head>', 1)
+
+overview = '''            <div class="firm-overview" aria-labelledby="firm-overview-title">
+                <p class="eyebrow">Professional Overview</p>
+                <h2 id="firm-overview-title">Kamal Kuldeep &amp; Associates</h2>
+                <p>We are a firm of Chartered Accountants based in Jalandhar, Punjab, providing professional services in audit, taxation, accounting and regulatory compliance.</p>
+                <p>Our professional work encompasses statutory and internal audit assignments, taxation and GST compliance, financial reporting, due diligence and other professional engagements across a range of sectors.</p>
+                <p>Our approach is centred on professional integrity, confidentiality, technical diligence and a practical understanding of the requirements of each engagement.</p>
+            </div>\n\n'''
+
+if 'id="firm-overview-title"' not in text:
+    marker = '        <div class="content">'
+    if marker not in text:
+        raise SystemExit("Could not locate content container in index.html")
+    text = text.replace(marker, marker + '\n' + overview, 1)
+
 items = []
 for item in data.get("items", []):
     badge = {
