@@ -1,0 +1,62 @@
+name: Concise public banking information
+
+on:
+  push:
+    paths:
+      - '.github/workflows/concise-public-banking.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  clean-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove individual bank names from public website
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+
+          # Remove the public empanelment statement and keep the wording factual.
+          text = re.sub(
+              r'Our firm is empanelled with leading banks and financial institutions including .*?\.',
+              'Our firm has experience in statutory, bank, concurrent, stock and tax audits and due diligence services.',
+              text,
+              flags=re.S,
+          )
+
+          # Replace detailed bank-by-bank experience lists with concise descriptions.
+          text = re.sub(
+              r'(<h3>Banking Sector Experience</h3>).*?(?=<h3>Stock &amp; Revenue Audit Experience</h3>)',
+              r'\1\n                <p>Experience in statutory, concurrent and specialised audit assignments for banks and financial institutions across various locations.</p>\n            ',
+              text,
+              flags=re.S,
+          )
+
+          text = re.sub(
+              r'(<h3>Stock &amp; Revenue Audit Experience</h3>).*?(?=<h3>Corporate Audit Services</h3>)',
+              r'\1\n                <p>Experience in stock and revenue audits for borrowers of banks and financial institutions across multiple regions.</p>\n            ',
+              text,
+              flags=re.S,
+          )
+
+          p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit website and remove one-time workflow
+        run: |
+          git config user.name 'KKA Website Bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git rm .github/workflows/concise-public-banking.yml
+          git commit -m 'Concise public banking experience information'
+          git push
