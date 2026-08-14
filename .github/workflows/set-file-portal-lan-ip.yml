@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Update Admin Login URL and Ludhiana number
+      - name: Update Admin Login URL
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -26,25 +26,17 @@ jobs:
           p = Path("index.html")
           text = p.read_text(encoding="utf-8")
 
-          old_admin = 'http://192.168.29.150:8080/'
-          new_admin = 'https://rapiserver.tail015684.ts.net/'
-          if old_admin in text:
-              text = text.replace(old_admin, new_admin, 1)
-          
-          old_ludhiana_1 = '''<h3 style="margin-top: 1.5rem;">Branch Office - Ludhiana</h3>\n                    <p><strong>Address:</strong> 53 Golf Link Extension, Hambran Road, Ludhiana, Punjab - 141008</p>\n                    <p><strong>Mobile:</strong> +91-98156-81778</p>'''
-          new_ludhiana_1 = '''<h3 style="margin-top: 1.5rem;">Branch Office - Ludhiana</h3>\n                    <p><strong>Address:</strong> 53 Golf Link Extension, Hambran Road, Ludhiana, Punjab - 141008</p>\n                    <p><strong>Mobile:</strong> +91-97806-24625</p>'''
-          if old_ludhiana_1 in text:
-              text = text.replace(old_ludhiana_1, new_ludhiana_1, 1)
+          old = "http://100.88.161.44:8080/"
+          new = "http://192.168.29.150:8080/"
 
-          old_ludhiana_2 = '''<!-- Ludhiana Office -->\n                    <div class="office-card">\n                        <h4>Branch Office - Ludhiana</h4>\n                        <div class="office-details">\n                            <p><strong>Address:</strong> <a href="https://maps.app.goo.gl/nGAKnDEsUXavGwPJ7" target="_blank">53 Golf Link Extension, Hambran Road, Ludhiana, Punjab - 141008</a></p>\n                            <p><strong>Mobile:</strong> <a href="tel:+919815681778">+91-98156-81778</a></p>'''
-          new_ludhiana_2 = '''<!-- Ludhiana Office -->\n                    <div class="office-card">\n                        <h4>Branch Office - Ludhiana</h4>\n                        <div class="office-details">\n                            <p><strong>Address:</strong> <a href="https://maps.app.goo.gl/nGAKnDEsUXavGwPJ7" target="_blank">53 Golf Link Extension, Hambran Road, Ludhiana, Punjab - 141008</a></p>\n                            <p><strong>Mobile:</strong> <a href="tel:+919780624625">+91-97806-24625</a></p>'''
-          if old_ludhiana_2 in text:
-              text = text.replace(old_ludhiana_2, new_ludhiana_2, 1)
-
-          p.write_text(text, encoding="utf-8")
+          if old in text:
+              p.write_text(text.replace(old, new), encoding="utf-8")
+              print("Admin Login URL changed to LAN address.")
+          else:
+              print("Old Tailscale URL not found; no change required.")
           PY
 
-      - name: Commit URL and number changes
+      - name: Commit URL change
         run: |
           if git diff --quiet -- index.html; then
             echo "No change required."
@@ -54,5 +46,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Update admin login and Ludhiana branch number"
+          git commit -m "Use LAN IP for KKA File Portal admin login"
           git push
