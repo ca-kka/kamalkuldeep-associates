@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T16:19:18.824954+00:00",
+  "generatedAt": "2026-08-14T16:20:05.677314+00:00",
   "items": [
     {
       "title": "Result of Certificate course on Certificate course on Forex and Treasury management (FXTM) held on 13th June 2026. -",
@@ -7,43 +7,40 @@
       "source": "ICAI"
     },
     {
-      "title": "Important Information regarding the Upgradation of DISA 3.0 to DISA 4.0. -",
-      "url": "https://resource.cdn.icai.org/93710daab-aps6058.pdf",
-      "source": "ICAI"
+      "title": "Modification in the regulatory framework for Online Bond Platform Providers (OBPPs) including measures for promoting ease of doing business",
+      "url": "https://www.sebi.gov.in/legal/circulars/aug-2026/modification-in-the-regulatory-framework-for-online-bond-platform-providers-obpps-including-measures-for-promoting-ease-of-doing-business_103647.html",
+      "source": "SEBI"
     },
     {
-      "title": "Mock Test Papers Series - I & Series II for CA. Final students appearing in November 2026 Examinations. -",
-      "url": "https://resource.cdn.icai.org/93707bos-aps6055-mtp-nov2026.pdf",
-      "source": "ICAI"
+      "title": "Framework for Calculation of Net Distributable Cash Flows for InvITs",
+      "url": "https://www.sebi.gov.in/legal/circulars/aug-2026/framework-for-calculation-of-net-distributable-cash-flows-for-invits_103644.html",
+      "source": "SEBI"
     },
     {
-      "title": "Success at CA. Exam - Series I starting from 6th October 2026 for CA. Final students appearing in November 2026 Examinations -",
-      "url": "https://resource.cdn.icai.org/93706bos-aps6055-ca-ex-final-nov2026.pdf",
-      "source": "ICAI"
+      "title": "Review of Inclusion of Historical Scenarios in Stress Testing for Commodity Derivatives Segment",
+      "url": "https://www.sebi.gov.in/legal/circulars/aug-2026/review-of-inclusion-of-historical-scenarios-in-stress-testing-for-commodity-derivatives-segment_103521.html",
+      "source": "SEBI"
     },
     {
-      "title": "Announcement - Hosting of Multipurpose Empanelment Form (MEF)-2026-27 -",
-      "url": "https://www.icai.org/post/mef070826",
-      "source": "ICAI"
+      "title": "Amendment to SEBI (Issue and Listing of Municipal Debt Securities) Regulations, 2015 (“ILMDS Regulations”)",
+      "url": "https://www.sebi.gov.in/legal/circulars/aug-2026/amendment-to-sebi-issue-and-listing-of-municipal-debt-securities-regulations-2015-ilmds-regulations-_103488.html",
+      "source": "SEBI"
     },
     {
-      "title": "Gazette Notification - 77th Annual Report and Accounts of the Institute for the year 2025-26 -",
-      "url": "https://resource.cdn.icai.org/9368177th-annual-report-gazette-india.pdf",
-      "source": "ICAI"
+      "title": "Extension of timeline for enrolment with PaRRVA as specified in SEBI Circular No. HO/38/14/(4)2026-MIRSD-POD/I/10557/2026 dated April 29, 2026",
+      "url": "https://www.sebi.gov.in/legal/circulars/aug-2026/extension-of-timeline-for-enrolment-with-parrva-as-specified-in-sebi-circular-no-ho-38-14-4-2026-mirsd-pod-i-10557-2026-dated-april-29-2026_103314.html",
+      "source": "SEBI"
     },
     {
-      "title": "77th Annual Report and Accounts of the Institute for the year 2025-26 -",
-      "url": "https://www.icai.org/post/77th-annual-report-and-accounts-icai-year-2025-26",
-      "source": "ICAI"
+      "title": "Extension of timelines with repect to compliance of Digital Accessibility Circulars.",
+      "url": "https://www.sebi.gov.in/legal/circulars/jul-2026/extension-of-timelines-with-repect-to-compliance-of-digital-accessibility-circulars-_103277.html",
+      "source": "SEBI"
     },
     {
-      "title": "Merit List of the Information Systems Audit [ISA] Assessment Test held in July 2026. -",
-      "url": "https://resource.cdn.icai.org/93631exam-aps6025-isa-july2026.pdf",
-      "source": "ICAI"
+      "title": "‘Green-Channel: AIF Rollout Upon Document Acknowledgement’ (GARUDA) Mechanism for Processing of Placement Memorandum of Alternative Investment Funds (AIFs) filed with SEBI",
+      "url": "https://www.sebi.gov.in/legal/circulars/jul-2026/-green-channel-aif-rollout-upon-document-acknowledgement-garuda-mechanism-for-processing-of-placement-memorandum-of-alternative-investment-funds-aifs-filed-with-sebi_103241.html",
+      "source": "SEBI"
     }
   ],
-  "sourceFailures": [
-    "RBI RSS: not well-formed (invalid token): line 1, column 1",
-    "RBI RSS: not well-formed (invalid token): line 1, column 1"
-  ]
+  "sourceFailures": []
 }
