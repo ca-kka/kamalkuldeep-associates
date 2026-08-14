@@ -28,6 +28,66 @@
     align-items: center !important;
 }
 
+/* Premium Important Dates / Due Dates treatment */
+.due-dates-section {
+    background: linear-gradient(135deg, #f7f9fc 0%, #eef3f9 100%) !important;
+    color: #1e293b !important;
+    border: 1px solid #d9e2ef !important;
+    border-top: 5px solid #1e3c72 !important;
+    border-radius: 14px !important;
+    padding: 2.2rem !important;
+    box-shadow: 0 10px 30px rgba(15, 39, 71, 0.10) !important;
+}
+
+.due-dates-section h3 {
+    color: #12325b !important;
+    text-align: left !important;
+    font-size: 1.85rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    margin-bottom: 0.45rem !important;
+    padding-bottom: 0.75rem !important;
+    border-bottom: 2px solid #d6a84f !important;
+    position: relative !important;
+}
+
+.due-dates-section h3::before {
+    content: 'IMPORTANT DATES' !important;
+    display: block !important;
+    color: #b8862b !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.14em !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.due-dates-grid {
+    margin-top: 1.35rem !important;
+}
+
+.due-date-card {
+    background: #ffffff !important;
+    border: 1px solid #e1e7ef !important;
+    border-top: 3px solid #1e3c72 !important;
+    box-shadow: 0 5px 16px rgba(15, 39, 71, 0.08) !important;
+}
+
+.due-date-card h4 {
+    color: #173d6b !important;
+}
+
+.due-date-card .date {
+    color: #b45309 !important;
+}
+
+.due-date-card .description {
+    color: #475569 !important;
+}
+
+.update-info {
+    color: #64748b !important;
+}
+
 @media (max-width: 768px) {
     .ca-logo {
         width: 92px !important;
@@ -38,6 +98,15 @@
 
     .logo-container {
         margin-bottom: 0.85rem !important;
+    }
+
+    .due-dates-section {
+        padding: 1.4rem !important;
+        border-radius: 12px !important;
+    }
+
+    .due-dates-section h3 {
+        font-size: 1.45rem !important;
     }
 }
 
