@@ -1,8 +1,9 @@
-/* KKA premium branding — keeps images/ca-logo.png as the source inside the premium SVG */
+/* KKA premium branding — use the PNG directly so the logo is reliably rendered */
 
 .ca-logo {
     width: 118px !important;
     height: 118px !important;
+    content: url("../images/ca-logo.png") !important;
     object-fit: contain;
     padding: 0 !important;
     background: transparent !important;
