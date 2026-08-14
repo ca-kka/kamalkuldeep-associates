@@ -26,8 +26,8 @@ jobs:
           p = Path('index.html')
           text = p.read_text(encoding='utf-8')
           links = [
-              '<link rel="stylesheet" href="styles/mobile-enhancements.css?v=20260814-2">',
-              '<link rel="stylesheet" href="styles/mobile-hamburger.css?v=20260814-1">'
+              '<link rel="stylesheet" href="styles/mobile-enhancements.css?v=20260814-3">',
+              '<link rel="stylesheet" href="styles/mobile-hamburger.css?v=20260814-2">'
           ]
           marker = '</head>'
           if marker not in text:
