@@ -15,18 +15,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Run official-source discovery
+      - name: Check official sources for a verified due-date change
         run: python3 scripts/discover_due_dates.py
 
-      - name: Commit discovery report
+      - name: Rebuild website only if a verified due date changed
+        run: python3 scripts/update_site.py
+
+      - name: Publish only verified due-date changes
         run: |
           git config user.name 'KKA Due Date Bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/due-date-discovery.json
+          git add data/due-dates.json index.html
           if git diff --cached --quiet; then
-            echo 'No discovery report changes.'
+            echo 'No verified due-date change. Public website and footer remain unchanged.'
           else
-            git commit -m 'Daily due-date source discovery'
+            git commit -m 'Auto-update verified due-date change'
             git push
           fi
