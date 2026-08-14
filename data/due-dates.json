@@ -1,0 +1,70 @@
+{
+  "updated": "14 August 2026",
+  "notice": "Due dates are subject to notifications, extensions and taxpayer category. Verify the applicable date on the official portal before filing.",
+  "items": [
+    {
+      "title": "GSTR-3B",
+      "category": "GST",
+      "date": "20 August 2026",
+      "description": "Monthly GSTR-3B for July 2026 for regular taxpayers, subject to the applicable filing category and notified extensions.",
+      "urgent": true,
+      "source": "https://www.gst.gov.in/"
+    },
+    {
+      "title": "GSTR-1",
+      "category": "GST",
+      "date": "11 August 2026",
+      "description": "Monthly GSTR-1 for July 2026 for taxpayers covered by the monthly filing cycle.",
+      "urgent": false,
+      "source": "https://www.gst.gov.in/"
+    },
+    {
+      "title": "GSTR-5 / GSTR-5A",
+      "category": "GST",
+      "date": "20 August 2026",
+      "description": "Return filing for applicable non-resident and OIDAR service providers for July 2026.",
+      "urgent": false,
+      "source": "https://www.gst.gov.in/"
+    },
+    {
+      "title": "TDS Certificate (Form 16A)",
+      "category": "TDS",
+      "date": "15 August 2026",
+      "description": "Issue Form 16A for tax deducted during Q1 of FY 2026-27, where applicable.",
+      "urgent": true,
+      "source": "https://www.tdscpc.gov.in/"
+    },
+    {
+      "title": "ITR – AY 2026-27 (eligible non-audit cases)",
+      "category": "Income Tax",
+      "date": "31 August 2026",
+      "description": "Due date indicated for eligible non-audit taxpayers for AY 2026-27. Check the applicable category before filing.",
+      "urgent": true,
+      "source": "https://www.incometax.gov.in/"
+    },
+    {
+      "title": "Advance Tax – Q2",
+      "category": "Income Tax",
+      "date": "15 September 2026",
+      "description": "Second instalment of advance tax for FY 2026-27, generally 45% of estimated annual tax liability cumulatively.",
+      "urgent": false,
+      "source": "https://www.incometax.gov.in/"
+    },
+    {
+      "title": "TDS Payment",
+      "category": "TDS",
+      "date": "7 September 2026",
+      "description": "General due date for depositing TDS deducted during August 2026, subject to applicable exceptions.",
+      "urgent": false,
+      "source": "https://www.incometax.gov.in/"
+    },
+    {
+      "title": "ITR – AY 2026-27 (audit cases)",
+      "category": "Income Tax",
+      "date": "31 October 2026",
+      "description": "Due date for applicable taxpayers whose accounts are required to be audited, subject to the notified provisions and extensions.",
+      "urgent": false,
+      "source": "https://www.incometax.gov.in/"
+    }
+  ]
+}
