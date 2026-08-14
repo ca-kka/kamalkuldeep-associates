@@ -1,0 +1,50 @@
+name: Set KKA File Portal LAN URL
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-admin-link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Update Admin Login URL
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("index.html")
+          text = p.read_text(encoding="utf-8")
+
+          old = "http://100.88.161.44:8080/"
+          new = "http://192.168.29.150:8080/"
+
+          if old in text:
+              p.write_text(text.replace(old, new), encoding="utf-8")
+              print("Admin Login URL changed to LAN address.")
+          else:
+              print("Old Tailscale URL not found; no change required.")
+          PY
+
+      - name: Commit URL change
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No change required."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Use LAN IP for KKA File Portal admin login"
+          git push
