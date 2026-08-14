@@ -1,0 +1,35 @@
+name: Update website due dates
+
+on:
+  push:
+    paths:
+      - 'data/due-dates.json'
+      - 'scripts/update_site.py'
+      - '.github/workflows/update-due-dates.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update index.html
+        run: python3 scripts/update_site.py
+
+      - name: Commit website update
+        run: |
+          git config user.name 'KKA Website Bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No website changes required.'
+          else
+            git commit -m 'Auto-update website due dates'
+            git push
+          fi
