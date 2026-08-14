@@ -14,16 +14,12 @@
         height: 64px;
         min-height: 64px;
         padding: 0 14px;
+        justify-content: flex-end !important;
     }
 
+    /* The firm name is already displayed in the main header. Keep the mobile navigation clean. */
     .nav-brand {
-        color: #173a70;
-        font-size: .92rem;
-        font-weight: 700;
-        max-width: calc(100% - 64px);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        display: none !important;
     }
 
     .hamburger {
@@ -152,7 +148,6 @@
     }
 
     .nav .container { padding: 0 12px; }
-    .nav-brand { font-size: .86rem; }
 
     .hamburger {
         width: 42px !important;
