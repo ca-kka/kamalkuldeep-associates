@@ -1,25 +1,50 @@
 {
-  "generatedAt": "2026-08-14T15:45:00Z",
+  "generatedAt": "2026-08-14T16:17:39.976256+00:00",
   "items": [
     {
-      "title": "Offline utility of ITR-7 for AY 2026-27 is available for filing.",
-      "url": "https://www.incometax.gov.in/iec/foportal/latest-news",
-      "source": "Income Tax Department"
-    },
-    {
-      "title": "Important Information regarding the Upgradation of DISA 3.0 to DISA 4.0.",
-      "url": "https://www.icai.org/category/notifications",
+      "title": "Result of Certificate course on Certificate course on Forex and Treasury management (FXTM) held on 13th June 2026. - (26-06-2027)",
+      "url": "https://resource.cdn.icai.org/92923cfmip-aps5683-result-fxtm.pdf",
       "source": "ICAI"
     },
     {
-      "title": "Hosting of Multipurpose Empanelment Form (MEF)-2026-27.",
-      "url": "https://www.icai.org/category/announcements",
+      "title": "Important Information regarding the Upgradation of DISA 3.0 to DISA 4.0. - (11-08-2026)",
+      "url": "https://resource.cdn.icai.org/93710daab-aps6058.pdf",
       "source": "ICAI"
     },
     {
-      "title": "Mock Test Papers Series - I & Series II for CA Final students appearing in November 2026 Examinations.",
-      "url": "https://www.icai.org/category/announcements",
+      "title": "Mock Test Papers Series - I & Series II for CA. Final students appearing in November 2026 Examinations. - (10-08-2026)",
+      "url": "https://resource.cdn.icai.org/93707bos-aps6055-mtp-nov2026.pdf",
+      "source": "ICAI"
+    },
+    {
+      "title": "Success at CA. Exam - Series I starting from 6th October 2026 for CA. Final students appearing in November 2026 Examinations - (10-08-2026)",
+      "url": "https://resource.cdn.icai.org/93706bos-aps6055-ca-ex-final-nov2026.pdf",
+      "source": "ICAI"
+    },
+    {
+      "title": "Announcement - Hosting of Multipurpose Empanelment Form (MEF)-2026-27 - (07-08-2026)",
+      "url": "https://www.icai.org/post/mef070826",
+      "source": "ICAI"
+    },
+    {
+      "title": "Gazette Notification - 77th Annual Report and Accounts of the Institute for the year 2025-26 - (06-08-2026)",
+      "url": "https://resource.cdn.icai.org/9368177th-annual-report-gazette-india.pdf",
+      "source": "ICAI"
+    },
+    {
+      "title": "77th Annual Report and Accounts of the Institute for the year 2025-26 - (06-08-2026)",
+      "url": "https://www.icai.org/post/77th-annual-report-and-accounts-icai-year-2025-26",
+      "source": "ICAI"
+    },
+    {
+      "title": "Merit List of the Information Systems Audit [ISA] Assessment Test held in July 2026. - (05-08-2026)",
+      "url": "https://resource.cdn.icai.org/93631exam-aps6025-isa-july2026.pdf",
       "source": "ICAI"
     }
+  ],
+  "sourceFailures": [
+    "RBI RSS: Couldn't find a tree builder with the features you requested: xml. Do you need to install a parser library?",
+    "RBI RSS: Couldn't find a tree builder with the features you requested: xml. Do you need to install a parser library?",
+    "SEBI RSS: Couldn't find a tree builder with the features you requested: xml. Do you need to install a parser library?"
   ]
 }
