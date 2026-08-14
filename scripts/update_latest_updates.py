@@ -17,7 +17,7 @@ INDEX = ROOT / 'index.html'
 
 HEADERS = {'User-Agent': 'KKA-Official-Updates/1.0 (+https://ca-kka.com/)'}
 ALLOWED_HOSTS = {
-    'www.incometax.gov.in', 'incometax.gov.in',
+    'www.incometax.gov.in', 'incometax.gov.in', 'eportal.incometax.gov.in',
     'www.icai.org', 'icai.org', 'resource.cdn.icai.org',
     'www.rbi.org.in', 'rbi.org.in',
     'www.sebi.gov.in', 'sebi.gov.in'
@@ -37,7 +37,7 @@ HTML_SOURCES = [
 def clean_title(value: str) -> str:
     value = html.unescape(re.sub(r'\s+', ' ', value or '')).strip()
     value = re.sub(r'^\s*[-–—|]+\s*', '', value)
-    return value[:240].rstrip(' .') + ('.' if value and not value.endswith(('.', '?', '!')) else '')
+    return value[:240].strip()
 
 
 def valid_url(url: str) -> bool:
@@ -70,7 +70,9 @@ def parse_date(value: str):
 
 
 def rss_items(source: str, url: str):
-    soup = BeautifulSoup(get(url), 'xml')
+    # Use the standard HTML parser: it safely handles RSS/XML tags without
+    # requiring lxml, keeping the GitHub Actions environment deterministic.
+    soup = BeautifulSoup(get(url), 'html.parser')
     items = []
     for node in soup.find_all(['item', 'entry'])[:12]:
         title_node = node.find('title')
@@ -113,16 +115,17 @@ def icai_items(url: str):
     soup = BeautifulSoup(get(url), 'html.parser')
     items = []
     for anchor in soup.find_all('a'):
-        title = clean_title(anchor.get_text(' ', strip=True))
+        raw_title = clean_title(anchor.get_text(' ', strip=True))
         href = urljoin(url, anchor.get('href') or '')
-        if not valid_url(href) or len(title) < 25 or len(title) > 240:
+        if not valid_url(href) or len(raw_title) < 25 or len(raw_title) > 260:
             continue
-        date_match = re.search(r'\(\s*(\d{2}-\d{2}-\d{4}|\d{2}-[A-Za-z]{3}-\d{4})\s*\)', title)
+        date_match = re.search(r'\s*[-–—]?\s*\(\s*(\d{2}-\d{2}-\d{4}|\d{2}-[A-Za-z]{3}-\d{4})\s*\)\s*\.?$', raw_title)
         if not date_match:
             continue
         published = parse_date(date_match.group(1))
-        title = clean_title(re.sub(r'\s*\(\s*(?:\d{2}-\d{2}-\d{4}|\d{2}-[A-Za-z]{3}-\d{4})\s*\)\s*$', '', title))
-        items.append({'title': title, 'url': href, 'source': 'ICAI', '_date': published})
+        title = clean_title(raw_title[:date_match.start()])
+        if len(title) >= 20:
+            items.append({'title': title, 'url': href, 'source': 'ICAI', '_date': published})
     return items
 
 
