@@ -1,0 +1,34 @@
+name: Refresh Official Latest Updates
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/latest-updates.js'
+      - 'scripts/update_latest_updates.py'
+      - 'data/latest-updates.json'
+      - '.github/workflows/latest-updates.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out site
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install parser dependencies
+        run: python -m pip install --disable-pip-version-check requests beautifulsoup4
+
+      - name: Collect and publish verified updates
+        run: python scripts/update_latest_updates.py
