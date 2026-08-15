@@ -67,6 +67,10 @@
   async function init() {
     injectStyles();
     addFallbackAnchorBehaviour();
+
+    const adminLogin = document.querySelector('.admin-login');
+    if (adminLogin) adminLogin.href = 'https://files.ca-kka.com/';
+
     try {
       const response = await fetch(DATA_URL, { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
