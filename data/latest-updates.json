@@ -1,9 +1,14 @@
 {
-  "generatedAt": "2026-08-14T16:20:05.677314+00:00",
+  "generatedAt": "2026-08-18T07:01:46.217779+00:00",
   "items": [
     {
       "title": "Result of Certificate course on Certificate course on Forex and Treasury management (FXTM) held on 13th June 2026. -",
       "url": "https://resource.cdn.icai.org/92923cfmip-aps5683-result-fxtm.pdf",
+      "source": "ICAI"
+    },
+    {
+      "title": "Convocation - 12th September, 2026 -",
+      "url": "https://www.icai.org/post/convocation-sep-2026",
       "source": "ICAI"
     },
     {
@@ -35,12 +40,6 @@
       "title": "Extension of timelines with repect to compliance of Digital Accessibility Circulars.",
       "url": "https://www.sebi.gov.in/legal/circulars/jul-2026/extension-of-timelines-with-repect-to-compliance-of-digital-accessibility-circulars-_103277.html",
       "source": "SEBI"
-    },
-    {
-      "title": "‘Green-Channel: AIF Rollout Upon Document Acknowledgement’ (GARUDA) Mechanism for Processing of Placement Memorandum of Alternative Investment Funds (AIFs) filed with SEBI",
-      "url": "https://www.sebi.gov.in/legal/circulars/jul-2026/-green-channel-aif-rollout-upon-document-acknowledgement-garuda-mechanism-for-processing-of-placement-memorandum-of-alternative-investment-funds-aifs-filed-with-sebi_103241.html",
-      "source": "SEBI"
     }
-  ],
-  "sourceFailures": []
+  ]
 }
