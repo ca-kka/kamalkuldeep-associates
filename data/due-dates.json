@@ -1,5 +1,6 @@
 {
   "updated": "7 September 2026",
+  "generator_version": "2026-09-07",
   "notice": "GST dates are generated from recurring GST Portal filing rules and checked against official GST advisories for extensions. TDS payment dates are shown separately from quarterly TDS return filing dates to avoid confusion. Due dates can differ by taxpayer category, State/UT and filing frequency. Verify the applicable date on the official portal before filing.",
   "items": [
     {"title":"GSTR-7","category":"GST","date":"10 September 2026","description":"Monthly GSTR-7 for August 2026.","urgent":true,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
