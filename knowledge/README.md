@@ -1,34 +1,22 @@
 # KKA Knowledge Centre
 
-This directory is a separate subsystem from the existing KKA website and File Server.
+The Knowledge Centre is a static, KKA-branded knowledge platform under `/knowledge/`.
 
-## Phase 1
-- Public Knowledge Centre at `/knowledge/`
-- Separate article template
-- Separate admin entry point at `/knowledge/admin/`
-- No File Server credentials, sessions, authentication code or secrets are reused
-- Public content is static and contains no credentials
+## Hosting
 
-## Authentication boundary
-The admin page is intentionally only an entry point until a server-side authentication provider is connected. Username/password/TOTP must not be implemented as client-side JavaScript or stored in public files.
+- Public site: GitHub Pages
+- Source/content: GitHub repository
+- Validation and automation: GitHub Actions
+- Administration: GitHub-authenticated repository permissions, editor and Pull Requests
+- Existing File Server admin: completely separate and untouched
 
-Required production flow:
+## Publishing
 
-`Admin browser -> HTTPS authentication API -> password hash + TOTP -> secure session -> CMS/publishing API -> GitHub`
+1. Edit the canonical JSON data in GitHub.
+2. Prefer a branch + Pull Request for editorial review.
+3. Run **Knowledge Centre Validation**.
+4. Review sources, dates and wording.
+5. Merge the approved change into `main`.
+6. GitHub Pages publishes the resulting static site.
 
-Required controls:
-- One Admin account initially
-- Strong password hash (Argon2id or bcrypt)
-- TOTP-based OTP
-- One-time recovery codes
-- Secure, HttpOnly, SameSite session cookie
-- Login rate limiting and lockout/backoff
-- Password change and recovery
-- Audit log
-- Server-side GitHub credentials only
-
-## Next production step
-Connect a dedicated server-side auth/API layer (for example a separately deployed serverless service) and configure its secret storage. This cannot safely be completed by GitHub Pages/static HTML alone.
-
-## Main website boundary
-The existing homepage and File Server are not modified by this Phase 1 branch. A small navigation link to `/knowledge/` should be added only after the Knowledge Centre public page is approved.
+The custom `/knowledge/admin/` area is a control centre and navigation layer. It never stores passwords, OTP secrets or GitHub tokens. This is intentional because GitHub Pages cannot safely act as a confidential OAuth callback server.
