@@ -1,1 +1,33 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>KKA Knowledge Centre — Admin Login</title><link rel="icon" href="../../images/favicon-circle.svg"><link rel="stylesheet" href="admin.css"></head><body><main class="card"><a class="back" href="../">← Knowledge Centre</a><div style="text-align:center;margin:24px 0 18px"><img class="admin-logo" src="../../images/ca-logo-premium.svg" alt="Kamal Kuldeep & Associates CA logo" style="width:86px;height:86px"></div><p class="eyebrow">KKA KNOWLEDGE CENTRE</p><h1>Admin Login</h1><p class="note">Enter your administrator ID and password. The credential check must be performed by a server-side authentication service; GitHub Pages cannot safely validate or store passwords.</p><form id="login-form"><label>Admin ID<input id="admin-id" autocomplete="username" placeholder="Administrator ID" required></label><label>Password<input id="admin-password" type="password" autocomplete="current-password" placeholder="Password" required></label><button type="submit" disabled>Sign In</button></form><p class="status">Secure authentication endpoint is not connected yet. This page intentionally remains locked rather than using a password embedded in JavaScript.</p><div class="panel" style="margin-top:20px"><strong>What happens after secure authentication is added</strong><span>Successful sign-in → KKA Publishing Workspace → create/edit article → preview → submit for validation → publish.</span></div><p class="security">No password, OTP seed, GitHub token or session credential is stored in this public page. The existing File Server authentication remains separate.</p></main><script>document.getElementById('login-form').addEventListener('submit',e=>e.preventDefault());</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>KKA Knowledge Centre — Admin Login</title>
+<link rel="icon" href="../../images/favicon-circle.svg"><link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<main class="card">
+<a class="back" href="../">← Knowledge Centre</a>
+<div style="text-align:center;margin:24px 0 18px"><img class="admin-logo" src="../../images/ca-logo.png" alt="Kamal Kuldeep &amp; Associates CA logo" style="width:86px;height:86px"></div>
+<p class="eyebrow">KKA KNOWLEDGE CENTRE</p>
+<h1>Admin Login</h1>
+<p class="note">Sign in securely with the authorized Google account. Google handles your password and two-step verification; KKA does not store your Google password.</p>
+<button id="google-login" class="google-login" type="button">Continue with Google</button>
+<p id="status" class="status">Connecting to the secure authentication service…</p>
+<div class="panel" style="margin-top:20px"><strong>Protected publishing access</strong><span>Only the registered KKA administrator account is permitted. After authentication you will enter the Publishing Workspace.</span></div>
+<p class="security">This login is separate from the existing File Server authentication. No password or Google credential is stored in this public page.</p>
+</main>
+<script>
+const AUTH_BASE='https://auth.ca-kka.com';
+const statusEl=document.getElementById('status');
+const button=document.getElementById('google-login');
+async function check(){
+  try{const r=await fetch(AUTH_BASE+'/session',{credentials:'include',cache:'no-store'});if(r.ok){const d=await r.json();if(d.authenticated){location.href='dashboard.html';return;}}statusEl.textContent='Use the authorized Google account to continue.';button.disabled=false;}
+  catch(e){statusEl.textContent='Secure authentication service is not reachable yet.';button.disabled=true;}
+}
+button.addEventListener('click',()=>{location.href=AUTH_BASE+'/login';});
+check();
+</script>
+</body>
+</html>
