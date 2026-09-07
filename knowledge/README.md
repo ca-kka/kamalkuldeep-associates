@@ -2,19 +2,16 @@
 
 The Knowledge Centre is a static, KKA-branded knowledge platform under `/knowledge/`.
 
-## Hosting
-- Public site: GitHub Pages
-- Source/content: GitHub repository
-- Validation and automation: GitHub Actions
-- Administration: GitHub-authenticated repository permissions, editor and Pull Requests
-- Existing File Server admin: completely separate and untouched
+## UI updates
+- Uses the KKA CA logo from the main website assets.
+- Uses a shared footer matching the main website structure, with working links back to the main site.
+- Includes the same WhatsApp contact number/button used by the main website.
+- Main-site Knowledge Centre navigation is styled as a prominent button.
+- `/knowledge/admin/` provides a dedicated KKA publishing workspace with local draft saving, preview and JSON export.
 
-## Publishing
-1. Edit canonical JSON data in GitHub.
-2. Prefer a branch + Pull Request for editorial review.
-3. Run **Knowledge Centre Validation**.
-4. Review sources, dates and wording.
-5. Merge the approved change into `main`.
-6. GitHub Pages publishes the approved result.
+## Publishing/authentication boundary
+GitHub Pages is static hosting. It cannot safely implement a real administrator ID/password system or accept/store a GitHub token in browser JavaScript. The admin login screen therefore fails closed until a server-side authentication/API endpoint is connected.
 
-The custom `/knowledge/admin/` area is a control centre and navigation layer. It never stores passwords, OTP secrets or GitHub tokens. GitHub itself provides the administrator authentication boundary.
+The publishing workspace can prepare and preview content without redirecting to GitHub. Final authenticated publishing should be connected to a server-side service that validates the administrator credentials, creates the controlled content change/PR, and never exposes repository credentials to the browser.
+
+The existing File Server authentication remains completely separate.
