@@ -1,0 +1,13 @@
+name = "kka-knowledge-google-auth"
+main = "src/index.js"
+compatibility_date = "2026-09-08"
+
+[vars]
+PUBLIC_ORIGIN = "https://ca-kka.com"
+REDIRECT_URI = "https://auth.ca-kka.com/callback"
+
+# Set these as encrypted Worker secrets, never in this file:
+# GOOGLE_CLIENT_ID
+# GOOGLE_CLIENT_SECRET
+# ADMIN_EMAIL
+# SESSION_SECRET
