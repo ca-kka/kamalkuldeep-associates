@@ -6,31 +6,39 @@ on:
     - cron: '30 18 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: due-date-discovery
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
 jobs:
   discover:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check official sources for a verified due-date change
+      - name: Regression-test calendar rollovers
+        run: python3 scripts/test_due_dates.py
+
+      - name: Check official sources and calculate recurring due dates
         run: python3 scripts/discover_due_dates.py
 
-      - name: Rebuild website only if a verified due date changed
+      - name: Rebuild website only when due-date data changed
         run: python3 scripts/update_site.py
 
-      - name: Publish only verified due-date changes
+      - name: Publish due-date changes
         run: |
           git config user.name 'KKA Due Date Bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/due-dates.json index.html
           if git diff --cached --quiet; then
-            echo 'No verified due-date change. Public website and footer remain unchanged.'
+            echo 'No due-date change. Public website remains unchanged.'
           else
             git commit -m 'Auto-update verified due-date change'
             git push
