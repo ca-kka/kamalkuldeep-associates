@@ -1,6 +1,8 @@
 import json
 import re
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
@@ -8,6 +10,11 @@ DATA = ROOT / "data" / "due-dates.json"
 
 text = INDEX.read_text(encoding="utf-8")
 data = json.loads(DATA.read_text(encoding="utf-8"))
+
+# Always use the latest data timestamp for the public footer.
+# The previous implementation replaced only one hard-coded historical date,
+# so later generated dates could leave the footer stale.
+updated = data.get("updated") or datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%-d %B %Y")
 
 # Keep the existing site intact and replace only the Admin Login target.
 text = re.sub(
@@ -64,7 +71,7 @@ section = f'''            <section id="due-dates" class="section">
 {chr(10).join(items)}
                     </div>
                     <div class="update-info">
-                        📌 Last updated: {data.get("updated", "")}. Due dates may change by notification or extension.<br>
+                        📌 Last updated: {updated}. Due dates may change by notification or extension.<br>
                         💼 For assistance with compliance, contact us at +91-98156-81778
                     </div>
                 </div>
@@ -83,12 +90,17 @@ text, n = re.subn(r'            <section id="due-dates" class="section">.*?     
 if n != 1:
     raise SystemExit("Could not locate due-dates section")
 
-text = re.sub(
-    r'Last Updated: October 25, 2025',
-    f'Last Updated: {data.get("updated", "")}',
-    text,
-    count=1,
-)
+# Update any existing footer date, not just one historical hard-coded value.
+# Handles formats such as "Last Updated: ..." and "Last Updated - ...".
+footer_patterns = [
+    r'Last Updated\s*:\s*[^<\n]*',
+    r'Last Updated\s*-\s*[^<\n]*',
+]
+replacement = f'Last Updated: {updated}'
+for pattern in footer_patterns:
+    text, count = re.subn(pattern, replacement, text, count=1, flags=re.I)
+    if count:
+        break
 
 INDEX.write_text(text, encoding="utf-8")
-print("Website updated from data/due-dates.json")
+print(f"Website updated from data/due-dates.json; Last Updated = {updated}")
