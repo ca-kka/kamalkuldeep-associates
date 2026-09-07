@@ -8,7 +8,7 @@ async function key(secret){return crypto.subtle.importKey('raw',enc.encode(secre
 async function sign(value,secret){const sig=await crypto.subtle.sign('HMAC',await key(secret),enc.encode(value));return `${value}.${b64u(new Uint8Array(sig))}`}
 async function verify(value,secret){if(!value)return null;const p=value.lastIndexOf('.');if(p<1)return null;const raw=value.slice(0,p),sig=value.slice(p+1);try{return await crypto.subtle.verify('HMAC',await key(secret),unb64u(sig),enc.encode(raw))?raw:null}catch{return null}}
 function cookie(name,value,maxAge){return `${name}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`}
-function redirect(url,headers={}){return new Response(null,{status:302,headers:{Location:url,...headers}})}
+function redirect(url,headers={}){const h=new Headers();h.set('Location',url);for(const [name,value] of Object.entries(headers)){if(name.toLowerCase()==='set-cookie'&&Array.isArray(value)){for(const item of value)h.append('Set-Cookie',item)}else h.set(name,String(value))}return new Response(null,{status:302,headers:h})}
 function json(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8',...headers}})}
 function b64json(obj){return b64u(JSON.stringify(obj))}
 function getCookie(request,name){const cookies=request.headers.get('Cookie')||'';const match=cookies.match(new RegExp('(?:^|; )'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'=([^;]+)'));return match?match[1]:''}
@@ -37,7 +37,7 @@ export default{async fetch(request,env){
     const userResponse=await fetch('https://openidconnect.googleapis.com/v1/userinfo',{headers:{Authorization:`Bearer ${tokens.access_token}`}});if(!userResponse.ok)return json({error:'Google profile lookup failed.'},502);const user=await userResponse.json();
     if(!user.email||user.email.toLowerCase()!==allowedEmail||user.email_verified!==true)return redirect(`${origin}${adminPath}?error=not-authorized`,{'Set-Cookie':cookie('kka_session','',0)});
     const sessionPayload=b64json({email:user.email.toLowerCase(),name:user.name||'',picture:user.picture||'',exp:Date.now()+8*60*60*1000}),session=await sign(sessionPayload,secret);
-    return redirect(`${origin}${adminPath}?login=success`,{'Set-Cookie':[cookie('kka_session',session,8*60*60),cookie('kka_oauth_state','',0)].join(', ')});
+    return redirect(`${origin}${adminPath}?login=success`,{'Set-Cookie':[cookie('kka_session',session,8*60*60),cookie('kka_oauth_state','',0)]});
   }
   const session=await authenticatedSession(request,secret,allowedEmail);
   if(url.pathname==='/session'){
