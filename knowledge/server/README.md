@@ -6,13 +6,13 @@ The KKA Knowledge Centre uses GitHub Pages for the public website and GitHub its
 
 `KKA public site → GitHub Pages`
 
-`KKA Admin → GitHub authentication/account + repository permissions → GitHub editor / Pull Requests / GitHub Actions → GitHub Pages`
+`KKA Admin → GitHub account authentication + repository permissions → GitHub editor / Pull Requests / GitHub Actions → GitHub Pages`
 
-GitHub is the identity provider and the security boundary. Only the KKA GitHub account(s) with appropriate repository permissions can edit or merge Knowledge Centre content.
+GitHub is the identity and authorization boundary. Only the KKA GitHub account(s) with appropriate repository permissions can edit or merge Knowledge Centre content.
 
-## Why there is no client-side OAuth token
+## Why this is safer than browser-side OAuth tokens
 
-A GitHub Pages site cannot safely keep a GitHub OAuth client secret or long-lived write token in browser JavaScript. GitHub's current OAuth web flow uses an authorization-code exchange, and GitHub recommends keeping application secrets/tokens protected on a backend. Therefore this project deliberately delegates the actual authenticated editing session to GitHub's own web interface rather than pretending that a static page is a secure OAuth server.
+A GitHub Pages site cannot safely keep a GitHub OAuth client secret or long-lived write token in browser JavaScript. GitHub's OAuth authorization-code flow requires protected application credentials for the token exchange, and GitHub recommends keeping application secrets/tokens protected. Therefore this project deliberately delegates the authenticated editing session to GitHub's own web interface instead of pretending that a static page is a secure OAuth server.
 
 For a future richer single-page editor, a small serverless callback can be added without moving the website away from GitHub Pages. Until then, GitHub's authenticated editor and Pull Request UI provide the secure administrative surface.
 
@@ -21,17 +21,10 @@ For a future richer single-page editor, a small serverless callback can be added
 1. Administrator opens the KKA Admin control centre.
 2. GitHub requires the administrator to sign in if necessary.
 3. Content is edited through GitHub's authenticated editor.
-4. Changes can be made on a branch and reviewed through a Pull Request.
+4. Important changes should be made on a branch and reviewed through a Pull Request.
 5. Knowledge Validation GitHub Action checks JSON structure, required fields, dates and published records.
 6. Approved changes are merged into `main`.
 7. GitHub Pages publishes the approved site.
-
-## Protected content files
-
-- `knowledge/data/articles.json`
-- `knowledge/data/case-laws.json`
-- `knowledge/data/compliance.json`
-- `knowledge/data/content-model.json`
 
 ## Security model
 
@@ -44,4 +37,4 @@ For a future richer single-page editor, a small serverless callback can be added
 
 ## GitHub OAuth note
 
-GitHub OAuth can be introduced later for a richer custom admin UI, but the authorization-code exchange requires protected application credentials/server-side handling. A static GitHub Pages-only implementation must not put such credentials in the browser. The current design therefore uses GitHub's own authenticated UI as the secure admin surface while retaining GitHub Pages as the only website host.
+GitHub OAuth remains available as a future enhancement for a custom single-page editor, but the confidential callback/token exchange must not be placed in GitHub Pages. The current implementation therefore uses GitHub's own authenticated UI as the secure admin surface while retaining GitHub Pages as the only website host.
