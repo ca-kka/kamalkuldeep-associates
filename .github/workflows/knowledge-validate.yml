@@ -1,0 +1,93 @@
+name: Knowledge Centre Validation
+
+on:
+  pull_request:
+    paths:
+      - 'knowledge/**'
+      - '.github/workflows/knowledge-validate.yml'
+  push:
+    branches:
+      - main
+      - knowledge-centre-phase1
+    paths:
+      - 'knowledge/**'
+      - '.github/workflows/knowledge-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          files = [
+              Path('knowledge/data/articles.json'),
+              Path('knowledge/data/case-laws.json'),
+              Path('knowledge/data/compliance.json'),
+              Path('knowledge/data/content-model.json'),
+          ]
+
+          for path in files:
+              data = json.loads(path.read_text(encoding='utf-8'))
+              if not isinstance(data, dict) or data.get('version') != 1 or not isinstance(data.get('items', []), list):
+                  raise SystemExit(f'{path}: expected object with version=1 and items[]')
+
+          articles = json.loads(files[0].read_text(encoding='utf-8'))['items']
+          allowed = {'draft','review','approved','published'}
+          slugs = set()
+          ids = set()
+          for article in articles:
+              for field in ('id','title','slug','category','author','summary','content','status'):
+                  if not article.get(field):
+                      raise SystemExit(f"articles.json: missing required field '{field}' in {article.get('id','unknown')}")
+              if article['status'] not in allowed:
+                  raise SystemExit(f"articles.json: invalid status {article['status']}")
+              if article['id'] in ids or article['slug'] in slugs:
+                  raise SystemExit(f"articles.json: duplicate id or slug: {article['id']} / {article['slug']}")
+              ids.add(article['id'])
+              slugs.add(article['slug'])
+              for date_field in ('publishedAt','updatedAt'):
+                  if article.get(date_field):
+                      from datetime import date
+                      date.fromisoformat(article[date_field][:10])
+
+          print(f'Validated {len(articles)} article records.')
+          print('Knowledge Centre data validation passed.')
+          PY
+
+      - name: Check required public files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f knowledge/index.html
+          test -f knowledge/article.html
+          test -f knowledge/categories.html
+          test -f knowledge/authors.html
+          test -f knowledge/case-laws.html
+          test -f knowledge/compliance.html
+          test -f knowledge/data/articles.json
+          test -f knowledge/data/case-laws.json
+          test -f knowledge/data/compliance.json
+          echo 'Required Knowledge Centre files are present.'
+
+      - name: Security scan for obvious secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude-dir=.git --exclude='*.map' '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|gho_[A-Za-z0-9]{20,}|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|client_secret[[:space:]]*[:=])' knowledge; then
+            echo 'Potential credential or private key detected in knowledge files.'
+            exit 1
+          fi
+          echo 'No obvious credential patterns detected.'

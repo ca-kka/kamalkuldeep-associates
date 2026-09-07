@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" id="description" content="KKA Knowledge Centre article">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="KKA Knowledge Centre">
+  <meta property="og:title" id="og-title" content="KKA Knowledge Centre">
+  <meta property="og:description" id="og-description" content="Professional insights from Kamal Kuldeep & Associates.">
+  <title id="page-title">KKA Knowledge Centre — Article</title>
+  <link rel="canonical" id="canonical" href="https://ca-kka.com/knowledge/article.html">
+  <link rel="icon" href="../images/favicon-circle.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/knowledge.css">
+</head>
+<body>
+<header class="kc-header">
+  <div class="wrap topbar">
+    <a class="back" href="./">← Knowledge Centre</a>
+    <div class="topbar-actions"><a class="back" href="../">KKA Main Website →</a><a class="admin-button" href="admin/">Admin</a></div>
+  </div>
+  <div class="wrap hero"><p id="category" class="kicker">KKA INSIGHTS</p><h1 id="title">Article</h1><p id="meta" class="hero-copy"></p></div>
+</header>
+<main class="wrap main">
+  <article id="content" class="article-body" style="max-width:850px;margin:auto;background:#fff;border:1px solid #e4e9f1;border-radius:14px;padding:28px"></article>
+  <div id="share" class="share-row" style="max-width:850px;margin:18px auto 0;display:flex;gap:10px;flex-wrap:wrap"></div>
+</main>
+<footer class="kc-footer"><div class="wrap footer-inner"><strong>KKA Knowledge Centre</strong><a href="./">← All Knowledge</a></div></footer>
+<script>
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=v=>new Date(v+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+const slug=new URLSearchParams(location.search).get('slug');
+const base='https://ca-kka.com/knowledge/article.html';
+fetch('data/articles.json').then(r=>{if(!r.ok)throw Error('data');return r.json()}).then(d=>{
+ const a=(d.items||[]).find(x=>x.status==='published'&&x.slug===slug);
+ if(!a)throw Error('not found');
+ const url=base+'?slug='+encodeURIComponent(a.slug);
+ document.title=`${a.title} | KKA Knowledge Centre`;
+ document.getElementById('description').content=a.metaDescription||a.summary;
+ document.getElementById('og-title').content=a.title;
+ document.getElementById('og-description').content=a.summary;
+ document.getElementById('canonical').href=url;
+ document.getElementById('category').textContent=a.category;
+ document.getElementById('title').textContent=a.title;
+ document.getElementById('meta').textContent=`${a.author} · Published ${fmt(a.publishedAt)} · Updated ${fmt(a.updatedAt)}`;
+ const content=a.contentHtml||`<p>${esc(a.content)}</p>`;
+ document.getElementById('content').innerHTML=`<p><strong>Executive Summary</strong></p><p>${esc(a.summary)}</p><hr>${content}<p><strong>Tags</strong></p><p>${(a.tags||[]).map(esc).join(' · ')}</p>${a.sources?.length?`<p><strong>Sources</strong></p><ul>${a.sources.map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)}</a></li>`).join('')}</ul>`:''}`;
+ const shareText=encodeURIComponent(a.title+' — KKA Knowledge Centre');
+ const shareUrl=encodeURIComponent(url);
+ document.getElementById('share').innerHTML=`<a class="category" style="padding:10px 14px" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}">LinkedIn</a><a class="category" style="padding:10px 14px" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}">X</a><a class="category" style="padding:10px 14px" target="_blank" rel="noopener" href="https://wa.me/?text=${shareText}%20${shareUrl}">WhatsApp</a>`;
+ const ld={"@context":"https://schema.org","@type":"Article","headline":a.title,"description":a.metaDescription||a.summary,"datePublished":a.publishedAt,"dateModified":a.updatedAt,"author":{"@type":"Person","name":a.author},"publisher":{"@type":"Organization","name":"Kamal Kuldeep & Associates","url":"https://ca-kka.com/"},"mainEntityOfPage":url,"articleSection":a.category,"keywords":(a.tags||[]).join(', ')};
+ const script=document.createElement('script');script.type='application/ld+json';script.textContent=JSON.stringify(ld);document.head.appendChild(script);
+}).catch(()=>{document.getElementById('title').textContent='Article not found';document.getElementById('content').innerHTML='<p>This article is not available.</p><p><a href="./">Return to Knowledge Centre</a></p>';document.getElementById('share').remove()});
+</script>
+</body>
+</html>

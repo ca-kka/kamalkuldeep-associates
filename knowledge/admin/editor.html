@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>KKA Knowledge Centre — Article Editor</title><link rel="stylesheet" href="admin.css"></head>
+<body><main class="shell">
+<header class="adminbar"><div><a class="back" href="dashboard.html">← Dashboard</a><p class="eyebrow">ARTICLE EDITOR</p></div></header>
+<section class="panel" style="margin-top:22px">
+<strong>GitHub content editor</strong>
+<span>The public site is static, so the canonical article data is stored in the repository. Use GitHub's authenticated editor to create or modify articles. For important content, edit on a branch and open a Pull Request rather than committing directly to main.</span>
+<div class="actions">
+<a class="secondary" href="https://github.com/ca-kka/kamalkuldeep-associates/edit/main/knowledge/data/articles.json" target="_blank" rel="noopener">Open Articles JSON</a>
+<a class="secondary" href="https://github.com/ca-kka/kamalkuldeep-associates/pulls" target="_blank" rel="noopener">Open Pull Requests</a>
+<a class="secondary" href="https://github.com/ca-kka/kamalkuldeep-associates/actions/workflows/knowledge-validate.yml" target="_blank" rel="noopener">Run Validation</a>
+</div>
+</section>
+<section class="panel" style="margin-top:16px">
+<strong>Required article fields</strong>
+<span>id · status · title · slug · category · author · publishedAt · updatedAt · summary · tags[] · content</span>
+</section>
+<p class="security">This page deliberately does not implement a fake browser-side CMS or store a GitHub token. GitHub authenticates the administrator and GitHub Actions validates changes before publication.</p>
+</main></body></html>
