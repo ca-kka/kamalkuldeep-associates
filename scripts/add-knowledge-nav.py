@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Draft release helper: fail closed if the existing navigation is not exactly as expected.
 p=Path('index.html')
 s=p.read_text(encoding='utf-8')
 if 'href="knowledge/"' in s or 'Knowledge Centre' in s:
