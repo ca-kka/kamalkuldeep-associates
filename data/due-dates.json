@@ -1,14 +1,21 @@
 {
-  "updated": "14 August 2026",
-  "notice": "Due dates are subject to notifications, extensions and taxpayer category. Verify the applicable date on the official portal before filing.",
+  "updated": "7 September 2026",
+  "notice": "GST dates are generated from recurring GST Portal filing rules and checked against official GST advisories for extensions. Due dates can differ by taxpayer category, State/UT and filing frequency. Verify the applicable date on the official portal before filing.",
   "items": [
-    {"title":"GSTR-3B","category":"GST","date":"20 August 2026","description":"Monthly GSTR-3B for July 2026 for regular taxpayers, subject to the applicable filing category and notified extensions.","urgent":true,"source":"https://www.gst.gov.in/"},
-    {"title":"GSTR-1","category":"GST","date":"11 August 2026","description":"Monthly GSTR-1 for July 2026 for taxpayers covered by the monthly filing cycle.","urgent":false,"source":"https://www.gst.gov.in/"},
-    {"title":"GSTR-5 / GSTR-5A","category":"GST","date":"20 August 2026","description":"Return filing for applicable non-resident and OIDAR service providers for July 2026.","urgent":false,"source":"https://www.gst.gov.in/"},
-    {"title":"TDS Certificate (Form 16A)","category":"TDS","date":"15 August 2026","description":"Issue Form 16A for tax deducted during Q1 of FY 2026-27, where applicable.","urgent":true,"source":"https://www.tdscpc.gov.in/"},
-    {"title":"ITR – AY 2026-27 (eligible non-audit cases)","category":"Income Tax","date":"31 August 2026","description":"Due date indicated for eligible non-audit taxpayers for AY 2026-27. Check the applicable category before filing.","urgent":true,"source":"https://www.incometax.gov.in/"},
-    {"title":"Advance Tax – Q2","category":"Income Tax","date":"15 September 2026","description":"Second instalment of advance tax for FY 2026-27, generally 45% of estimated annual tax liability cumulatively.","urgent":false,"source":"https://www.incometax.gov.in/"},
-    {"title":"TDS Payment","category":"TDS","date":"7 September 2026","description":"General due date for depositing TDS deducted during August 2026, subject to applicable exceptions.","urgent":false,"source":"https://www.incometax.gov.in/"},
+    {"title":"GSTR-7","category":"GST","date":"10 September 2026","description":"Monthly GSTR-7 for August 2026.","urgent":true,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-8","category":"GST","date":"10 September 2026","description":"Monthly GSTR-8 for August 2026 for applicable e-commerce operators.","urgent":true,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-1","category":"GST","date":"11 September 2026","description":"Monthly GSTR-1 for August 2026 for taxpayers covered by the monthly filing cycle.","urgent":true,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"IFF (Optional)","category":"GST","date":"13 September 2026","description":"Optional Invoice Furnishing Facility for the applicable month.","urgent":false,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-5","category":"GST","date":"13 September 2026","description":"Monthly GSTR-5 for August 2026 for applicable non-resident taxpayers.","urgent":false,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-6","category":"GST","date":"13 September 2026","description":"Monthly GSTR-6 for August 2026 for applicable input service distributors.","urgent":false,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-3B","category":"GST","date":"20 September 2026","description":"Monthly GSTR-3B for August 2026 for regular monthly filers.","urgent":true,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-5A","category":"GST","date":"20 September 2026","description":"Monthly GSTR-5A for August 2026 for applicable OIDAR service providers.","urgent":false,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-1 (Quarterly)","category":"GST","date":"13 October 2026","description":"Quarterly GSTR-1 for July-September 2026 for QRMP taxpayers.","urgent":false,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"CMP-08","category":"GST","date":"18 October 2026","description":"CMP-08 for July-September 2026 for applicable composition taxpayers.","urgent":false,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"GSTR-3B (Quarterly)","category":"GST","date":"22/24 October 2026","description":"Quarterly GSTR-3B for July-September 2026; 22nd or 24th depending on the applicable State/UT.","urgent":false,"source":"https://www.gst.gov.in/","generated_from_gst_rule":true},
+    {"title":"TDS Certificate (Form 16A)","category":"TDS","date":"15 November 2026","description":"Issue Form 16A for tax deducted during Q2 of FY 2026-27, where applicable.","urgent":false,"source":"https://www.tdscpc.gov.in/"},
+    {"title":"Advance Tax – Q3","category":"Income Tax","date":"15 December 2026","description":"Third instalment of advance tax for FY 2026-27, generally 75% of estimated annual tax liability cumulatively.","urgent":false,"source":"https://www.incometax.gov.in/"},
+    {"title":"TDS Payment","category":"TDS","date":"7 October 2026","description":"General due date for depositing TDS deducted during September 2026, subject to applicable exceptions.","urgent":false,"source":"https://www.incometax.gov.in/"},
     {"title":"ITR – AY 2026-27 (audit cases)","category":"Income Tax","date":"31 October 2026","description":"Due date for applicable taxpayers whose accounts are required to be audited, subject to the notified provisions and extensions.","urgent":false,"source":"https://www.incometax.gov.in/"}
   ]
 }
