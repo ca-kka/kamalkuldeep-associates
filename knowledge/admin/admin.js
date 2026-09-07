@@ -1,2 +1,5 @@
-/* Draft-only admin shell. Production must replace this with server-backed session checks. */
-(function(){const logout=document.getElementById('logout');if(logout)logout.addEventListener('click',()=>{window.location.href='index.html';});})();
+/* GitHub-native admin: authentication is provided by GitHub, not by client-side credentials. */
+(function(){
+  const links=[...document.querySelectorAll('a[href^="https://github.com/"]')];
+  links.forEach(link=>link.addEventListener('click',()=>{link.setAttribute('rel','noopener');}));
+})();
