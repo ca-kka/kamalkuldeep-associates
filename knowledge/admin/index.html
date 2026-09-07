@@ -1,1 +1,31 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>KKA Knowledge Centre — Admin</title><link rel="icon" href="../../images/favicon-circle.svg"><link rel="stylesheet" href="admin.css"></head><body><main class="card"><a class="back" href="../">← Knowledge Centre</a><div class="brand">KKA</div><p class="eyebrow">KNOWLEDGE CENTRE ADMIN</p><h1>Secure Admin</h1><p class="note">Separate from the existing File Server administration.</p><form id="login"><label>Admin ID<input name="username" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">Continue to OTP</button></form><p id="status" class="status" aria-live="polite"></p><p class="security">Production authentication is server-side only. This page does not store or validate credentials. Passwords must be hashed server-side and TOTP must be verified before a session is issued.</p></main><script>document.getElementById('login').addEventListener('submit',e=>{e.preventDefault();document.getElementById('status').textContent='Secure authentication backend is required before login can be enabled.'});</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>KKA Knowledge Centre — Admin</title>
+  <link rel="icon" href="../../images/favicon-circle.svg">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="card">
+    <a class="back" href="../">← Knowledge Centre</a>
+    <div class="brand">KKA</div>
+    <p class="eyebrow">KNOWLEDGE CENTRE ADMIN</p>
+    <h1>GitHub Admin</h1>
+    <p class="note">The Knowledge Centre stays entirely on GitHub Pages. Administrative access is controlled by your GitHub account and repository permissions.</p>
+    <div class="actions">
+      <a class="panel" href="https://github.com/ca-kka/kamalkuldeep-associates/actions/workflows/knowledge-validate.yml" target="_blank" rel="noopener">
+        <strong>Open GitHub Admin</strong>
+        <span>Sign in to GitHub if required, then use the repository's Actions and content controls.</span>
+      </a>
+      <a class="panel" href="dashboard.html">
+        <strong>Knowledge Control Centre</strong>
+        <span>Open the KKA publishing control panel and links to the protected GitHub editing workflow.</span>
+      </a>
+    </div>
+    <p class="security">No password, OTP seed, GitHub token or session credential is stored in this public page. GitHub itself performs authentication and authorization. The existing File Server administration remains completely separate.</p>
+  </main>
+</body>
+</html>
