@@ -1,8 +1,8 @@
-name: Knowledge Centre navigation (draft)
+name: Knowledge Centre navigation
 
 on:
   push:
-    branches: [knowledge-centre-phase1]
+    branches: [main, knowledge-centre-phase1]
     paths: ['index.html','scripts/add-knowledge-nav.py','.github/workflows/knowledge-nav-draft.yml']
 
 permissions:
