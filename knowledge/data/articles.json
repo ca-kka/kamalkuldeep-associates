@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "kc-001",
+      "status": "published",
+      "title": "KKA Knowledge Centre is coming soon",
+      "slug": "kka-knowledge-centre-coming-soon",
+      "category": "KKA Updates",
+      "author": "KKA",
+      "publishedAt": "2026-09-07",
+      "updatedAt": "2026-09-07",
+      "summary": "A dedicated home for KKA insights, regulatory updates, case-law analysis and practical compliance guidance.",
+      "tags": ["KKA", "Knowledge Centre"],
+      "content": "The KKA Knowledge Centre will bring together practical professional insights, regulatory developments, case laws and compliance guidance."
+    }
+  ]
+}
