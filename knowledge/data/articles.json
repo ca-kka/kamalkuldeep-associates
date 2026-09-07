@@ -11,8 +11,26 @@
       "publishedAt": "2026-09-07",
       "updatedAt": "2026-09-07",
       "summary": "A dedicated home for KKA insights, regulatory updates, case-law analysis and practical compliance guidance.",
-      "tags": ["KKA", "Knowledge Centre"],
+      "tags": [
+        "KKA",
+        "Knowledge Centre"
+      ],
       "content": "The KKA Knowledge Centre will bring together practical professional insights, regulatory developments, case laws and compliance guidance."
+    },
+    {
+      "id": "123",
+      "status": "published",
+      "title": "ad",
+      "slug": "accc",
+      "category": "GST",
+      "author": "KKA",
+      "publishedAt": "2026-09-08",
+      "updatedAt": "2026-09-08",
+      "summary": "adad",
+      "tags": [
+        "GST"
+      ],
+      "content": "addaddcascsacsacscscscssvevevrdv"
     }
   ]
 }
