@@ -4,6 +4,21 @@
   const DATA_URL = 'data/latest-updates.json';
   const SECTION_ID = 'latest-updates';
 
+  function updateFooterDate() {
+    const formatter = new Intl.DateTimeFormat('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Kolkata'
+    });
+    const today = formatter.format(new Date());
+    document.querySelectorAll('.footer-bottom p').forEach(function (p) {
+      if (/Last Updated\s*:/i.test(p.textContent)) {
+        p.textContent = `Last Updated: ${today}`;
+      }
+    });
+  }
+
   function injectStyles() {
     if (document.getElementById('latest-updates-styles')) return;
     const style = document.createElement('style');
@@ -65,6 +80,7 @@
   }
 
   async function init() {
+    updateFooterDate();
     injectStyles();
     addFallbackAnchorBehaviour();
 
