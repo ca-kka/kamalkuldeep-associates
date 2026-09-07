@@ -1,57 +1,47 @@
-# KKA Knowledge Centre — production backend contract
+# KKA Knowledge Centre — GitHub-native administration
 
-The public Knowledge Centre is static and can be hosted by GitHub Pages. The admin system must NOT be implemented as client-side authentication.
+The KKA Knowledge Centre uses GitHub Pages for the public website and GitHub itself for administrative authentication and authorization. There is intentionally no separate password database, OTP server, Node server, PostgreSQL instance, or external website host.
 
-## Required production backend
-- HTTPS-only API under a separate origin/subdomain or serverless function.
-- One Admin account initially; Admin ID is stored server-side and can be changed after re-authentication.
-- Password hashing: Argon2id preferred; bcrypt acceptable if Argon2id is unavailable.
-- TOTP authenticator compatible with Google Authenticator / Microsoft Authenticator.
-- One-time recovery codes, hashed at rest.
-- Secure, HttpOnly, SameSite session cookies; short idle/absolute expiry; session revocation.
-- Login rate limiting, progressive lockout and audit logging.
-- CSRF protection for cookie-authenticated state-changing requests.
-- Password reset/change requires re-authentication and OTP; recovery flow requires recovery code.
-- Registered email/mobile changes require re-authentication and OTP.
-- Logout-all-sessions support.
-- Never place GitHub, X, LinkedIn or other API tokens in public JavaScript.
+## Architecture
 
-## CMS API
-`POST /auth/login` → password verification → TOTP challenge
-`POST /auth/totp` → session creation
-`POST /auth/logout`
-`POST /auth/logout-all`
-`POST /auth/password/change`
-`POST /auth/admin-id/change`
-`POST /auth/totp/enrol`
-`POST /auth/totp/disable`
-`POST /auth/recovery-codes/regenerate`
-`GET /me`
-`GET /content?status=draft|review|approved|published`
-`POST /content/articles`
-`PUT /content/articles/:id`
-`POST /content/articles/:id/submit-review`
-`POST /content/articles/:id/approve`
-`POST /content/articles/:id/publish`
-`POST /content/case-laws`
-`POST /content/compliance`
-`POST /social/x/prepare`
-`POST /social/linkedin/prepare`
-`POST /social/x/publish`
-`POST /social/linkedin/publish`
-`GET /audit-log`
+`KKA public site → GitHub Pages`
 
-## Publishing model
-1. Admin saves Draft.
-2. Article enters Review.
-3. Admin/author completes factual/source checks.
-4. Article becomes Approved.
-5. Publish generates canonical static content/data.
-6. GitHub Actions builds/deploys the public Knowledge Centre.
-7. Social posts are generated from the canonical article and require explicit publish approval.
+`KKA Admin → GitHub authentication/account + repository permissions → GitHub editor / Pull Requests / GitHub Actions → GitHub Pages`
 
-## Environment variables
-Never commit values. Production deployment should provide secrets such as `DATABASE_URL`, `SESSION_SECRET`, `TOTP_ENCRYPTION_KEY`, `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, `X_CLIENT_*`, and `LINKEDIN_CLIENT_*` through the hosting platform's secret store.
+GitHub is the identity provider and the security boundary. Only the KKA GitHub account(s) with appropriate repository permissions can edit or merge Knowledge Centre content.
 
-## Separation guarantee
-This backend is exclusively for the KKA Knowledge Centre. It must not import, reuse, proxy, or share sessions/credentials with the existing File Server administration system.
+## Why there is no client-side OAuth token
+
+A GitHub Pages site cannot safely keep a GitHub OAuth client secret or long-lived write token in browser JavaScript. GitHub's current OAuth web flow uses an authorization-code exchange, and GitHub recommends keeping application secrets/tokens protected on a backend. Therefore this project deliberately delegates the actual authenticated editing session to GitHub's own web interface rather than pretending that a static page is a secure OAuth server.
+
+For a future richer single-page editor, a small serverless callback can be added without moving the website away from GitHub Pages. Until then, GitHub's authenticated editor and Pull Request UI provide the secure administrative surface.
+
+## Editorial workflow
+
+1. Administrator opens the KKA Admin control centre.
+2. GitHub requires the administrator to sign in if necessary.
+3. Content is edited through GitHub's authenticated editor.
+4. Changes can be made on a branch and reviewed through a Pull Request.
+5. Knowledge Validation GitHub Action checks JSON structure, required fields, dates and published records.
+6. Approved changes are merged into `main`.
+7. GitHub Pages publishes the approved site.
+
+## Protected content files
+
+- `knowledge/data/articles.json`
+- `knowledge/data/case-laws.json`
+- `knowledge/data/compliance.json`
+- `knowledge/data/content-model.json`
+
+## Security model
+
+- No password or OTP secret is stored in the repository.
+- No GitHub access token is stored in public JavaScript.
+- Repository write/merge access is the administrator authorization boundary.
+- Pull Requests provide the review/approval boundary.
+- GitHub Actions uses the repository's short-lived `GITHUB_TOKEN` for automation where needed.
+- Existing File Server authentication is completely separate and is not imported, reused, proxied or modified.
+
+## GitHub OAuth note
+
+GitHub OAuth can be introduced later for a richer custom admin UI, but the authorization-code exchange requires protected application credentials/server-side handling. A static GitHub Pages-only implementation must not put such credentials in the browser. The current design therefore uses GitHub's own authenticated UI as the secure admin surface while retaining GitHub Pages as the only website host.
