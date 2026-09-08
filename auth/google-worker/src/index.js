@@ -11,8 +11,8 @@ function cookie(name,value,maxAge,domain=''){return `${name}=${value}; Path=/; M
 function redirect(url,headers={}){const h=new Headers();h.set('Location',url);for(const [name,value] of Object.entries(headers)){if(name.toLowerCase()==='set-cookie'&&Array.isArray(value)){for(const item of value)h.append('Set-Cookie',item)}else h.set(name,String(value))}return new Response(null,{status:302,headers:h})}
 function json(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8',...headers}})}
 function b64json(obj){return b64u(JSON.stringify(obj))}
-function getCookie(request,name){const cookies=request.headers.get('Cookie')||'';const match=cookies.match(new RegExp('(?:^|; )'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'=([^;]+)'));return match?match[1]:''}
-async function authenticatedSession(request,secret,allowedEmail){const token=getCookie(request,'kka_session'),raw=await verify(token,secret);if(!raw)return null;try{const payload=JSON.parse(dec.decode(unb64u(raw)));if(!payload.exp||Date.now()>payload.exp||payload.email!==allowedEmail)return null;return payload}catch{return null}}
+function getCookies(request,name){const header=request.headers.get('Cookie')||'';const re=new RegExp('(?:^|;\\s*)'+name.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')+'=([^;]*)','g');const values=[];let match;while((match=re.exec(header))!==null)values.push(match[1]);return values}
+async function authenticatedSession(request,secret,allowedEmail){for(const token of getCookies(request,'kka_session')){const raw=await verify(token,secret);if(!raw)continue;try{const payload=JSON.parse(dec.decode(unb64u(raw)));if(payload.exp&&Date.now()<=payload.exp&&payload.email===allowedEmail)return payload}catch{}}return null}
 function validDate(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)}
 function validSlug(v){return typeof v==='string'&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v)&&v.length<=120}
 const required=['id','title','slug','category','author','summary','content'];
@@ -30,14 +30,14 @@ export default{async fetch(request,env){
     return redirect(google.toString(),{'Set-Cookie':cookie('kka_oauth_state',state,600)});
   }
   if(url.pathname==='/callback'){
-    const returnedState=url.searchParams.get('state')||'',expected=getCookie(request,'kka_oauth_state'),verifiedState=await verify(returnedState,secret);if(!returnedState||returnedState!==expected||!verifiedState)return json({error:'Invalid OAuth state.'},400);
+    const returnedState=url.searchParams.get('state')||'',expected=getCookies(request,'kka_oauth_state')[0]||'',verifiedState=await verify(returnedState,secret);if(!returnedState||returnedState!==expected||!verifiedState)return json({error:'Invalid OAuth state.'},400);
     const code=url.searchParams.get('code');if(!code)return json({error:'Google did not return an authorization code.'},400);
     const tokenResponse=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({code,client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,redirect_uri:env.REDIRECT_URI,grant_type:'authorization_code'})});
     if(!tokenResponse.ok)return json({error:'Google token exchange failed.'},502);const tokens=await tokenResponse.json();if(!tokens.access_token)return json({error:'Google did not provide an access token.'},502);
     const userResponse=await fetch('https://openidconnect.googleapis.com/v1/userinfo',{headers:{Authorization:`Bearer ${tokens.access_token}`}});if(!userResponse.ok)return json({error:'Google profile lookup failed.'},502);const user=await userResponse.json();
-    if(!user.email||user.email.toLowerCase()!==allowedEmail||user.email_verified!==true)return redirect(`${origin}${adminPath}?error=not-authorized`,{'Set-Cookie':cookie('kka_session','',0,'ca-kka.com')});
+    if(!user.email||user.email.toLowerCase()!==allowedEmail||user.email_verified!==true)return redirect(`${origin}${adminPath}?error=not-authorized`,{'Set-Cookie':[cookie('kka_session','',0,'ca-kka.com'),cookie('kka_session','',0)]});
     const sessionPayload=b64json({email:user.email.toLowerCase(),name:user.name||'',picture:user.picture||'',exp:Date.now()+8*60*60*1000}),session=await sign(sessionPayload,secret);
-    return redirect(`${origin}${adminPath}?login=success`,{'Set-Cookie':[cookie('kka_session',session,8*60*60,'ca-kka.com'),cookie('kka_oauth_state','',0)]});
+    return redirect(`${origin}${adminPath}?login=success`,{'Set-Cookie':[cookie('kka_session',session,8*60*60,'ca-kka.com'),cookie('kka_session','',0),cookie('kka_oauth_state','',0)]});
   }
   const session=await authenticatedSession(request,secret,allowedEmail);
   if(url.pathname==='/session'){
@@ -71,6 +71,6 @@ export default{async fetch(request,env){
     const text=await updateResponse.text();if(!updateResponse.ok)return json({error:updateResponse.status===409?'GitHub data changed while saving. Refresh and try again.':'GitHub update failed.',githubStatus:updateResponse.status},502,corsHeaders);let result={};try{result=JSON.parse(text)}catch{}
     return json({success:true,message,commit:result.commit?.sha||null},200,{...corsHeaders,'Cache-Control':'no-store'});
   }
-  if(url.pathname==='/logout')return redirect(`${origin}${adminPath}`,{'Set-Cookie':cookie('kka_session','',0,'ca-kka.com')});
+  if(url.pathname==='/logout')return redirect(`${origin}${adminPath}`,{'Set-Cookie':[cookie('kka_session','',0,'ca-kka.com'),cookie('kka_session','',0)]});
   return json({service:'KKA Knowledge Centre Google Authentication',status:'ok'},200,corsHeaders);
 }};
