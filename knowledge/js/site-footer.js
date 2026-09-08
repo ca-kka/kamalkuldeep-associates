@@ -43,7 +43,7 @@
     <div class="wrap main-footer-bottom">
       <p><strong>Kamal Kuldeep &amp; Associates</strong> - Chartered Accountants</p>
       <p>© 2025 All rights reserved. | ICAI Peer Reviewed Firm</p>
-      <p>Last Updated: 14 August 2026</p>
+      <p id="kc-last-updated">Last Updated: Loading…</p>
       <div class="footer-social">
         <a href="https://wa.me/918289037976" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
         <a href="mailto:kamal_ca72@rediffmail.com" aria-label="Email">Email</a>
@@ -51,6 +51,36 @@
       </div>
     </div>`;
   document.body.appendChild(footer);
+
+  fetch('data/articles.json?v=' + Date.now(), {cache:'no-store'})
+    .then(response => {
+      if (!response.ok) throw new Error('Unable to load article data');
+      return response.json();
+    })
+    .then(data => {
+      const dates = (Array.isArray(data.items) ? data.items : [])
+        .filter(article => article && article.status === 'published' && /^\\d{4}-\\d{2}-\\d{2}$/.test(article.publishedAt))
+        .map(article => article.publishedAt)
+        .sort();
+
+      const latest = dates[dates.length - 1];
+      const updated = document.getElementById('kc-last-updated');
+      if (!updated) return;
+
+      if (latest) {
+        const [year, month, day] = latest.split('-').map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        updated.textContent = 'Last Updated: ' + date.toLocaleDateString('en-IN', {
+          day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'
+        });
+      } else {
+        updated.textContent = 'Last Updated: —';
+      }
+    })
+    .catch(() => {
+      const updated = document.getElementById('kc-last-updated');
+      if (updated) updated.textContent = 'Last Updated: —';
+    });
 
   const wa=document.createElement('a');
   wa.className='kc-whatsapp-float';
