@@ -7,7 +7,7 @@ function unb64(s){return dec.decode(Uint8Array.from(atob(s.replace(/\n/g,'')),c=
 async function key(secret){return crypto.subtle.importKey('raw',enc.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign','verify'])}
 async function sign(value,secret){const sig=await crypto.subtle.sign('HMAC',await key(secret),enc.encode(value));return `${value}.${b64u(new Uint8Array(sig))}`}
 async function verify(value,secret){if(!value)return null;const p=value.lastIndexOf('.');if(p<1)return null;const raw=value.slice(0,p),sig=value.slice(p+1);try{return await crypto.subtle.verify('HMAC',await key(secret),unb64u(sig),enc.encode(raw))?raw:null}catch{return null}}
-function cookie(name,value,maxAge){return `${name}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`}
+function cookie(name,value,maxAge,domain=''){return `${name}=${value}; Path=/; Max-Age=${maxAge}${domain?`; Domain=${domain}`:''}; HttpOnly; Secure; SameSite=Lax`}
 function redirect(url,headers={}){const h=new Headers();h.set('Location',url);for(const [name,value] of Object.entries(headers)){if(name.toLowerCase()==='set-cookie'&&Array.isArray(value)){for(const item of value)h.append('Set-Cookie',item)}else h.set(name,String(value))}return new Response(null,{status:302,headers:h})}
 function json(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8',...headers}})}
 function b64json(obj){return b64u(JSON.stringify(obj))}
@@ -35,9 +35,9 @@ export default{async fetch(request,env){
     const tokenResponse=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({code,client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,redirect_uri:env.REDIRECT_URI,grant_type:'authorization_code'})});
     if(!tokenResponse.ok)return json({error:'Google token exchange failed.'},502);const tokens=await tokenResponse.json();if(!tokens.access_token)return json({error:'Google did not provide an access token.'},502);
     const userResponse=await fetch('https://openidconnect.googleapis.com/v1/userinfo',{headers:{Authorization:`Bearer ${tokens.access_token}`}});if(!userResponse.ok)return json({error:'Google profile lookup failed.'},502);const user=await userResponse.json();
-    if(!user.email||user.email.toLowerCase()!==allowedEmail||user.email_verified!==true)return redirect(`${origin}${adminPath}?error=not-authorized`,{'Set-Cookie':cookie('kka_session','',0)});
+    if(!user.email||user.email.toLowerCase()!==allowedEmail||user.email_verified!==true)return redirect(`${origin}${adminPath}?error=not-authorized`,{'Set-Cookie':cookie('kka_session','',0,'ca-kka.com')});
     const sessionPayload=b64json({email:user.email.toLowerCase(),name:user.name||'',picture:user.picture||'',exp:Date.now()+8*60*60*1000}),session=await sign(sessionPayload,secret);
-    return redirect(`${origin}${adminPath}?login=success`,{'Set-Cookie':[cookie('kka_session',session,8*60*60),cookie('kka_oauth_state','',0)]});
+    return redirect(`${origin}${adminPath}?login=success`,{'Set-Cookie':[cookie('kka_session',session,8*60*60,'ca-kka.com'),cookie('kka_oauth_state','',0)]});
   }
   const session=await authenticatedSession(request,secret,allowedEmail);
   if(url.pathname==='/session'){
@@ -71,6 +71,6 @@ export default{async fetch(request,env){
     const text=await updateResponse.text();if(!updateResponse.ok)return json({error:updateResponse.status===409?'GitHub data changed while saving. Refresh and try again.':'GitHub update failed.',githubStatus:updateResponse.status},502,corsHeaders);let result={};try{result=JSON.parse(text)}catch{}
     return json({success:true,message,commit:result.commit?.sha||null},200,{...corsHeaders,'Cache-Control':'no-store'});
   }
-  if(url.pathname==='/logout')return redirect(`${origin}${adminPath}`,{'Set-Cookie':cookie('kka_session','',0)});
+  if(url.pathname==='/logout')return redirect(`${origin}${adminPath}`,{'Set-Cookie':cookie('kka_session','',0,'ca-kka.com')});
   return json({service:'KKA Knowledge Centre Google Authentication',status:'ok'},200,corsHeaders);
 }};
