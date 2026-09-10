@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const emailRowStyle=document.createElement("style");emailRowStyle.textContent='.client-email-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}.client-email-row input{width:100%!important}.client-email-row button{width:auto!important;min-width:100px!important}@media(max-width:460px){.client-email-row{grid-template-columns:1fr!important}.client-email-row button{width:100%!important}}';document.head.appendChild(emailRowStyle);
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 const clean=v=>String(v??"").trim();
 async function session(){const {data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error("The session has expired. Please sign in again.");return session.access_token}
