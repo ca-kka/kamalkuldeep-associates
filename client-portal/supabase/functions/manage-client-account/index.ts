@@ -24,6 +24,17 @@ Deno.serve(async req=>{
     const {data:membership}=await service.from("client_memberships").select("user_id,can_upload").eq("client_id",clientId).limit(1).maybeSingle();
     const userId=membership?.user_id??null;
 
+    if(action==="get_details"){
+      let email=null,fullName=null;
+      if(userId){
+        const {data:authUser}=await service.auth.admin.getUserById(userId);
+        email=authUser.user?.email??null;
+        const {data:profile}=await service.from("profiles").select("full_name").eq("id",userId).maybeSingle();
+        fullName=profile?.full_name??null;
+      }
+      return json({ok:true,email,fullName,client:{legal_name:client.legal_name,display_name:client.display_name,pan:client.pan,tan:client.tan,cin:client.cin,gstin:client.gstin,filename_aliases:client.filename_aliases,active:client.active,can_upload:membership?.can_upload??false}});
+    }
+
     if(action==="update_profile"){
       const legalName=clean(b.legalName),displayName=clean(b.displayName)||legalName,fullName=clean(b.fullName)||displayName;
       const email=clean(b.email).toLowerCase();
