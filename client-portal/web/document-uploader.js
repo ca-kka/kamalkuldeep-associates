@@ -24,12 +24,7 @@ async function prepare(item) {
   const r = await fetch(`${SUPABASE_URL}/functions/v1/prepare-upload`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      filename: item.file.name,
-      byteSize: item.file.size,
-      contentType: item.file.type || "application/octet-stream",
-      sha256: item.sha256
-    })
+    body: JSON.stringify({ filename: item.file.name, byteSize: item.file.size, contentType: item.file.type || "application/octet-stream", sha256: item.sha256 })
   });
   const result = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(result.message || result.error || `Preparation failed (HTTP ${r.status})`);
@@ -38,15 +33,9 @@ async function prepare(item) {
 
 async function uploadPrepared(item) {
   const token = await sessionToken();
-  const { data, error } = await supabase.storage
-    .from("client-documents")
-    .uploadToSignedUrl(item.prepared.objectPath || item.objectPath, item.prepared.token, item.file, { contentType: item.file.type || "application/octet-stream" });
+  const { data, error } = await supabase.storage.from("client-documents").uploadToSignedUrl(item.prepared.objectPath || item.objectPath, item.prepared.token, item.file, { contentType: item.file.type || "application/octet-stream" });
   if (error) throw error;
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/complete-upload`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ uploadId: item.prepared.uploadId })
-  });
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/complete-upload`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ uploadId: item.prepared.uploadId }) });
   const result = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(result.error || `Completion failed (HTTP ${r.status})`);
   return { ...result, storageResult: data };
@@ -65,18 +54,7 @@ function render() {
   const main = document.querySelector(".portal-main");
   if (!main) return;
   document.querySelectorAll(".sidebar nav a").forEach(a => a.classList.toggle("active", a.dataset.view === "documents"));
-  main.innerHTML = `<header><div><p class="eyebrow">SECURE DOCUMENT INGESTION</p><h1>Document Uploader</h1><p class="muted">Drop KKA documents here. The uploader checks the filename against client identifiers and proposes the filing area and period before storage.</p></div><div class="page-actions"><button class="secondary" id="uploader-clear">Clear</button></div></header>
-    <section class="panel uploader-panel">
-      <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Choose documents to upload">
-        <div class="drop-icon">↑</div><h2>Drop documents here</h2><p class="muted">or click to choose files · maximum 50 MB per file</p>
-        <input id="file-input" type="file" multiple hidden />
-        <button class="secondary" id="choose-files" type="button">Choose files</button>
-      </div>
-      <div class="uploader-summary" id="uploader-summary"><span>No files selected</span></div>
-      <div class="upload-list" id="upload-list"></div>
-      <div class="uploader-actions"><button class="primary" id="analyze-files" type="button" disabled>Check &amp; classify files</button><button class="primary" id="upload-files" type="button" disabled>Upload checked files</button></div>
-      <div class="form-message" id="uploader-message" aria-live="polite"></div>
-    </section>`;
+  main.innerHTML = `<header><div><p class="eyebrow">SECURE DOCUMENT INGESTION</p><h1>Document Uploader</h1><p class="muted">Drop KKA documents here. The uploader checks the filename against client identifiers and proposes the filing area and period before storage.</p></div><div class="page-actions"><button class="secondary" id="uploader-clear">Clear</button></div></header><section class="panel uploader-panel"><div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Choose documents to upload"><div class="drop-icon">↑</div><h2>Drop documents here</h2><p class="muted">or click to choose files · maximum 50 MB per file</p><input id="file-input" type="file" multiple hidden /><button class="secondary" id="choose-files" type="button">Choose files</button></div><div class="uploader-summary" id="uploader-summary"><span>No files selected</span></div><div class="upload-list" id="upload-list"></div><div class="uploader-actions"><button class="primary" id="analyze-files" type="button" disabled>Check &amp; classify files</button><button class="primary" id="upload-files" type="button" disabled>Upload checked files</button></div><div class="form-message" id="uploader-message" aria-live="polite"></div></section>`;
   bind();
   drawList();
 }
@@ -101,10 +79,7 @@ function addFiles(selected) {
   const accepted = selected.filter(file => file.size > 0 && file.size <= MAX_BYTES);
   const rejected = selected.filter(file => file.size === 0 || file.size > MAX_BYTES);
   const existing = new Set(files.map(x => `${x.file.name}|${x.file.size}|${x.file.lastModified}`));
-  accepted.forEach(file => {
-    const key = `${file.name}|${file.size}|${file.lastModified}`;
-    if (!existing.has(key)) files.push({ file, state: "queued" });
-  });
+  accepted.forEach(file => { const key = `${file.name}|${file.size}|${file.lastModified}`; if (!existing.has(key)) files.push({ file, state: "queued" }); });
   message.textContent = rejected.length ? `${rejected.length} file(s) skipped because they are empty or exceed 50 MB.` : "";
   drawList();
 }
@@ -122,9 +97,7 @@ function drawList() {
   upload.disabled = !files.some(x => x.state === "prepared");
 }
 
-function labelState(state) {
-  return ({ queued: "Not checked", preparing: "Checking…", prepared: "Ready", uploading: "Uploading…", accepted: "Accepted", review: "Review queue", duplicate: "Duplicate", error: "Error" })[state] || state;
-}
+function labelState(state) { return ({ queued: "Not checked", preparing: "Checking…", prepared: "Ready", uploading: "Uploading…", accepted: "Accepted", review: "Review queue", duplicate: "Duplicate", error: "Error" })[state] || state; }
 function formatBytes(n) { if (n < 1024) return `${n} B`; if (n < 1048576) return `${(n / 1024).toFixed(1)} KB`; if (n < 1073741824) return `${(n / 1048576).toFixed(1)} MB`; return `${(n / 1073741824).toFixed(2)} GB`; }
 
 async function analyzeAll() {
@@ -133,12 +106,8 @@ async function analyzeAll() {
   for (const item of files) {
     if (item.state !== "queued" && item.state !== "error") continue;
     item.state = "preparing"; item.error = ""; drawList();
-    try {
-      item.sha256 = await sha256(item.file);
-      const result = await prepare(item);
-      if (result.state === "duplicate") { item.state = "duplicate"; item.classification = null; item.error = result.message || "Identical file already exists."; }
-      else { item.prepared = result; item.classification = result; item.state = "prepared"; }
-    } catch (e) { item.state = "error"; item.error = e.message || "File could not be prepared."; }
+    try { item.sha256 = await sha256(item.file); const result = await prepare(item); if (result.state === "duplicate") { item.state = "duplicate"; item.classification = null; item.error = result.message || "Identical file already exists."; } else { item.prepared = result; item.classification = result; item.state = "prepared"; } }
+    catch (e) { item.state = "error"; item.error = e.message || "File could not be prepared."; }
     drawList();
   }
   const ready = files.filter(x => x.state === "prepared").length;
@@ -152,12 +121,8 @@ async function uploadAll() {
   message.textContent = `Uploading ${ready.length} file(s)…`;
   for (const item of ready) {
     item.state = "uploading"; item.error = ""; drawList();
-    try {
-      const result = await uploadPrepared(item);
-      item.state = result.state === "accepted" ? "accepted" : result.state === "duplicate" ? "duplicate" : "review";
-      item.result = result;
-      item.classification = result;
-    } catch (e) { item.state = "error"; item.error = e.message || "Upload failed."; }
+    try { const result = await uploadPrepared(item); item.state = result.state === "accepted" ? "accepted" : result.state === "duplicate" ? "duplicate" : "review"; item.result = result; item.classification = result; }
+    catch (e) { item.state = "error"; item.error = e.message || "Upload failed."; }
     drawList();
   }
   const done = files.filter(x => ["accepted", "review", "duplicate"].includes(x.state)).length;
@@ -169,20 +134,14 @@ function installNavigation() {
   bound = true;
   document.addEventListener("click", e => {
     const link = e.target.closest('a[data-view="documents"]');
-    if (!link) return;
-    if (!document.querySelector(".portal-main")) return;
+    if (!link || !document.querySelector(".portal-main")) return;
     e.preventDefault();
+    e.stopPropagation();
     render();
   }, true);
 }
 
 installNavigation();
 
-// The main portal renders asynchronously; keep this listener lightweight and only
-// expose the uploader after the authenticated portal shell exists.
-const observer = new MutationObserver(() => {
-  if (document.querySelector('.sidebar a[data-view="documents"]') && !document.querySelector('.uploader-panel')) {
-    // Navigation remains controlled by the capture listener above; no auto-render here.
-  }
-});
+const observer = new MutationObserver(() => {});
 observer.observe(document.querySelector("#app") || document.body, { childList: true, subtree: true });
