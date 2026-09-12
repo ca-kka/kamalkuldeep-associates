@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const STORAGE_KEY="kka-selected-client";
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+let clientSession=false;
 
 async function getClientContext(){
   const {data:{user}}=await supabase.auth.getUser();
@@ -16,6 +17,13 @@ async function getClientContext(){
   const {data:client}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin").eq("id",selectedId).eq("active",true).maybeSingle();
   if(!client)return null;
   return {user,profile,membership,client,selectedId};
+}
+
+async function syncClientSession(session){
+  if(!session?.user){clientSession=false;return;}
+  const {data:profile}=await supabase.from("profiles").select("role,active").eq("id",session.user.id).maybeSingle();
+  clientSession=profile?.active===true&&profile.role==="client";
+  window.KKAClientSession=clientSession;
 }
 
 async function renderClientDashboard(){
@@ -36,16 +44,15 @@ async function renderClientDashboard(){
   return true;
 }
 
-document.addEventListener("click",async e=>{
+document.addEventListener("click",e=>{
   const link=e.target.closest('a[data-view="dashboard"]');
-  if(!link||!document.querySelector(".portal-main"))return;
-  const ctx=await getClientContext().catch(()=>null);
-  if(!ctx)return;
+  if(!link||!clientSession||!document.querySelector(".portal-main"))return;
   e.preventDefault();e.stopPropagation();
-  await renderClientDashboard();
+  renderClientDashboard().catch(()=>{});
 },true);
 
 supabase.auth.onAuthStateChange((_event,session)=>{
-  if(!session?.user)return;
-  setTimeout(()=>renderClientDashboard().catch(()=>{}),80);
+  setTimeout(async()=>{await syncClientSession(session);if(clientSession)await renderClientDashboard().catch(()=>{});},0);
 });
+
+supabase.auth.getSession().then(({data:{session}})=>syncClientSession(session)).catch(()=>{});
