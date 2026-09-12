@@ -1,3 +1,0 @@
-Knowledge Centre Editor v2 implementation branch.
-
-Includes rich text editing, image upload endpoint integration, controlled publisher attribution, and public publisher profile cards.
