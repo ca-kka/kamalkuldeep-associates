@@ -140,6 +140,38 @@
         margin-top: 0 !important;
         padding-top: 88px !important;
     }
+
+    /* Knowledge Centre must remain readable against its branded navy button on mobile. */
+    .nav .knowledge-centre-link {
+        background: #1e3c72 !important;
+        color: #fff !important;
+        font-weight: 800 !important;
+        min-height: 50px !important;
+        justify-content: center !important;
+        text-align: center !important;
+        border-radius: 10px !important;
+        margin: 10px 2px 4px !important;
+        width: calc(100% - 4px) !important;
+        box-shadow: 0 4px 12px rgba(30,60,114,.20) !important;
+    }
+
+    .nav .knowledge-centre-link::after {
+        color: #ffd700 !important;
+    }
+
+    .nav .knowledge-centre-link:hover,
+    .nav .knowledge-centre-link:focus-visible,
+    .nav .knowledge-centre-link:active {
+        background: #f59e0b !important;
+        color: #fff !important;
+        outline: none !important;
+    }
+
+    .nav .knowledge-centre-link:hover::after,
+    .nav .knowledge-centre-link:focus-visible::after,
+    .nav .knowledge-centre-link:active::after {
+        color: #fff !important;
+    }
 }
 
 @media (max-width: 390px) {
@@ -147,4 +179,9 @@
     .nav .container { padding: 0 12px !important; }
     .hamburger { width: 42px !important; height: 42px !important; min-width: 42px !important; min-height: 42px !important; max-width: 42px !important; max-height: 42px !important; border-radius: 11px !important; }
     .header { padding-top: 82px !important; }
+
+    .nav .knowledge-centre-link {
+        font-size: .96rem !important;
+        min-height: 48px !important;
+    }
 }
