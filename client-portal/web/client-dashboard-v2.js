@@ -18,6 +18,20 @@ function installStyles(){
 `;document.head.appendChild(s);
 }
 
+function syncUploadNav(enabled){
+  const nav=document.querySelector(".sidebar nav");
+  if(!nav)return;
+  let link=nav.querySelector('a[data-view="upload"]');
+  if(enabled&&!link){
+    link=document.createElement("a");
+    link.dataset.view="upload";
+    link.href="#upload";
+    link.textContent="Upload";
+    nav.insertBefore(link,nav.querySelector('a[data-view="review"]')||null);
+  }
+  if(link)link.hidden=!enabled;
+}
+
 async function getClientContext(){
   const {data:{user}}=await supabase.auth.getUser();
   if(!user)return null;
@@ -38,9 +52,10 @@ async function getClientContext(){
 async function renderClientDashboard(){
   installStyles();
   const ctx=await getClientContext();
-  if(!ctx){window.KKAClientSession=false;return false;}
+  if(!ctx){window.KKAClientSession=false;syncUploadNav(false);return false;}
   window.KKAClientSession=true;
   localStorage.setItem(STORAGE_KEY,ctx.selectedId);
+  syncUploadNav(ctx.membership.can_upload===true);
   const main=document.querySelector(".portal-main");
   if(!main)return false;
   document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a.dataset.view==="dashboard"));
@@ -53,7 +68,7 @@ async function renderClientDashboard(){
   document.getElementById("client-profile-select")?.addEventListener("change",async e=>{localStorage.setItem(STORAGE_KEY,e.target.value);await renderClientDashboard()});
   document.getElementById("client-signout")?.addEventListener("click",async()=>{await supabase.auth.signOut();localStorage.removeItem(STORAGE_KEY);location.reload()});
   document.getElementById("client-documents")?.addEventListener("click",()=>document.querySelector('a[data-view="documents"]')?.click());
-  document.getElementById("client-upload")?.addEventListener("click",()=>document.querySelector('a[data-view="documents"]')?.click());
+  document.getElementById("client-upload")?.addEventListener("click",()=>document.querySelector('a[data-view="upload"]')?.click());
   return true;
 }
 
