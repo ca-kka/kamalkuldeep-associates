@@ -38,7 +38,9 @@ async function getClientContext(){
 async function renderClientDashboard(){
   installStyles();
   const ctx=await getClientContext();
-  if(!ctx)return false;
+  if(!ctx){window.KKAClientSession=false;return false;}
+  window.KKAClientSession=true;
+  localStorage.setItem(STORAGE_KEY,ctx.selectedId);
   const main=document.querySelector(".portal-main");
   if(!main)return false;
   document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a.dataset.view==="dashboard"));
