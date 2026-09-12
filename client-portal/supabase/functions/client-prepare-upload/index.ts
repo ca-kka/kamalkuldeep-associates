@@ -12,7 +12,7 @@ const normal = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]+/g, " "
 const cleanFilename = (filename: string) => filename.replace(/[\\/:*?"<>|\x00-\x1F]/g, "_").slice(0, 220);
 
 function classify(filename: string, client: any) {
-  const raw = filename.toUpperCase(), words = normal(filename);
+  const raw = filename.toUpperCase();
   let area = "other";
   if (/GST|GSTR|GSTR1|GSTR3B/.test(raw)) area = "gst";
   else if (/TDS|24Q|26Q|27Q|27EQ/.test(raw)) area = "tds";
@@ -36,8 +36,7 @@ async function authenticate(req: Request) {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) throw new Error("Missing client session");
   const url = Deno.env.get("SUPABASE_URL")!;
-  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const auth = createClient(url, anon, { auth: { autoRefreshToken: false, persistSession: false } });
+  const auth = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: { user }, error } = await auth.auth.getUser(token);
   if (error || !user) throw new Error("Invalid or expired client session");
   const service = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { autoRefreshToken: false, persistSession: false } });
@@ -79,7 +78,7 @@ Deno.serve(async req => {
     if (uploadError) throw uploadError;
     const { data: signed, error: signedError } = await service.storage.from("client-documents").createSignedUploadUrl(objectPath);
     if (signedError) throw signedError;
-    return json({ state: "prepared", uploadId: upload.id, signedUrl: signed.signedUrl, token: signed.token, expiresAt, classification });
+    return json({ state: "prepared", uploadId: upload.id, objectPath, signedUrl: signed.signedUrl, token: signed.token, expiresAt, classification });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Client upload could not be prepared";
     const status = /disabled|membership|session|accessible/i.test(message) ? 403 : 400;
