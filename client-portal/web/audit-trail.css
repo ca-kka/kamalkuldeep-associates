@@ -1,0 +1,21 @@
+.audit-panel{margin-top:20px;padding:22px;background:var(--white);border:1px solid var(--line);border-radius:16px}
+.audit-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.audit-toolbar h2{margin:2px 0 4px;font:700 20px Georgia,serif;color:var(--ink)}
+.audit-toolbar .muted{margin:0;font-size:12px}
+.audit-filters{display:flex;gap:10px;min-width:min(520px,100%)}
+.audit-filters input,.audit-filters select{height:40px;border:1px solid var(--line);border-radius:10px;background:var(--soft);color:var(--ink);padding:0 12px;font:inherit;outline:none}
+.audit-filters input{min-width:240px;flex:1}
+.audit-filters select{min-width:150px}
+.audit-filters input:focus,.audit-filters select:focus{border-color:var(--accent)}
+.audit-table{width:100%;border-collapse:collapse}
+.audit-table th{padding:13px 12px;text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line)}
+.audit-table td{padding:15px 12px;vertical-align:top;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink)}
+.audit-table tbody tr:last-child td{border-bottom:0}
+.audit-table tbody tr:hover{background:var(--soft)}
+.audit-table td strong{display:block;font-size:13px}
+.audit-table td small{display:block;margin-top:4px;color:var(--muted);font-size:11px;line-height:1.45;word-break:break-word}
+.audit-entity{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font-size:11px;font-weight:700}
+.audit-table time{white-space:nowrap;color:var(--muted);font-size:12px}
+.audit-empty-cell{text-align:center!important;padding:42px 18px!important;color:var(--muted)!important}
+@media(max-width:800px){.audit-toolbar{align-items:stretch;flex-direction:column}.audit-filters{min-width:0}.audit-filters input{min-width:0}.audit-table{min-width:720px}.audit-panel .table-wrap{overflow-x:auto}}
+@media(max-width:520px){.audit-filters{flex-direction:column}.audit-filters input,.audit-filters select{width:100%}.audit-panel{padding:16px}}
