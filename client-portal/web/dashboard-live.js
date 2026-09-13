@@ -1,23 +1,11 @@
-import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
-const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-let timer=null,channel=null,refreshInFlight=false;
-const isStaffRole=role=>["admin","staff"].includes(role);
-async function refreshLiveKpis(){
- if(refreshInFlight)return;const stats=document.querySelector(".stats");if(!stats)return;refreshInFlight=true;
- try{const {data:{user}}=await supabase.auth.getUser();if(!user){stopLiveKpis();return}const {data:profile}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();if(!profile?.active||!isStaffRole(profile.role)){stopLiveKpis();return}
-  const [documents,review,duplicates,clients]=await Promise.all([
-   supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","accepted").is("deleted_at",null),
-   supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","review").is("deleted_at",null),
-   supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","duplicate").is("deleted_at",null),
-   supabase.from("clients").select("id",{count:"exact",head:true}).eq("active",true)
-  ]);
-  const values=[["Documents",documents.count??0,"Accepted documents available"],["Needs review",review.count??0,"Awaiting KKA review"],["Duplicate checks",duplicates.count??0,"Held before storage"],["Active clients",clients.count??0,"Managed securely"]];
-  stats.innerHTML=values.map(([label,value,note])=>`<article><p>${label}</p><strong>${value}</strong><span class="muted">${note}</span></article>`).join("");
- }finally{refreshInFlight=false}
-}
-function stopLiveKpis(){if(timer){clearInterval(timer);timer=null}if(channel){supabase.removeChannel(channel);channel=null}}
-async function startLiveKpis(){stopLiveKpis();await refreshLiveKpis();timer=setInterval(refreshLiveKpis,5000);channel=supabase.channel("kka-dashboard-live-kpis").on("postgres_changes",{event:"*",schema:"public",table:"documents"},refreshLiveKpis).on("postgres_changes",{event:"*",schema:"public",table:"clients"},refreshLiveKpis).subscribe()}
-supabase.auth.onAuthStateChange((event,session)=>{if(session?.user)startLiveKpis().catch(()=>{});else stopLiveKpis()});
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&document.querySelector(".stats"))refreshLiveKpis().catch(()=>{})});
-setTimeout(()=>{if(document.querySelector(".stats"))startLiveKpis().catch(()=>{})},1000);
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+let timer=null,channel=null,busy=false,observer=null;
+const staffRole=r=>["admin","staff"].includes(r);
+function loading(stats){if(!stats)return;stats.innerHTML=["Documents","Needs review","Duplicate checks","Active clients"].map(x=>`<article><p>${x}</p><strong>—</strong><span class="muted">Loading authoritative count…</span></article>`).join("")}
+async function refresh(){if(busy)return;const stats=document.querySelector(".stats");if(!stats)return;busy=true;try{const {data:{user}}=await supabase.auth.getUser();if(!user)return;const {data:p}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();if(!p?.active||!staffRole(p.role))return;const [d,r,x,c]=await Promise.all([supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","accepted").is("deleted_at",null),supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","review").is("deleted_at",null),supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","duplicate").is("deleted_at",null),supabase.from("clients").select("id",{count:"exact",head:true}).eq("active",true)]);stats.innerHTML=[["Documents",d.count??0,"Accepted documents available"],["Needs review",r.count??0,"Awaiting KKA review"],["Duplicate checks",x.count??0,"Held before storage"],["Active clients",c.count??0,"Managed securely"]].map(([l,v,n])=>`<article><p>${l}</p><strong>${v}</strong><span class="muted">${n}</span></article>`).join("")}finally{busy=false}}
+function start(){if(timer)clearInterval(timer);if(channel)supabase.removeChannel(channel);loading(document.querySelector(".stats"));refresh().catch(console.error);timer=setInterval(()=>refresh().catch(console.error),5000);channel=supabase.channel("kka-dashboard-live-kpis").on("postgres_changes",{event:"*",schema:"public",table:"documents"},()=>refresh().catch(console.error)).on("postgres_changes",{event:"*",schema:"public",table:"clients"},()=>refresh().catch(console.error)).subscribe()}
+observer=new MutationObserver(()=>{const stats=document.querySelector(".stats");if(stats&&!stats.dataset.authoritative){stats.dataset.authoritative="1";loading(stats);refresh().catch(console.error)}});observer.observe(document.querySelector("#app"),{childList:true,subtree:true});
+supabase.auth.onAuthStateChange((event,session)=>{if(session?.user)start();else{if(timer)clearInterval(timer);timer=null;if(channel){supabase.removeChannel(channel);channel=null}}});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh().catch(console.error)});
