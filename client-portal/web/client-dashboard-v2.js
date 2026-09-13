@@ -23,11 +23,7 @@ function syncUploadNav(enabled){
   if(!nav)return;
   let link=nav.querySelector('a[data-view="upload"]');
   if(enabled&&!link){
-    link=document.createElement("a");
-    link.dataset.view="upload";
-    link.href="#upload";
-    link.textContent="Upload";
-    nav.insertBefore(link,nav.querySelector('a[data-view="review"]')||null);
+    link=document.createElement("a");link.dataset.view="upload";link.href="#upload";link.textContent="Upload";nav.insertBefore(link,nav.querySelector('a[data-view="review"]')||null);
   }
   if(link)link.hidden=!enabled;
 }
@@ -39,9 +35,18 @@ async function getClientContext(){
   if(profile?.role!=="client"||!profile.active)return null;
   const {data:membership}=await supabase.from("client_memberships").select("client_id,can_upload").eq("user_id",user.id).maybeSingle();
   if(!membership?.client_id)return null;
-  const {data:clients,error}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").eq("active",true).order("legal_name",{ascending:true});
-  if(error)return null;
-  const accessible=(clients??[]).filter(c=>c.id===membership.client_id||c.id);
+  let accessible=[];
+  const {data:account}=await supabase.from("client_accounts").select("id").eq("primary_client_id",membership.client_id).eq("active",true).maybeSingle();
+  if(account){
+    const {data:members}=await supabase.from("client_account_members").select("client_id,active").eq("account_id",account.id).eq("active",true);
+    const ids=[membership.client_id,...(members??[]).map(m=>m.client_id)].filter(Boolean);
+    const unique=[...new Set(ids)];
+    if(unique.length){const {data:rows}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").in("id",unique).eq("active",true);accessible=rows??[];}
+  }
+  if(!accessible.length){
+    const {data:primary}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").eq("id",membership.client_id).eq("active",true).maybeSingle();
+    if(primary)accessible=[primary];
+  }
   const saved=localStorage.getItem(STORAGE_KEY);
   const selectedId=accessible.some(c=>c.id===saved)?saved:membership.client_id;
   const client=accessible.find(c=>c.id===selectedId)||accessible.find(c=>c.id===membership.client_id);
