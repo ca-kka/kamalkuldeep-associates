@@ -1,1 +1,3 @@
-document.addEventListener("click",e=>{const link=e.target.closest?.('a[data-view="documents"]');if(!link)return;if(!localStorage.getItem("kka-selected-client"))return;e.preventDefault();e.stopImmediatePropagation();document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a===link));window.dispatchEvent(new Event("kka-open-client-documents"));},true);
+// Client document route guard
+
+document.addEventListener("click",e=>{const link=e.target.closest?.('a[data-view="documents"]');if(!link)return;if(!localStorage.getItem("kka-selected-client"))return;e.preventDefault();e.stopImmediatePropagation();},true);
