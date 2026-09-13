@@ -21,6 +21,7 @@ async function getClientContext(){
 async function renderClientDashboard(){
   const ctx=await getClientContext();
   if(!ctx)return false;
+  localStorage.setItem(STORAGE_KEY,ctx.selectedId);
   const main=document.querySelector(".portal-main");
   if(!main)return false;
   document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a.dataset.view==="dashboard"));
