@@ -1,4 +1,8 @@
 import { supabase } from "./supabase.js";
+import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
+const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
 
 const clean = v => String(v ?? "").trim();
 const upper = v => clean(v).toUpperCase() || null;
