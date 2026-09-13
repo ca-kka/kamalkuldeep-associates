@@ -1,1 +1,2 @@
-document.addEventListener("click",e=>{const link=e.target.closest?.('a[data-view="documents"]');if(!link||window.KKAClientSession!==true)return;e.preventDefault();e.stopImmediatePropagation()},true);
+// Client document routing is handled by family-documents-view.js.
+// This module intentionally does not intercept the Documents navigation.
