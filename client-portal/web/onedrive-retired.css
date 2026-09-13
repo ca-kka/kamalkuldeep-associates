@@ -1,0 +1,4 @@
+/* OneDrive is now managed by the storage backend. Retire the legacy connection control. */
+#connect-onedrive {
+  display: none !important;
+}
