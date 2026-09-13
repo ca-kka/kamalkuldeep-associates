@@ -19,13 +19,13 @@ async function refreshLiveKpis(){
     const {data:profile}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();
     if(!profile?.active||!isStaffRole(profile.role)){stopLiveKpis();return;}
     const [documents,review,duplicates,clients]=await Promise.all([
-      supabase.from("documents").select("id",{count:"exact",head:true}),
+      supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","accepted"),
       supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","review"),
       supabase.from("documents").select("id",{count:"exact",head:true}).eq("status","duplicate"),
       supabase.from("clients").select("id",{count:"exact",head:true}).eq("active",true)
     ]);
     const values=[
-      ["Documents",documents.count??0,"Private documents you can access"],
+      ["Documents",documents.count??0,"Accepted documents in storage"],
       ["Needs review",review.count??0,"Awaiting KKA review"],
       ["Duplicate checks",duplicates.count??0,"Held before storage"],
       ["Active clients",clients.count??0,"Managed securely"]
