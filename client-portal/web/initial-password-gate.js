@@ -26,7 +26,10 @@ function showGate(){
     if(!r.ok){m.className="message error";m.textContent=result.error||"Password could not be updated.";return}
 
     await supabase.auth.signOut();
-    wrap.innerHTML=`<section class="kka-password-card" role="status"><div class="brand"><strong>KKA</strong><small>CLIENT PLATFORM</small></div><p class="eyebrow">SECURITY · COMPLETE</p><h1>Password changed successfully</h1><p class="muted">Your private password has been updated successfully. Please relogin with your new password to continue to your KKA workspace.</p><p class="message success">A password-change confirmation has also been sent to your registered email address.</p><button id="kka-relogin" class="primary" type="button">Relogin to continue</button></section>`;
+    const emailNote=result.emailSent===true
+      ? `<p class="message success">A password-change confirmation has been sent to your registered email address.</p>`
+      : `<p class="message">Your password was changed, but the confirmation email could not be sent. Please continue and contact KKA if you do not receive it.</p>`;
+    wrap.innerHTML=`<section class="kka-password-card" role="status"><div class="brand"><strong>KKA</strong><small>CLIENT PLATFORM</small></div><p class="eyebrow">SECURITY · COMPLETE</p><h1>Password changed successfully</h1><p class="muted">Your private password has been updated successfully. Please relogin with your new password to continue to your KKA workspace.</p>${emailNote}<button id="kka-relogin" class="primary" type="button">Relogin to continue</button></section>`;
     wrap.querySelector("#kka-relogin").addEventListener("click",()=>location.reload());
   });
 }
