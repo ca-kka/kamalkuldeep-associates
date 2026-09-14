@@ -33,11 +33,15 @@ function errorMessage(err){
 function legacyAlert(message){
   const text=String(message??"");
   const lower=text.toLowerCase();
-  const isError=/(error|failed|failure|cannot|could not|unable|expired|not found|unauthorized|forbidden|invalid|rejected|not completed)/i.test(lower);
-  notify(isError?errorMessage({message:text}):text,isError?"error":"success");
+  const isError=/(error|failed|failure|cannot|could not|unable|expired|not found|unauthorized|forbidden|invalid|rejected|not completed|couldn't|can't)/i.test(lower);
+  notify(text,isError?"error":"success");
 }
 
-window.KKANotify={success:(message,detail="")=>notify(message,"success",detail),error:(err)=>notify(errorMessage(err),"error"),info:(message)=>notify(message,"info"),operation:async(label,fn)=>{notify(`${label}…`,"info");try{const result=await fn();notify(`${label} completed successfully.`);return result}catch(err){notify(errorMessage(err),"error");throw err;}}};
-window.alert=legacyAlert;
+window.KKANotify={
+  success:(message,detail="")=>notify(message,"success",detail),
+  error:(err)=>notify(errorMessage(err),"error"),
+  info:(message)=>notify(message,"info"),
+  operation:async(label,fn)=>{notify(`${label}…`,"info");try{const result=await fn();notify(`${label} completed successfully.`);return result}catch(err){notify(errorMessage(err),"error");throw err}}
+};
 window.KKANotifyError=errorMessage;
 install();
