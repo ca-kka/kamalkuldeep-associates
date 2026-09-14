@@ -1,0 +1,1 @@
+Production onedrive-sync v2 is deployed with automatic full reconciliation during maintenance when last_full_reconcile_at is missing or older than 24 hours. The hourly maintenance job therefore performs incremental delta syncs normally and a full reconciliation at least once per 24-hour period. See the deployed Edge Function for executable source.
