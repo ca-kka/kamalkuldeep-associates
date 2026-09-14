@@ -37,4 +37,14 @@ export async function enforceInitialPassword(){
   if(session.user.app_metadata?.must_change_password===true){showGate();return true}
   return false;
 }
+
 window.KKAEnforceInitialPassword=enforceInitialPassword;
+
+// Also enforce immediately on an existing session and after a fresh sign-in.
+// This keeps the temporary-password account behind the gate before the portal can be used.
+void enforceInitialPassword();
+supabase.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_IN"&&session?.user?.app_metadata?.must_change_password===true){
+    setTimeout(()=>{void enforceInitialPassword()},0);
+  }
+});
