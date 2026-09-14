@@ -1,7 +1,8 @@
+import "./access-requests.js?v=20260914-1";
 // Keep the legacy app navigation handler from overriding dedicated portal views.
 // Dedicated view modules register document-level capture handlers; this runs last and
 // stops the legacy bubble handler after the appropriate view module has handled it.
-const handledViews=new Set(["documents","review","activity","staff-access"]);
+const handledViews=new Set(["documents","review","activity","staff-access","access-requests"]);
 document.addEventListener("click",event=>{
   const link=event.target.closest?.("a[data-view]");
   if(!link)return;
