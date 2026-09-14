@@ -79,10 +79,38 @@
     });
   }
 
+  function addClientPortalEntry() {
+    const nav = document.querySelector('.nav ul');
+    if (!nav || nav.querySelector('[data-client-portal-preview]')) return;
+
+    const item = document.createElement('li');
+    item.setAttribute('data-client-portal-preview', 'true');
+    const link = document.createElement('a');
+    link.href = 'client-portal.html';
+    link.className = 'client-portal-login';
+    link.textContent = 'Client Login';
+    link.setAttribute('aria-label', 'KKA Client Portal — Coming Soon');
+    item.appendChild(link);
+    nav.appendChild(item);
+
+    if (!document.getElementById('client-portal-nav-styles')) {
+      const style = document.createElement('style');
+      style.id = 'client-portal-nav-styles';
+      style.textContent = `
+        .nav .client-portal-login{position:relative;background:linear-gradient(135deg,#071522,#163445);color:#f0d99a!important;border:1px solid rgba(214,181,107,.42);border-radius:6px;padding:.5rem 1.25rem!important;font-weight:700;box-shadow:0 3px 12px rgba(7,21,34,.16);transition:all .25s ease}
+        .nav .client-portal-login::before{content:'✦';margin-right:7px;font-size:.72rem;color:#f0d99a}
+        .nav .client-portal-login:hover{background:linear-gradient(135deg,#10283a,#1c465b)!important;color:#fff4cf!important;border-color:rgba(240,217,154,.72);transform:translateY(-1px);box-shadow:0 5px 16px rgba(7,21,34,.24)}
+        @media(max-width:768px){.nav .client-portal-login{border-radius:0;border-left:3px solid #d6b56b;padding:1rem 1.5rem!important}}
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
   async function init() {
     updateFooterDate();
     injectStyles();
     addFallbackAnchorBehaviour();
+    addClientPortalEntry();
 
     const adminLogin = document.querySelector('.admin-login');
     if (adminLogin) adminLogin.href = 'https://files.ca-kka.com/';
