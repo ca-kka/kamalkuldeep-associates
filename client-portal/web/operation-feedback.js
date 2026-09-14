@@ -17,8 +17,8 @@ function notify(message,type="success",detail=""){
   el.className=type;
   el.innerHTML=`<span class="icon" aria-hidden="true">${icon}</span><div><span class="title">${title}</span><span class="body"></span></div><button type="button" aria-label="Dismiss">×</button>`;
   el.querySelector(".body").textContent=String(message??"");
-  if(detail){el.querySelector(".body").textContent+=` (${detail})`}
-  el.querySelector("button").onclick=()=>{el.classList.remove("show")};
+  if(detail)el.querySelector(".body").textContent+=` (${detail})`;
+  el.querySelector("button").onclick=()=>el.classList.remove("show");
   requestAnimationFrame(()=>el.classList.add("show"));
   timer=setTimeout(()=>el.classList.remove("show"),4200);
 }
@@ -30,10 +30,14 @@ function errorMessage(err){
   return code?`${text} · Error code: ${code}`:text;
 }
 
-window.KKANotify={success:(message,detail="")=>notify(message,"success",detail),error:(err)=>notify(errorMessage(err),"error"),info:(message)=>notify(message,"info"),operation:async(label,fn)=>{notify(`${label}…`,"info");try{const result=await fn();notify(`${label} completed successfully.`);return result}catch(err){notify(errorMessage(err),"error");throw err;}}};
+function legacyAlert(message){
+  const text=String(message??"");
+  const lower=text.toLowerCase();
+  const isError=/(error|failed|failure|cannot|could not|unable|expired|not found|unauthorized|forbidden|invalid|rejected|not completed)/i.test(lower);
+  notify(isError?errorMessage({message:text}):text,isError?"error":"success");
+}
 
-const nativeAlert=window.alert?.bind(window);
-window.alert=(message)=>notify(String(message??""),"success");
+window.KKANotify={success:(message,detail="")=>notify(message,"success",detail),error:(err)=>notify(errorMessage(err),"error"),info:(message)=>notify(message,"info"),operation:async(label,fn)=>{notify(`${label}…`,"info");try{const result=await fn();notify(`${label} completed successfully.`);return result}catch(err){notify(errorMessage(err),"error");throw err;}}};
+window.alert=legacyAlert;
 window.KKANotifyError=errorMessage;
-void nativeAlert;
 install();
