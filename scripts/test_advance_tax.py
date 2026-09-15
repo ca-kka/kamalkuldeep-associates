@@ -8,30 +8,34 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
-def dates(today):
+def titles(today):
     data = {"items": []}
     module.upsert_advance_tax(data, today)
-    items = {item["title"]: item for item in data["items"]}
-    return items
+    return [item["title"] for item in data["items"] if item.get("title", "").startswith("Advance Tax")], data
 
 
-# On 15 Sep 2026, Q2 is due today and Q3 is the next instalment.
-items = dates(date(2026, 9, 15))
-assert items["Advance Tax – Q2"]["date"] == "15 September 2026"
-assert items["Advance Tax – Q2"]["urgent"] is True
-assert items["Advance Tax – Q3"]["date"] == "15 December 2026"
-assert items["Advance Tax – Q3"]["urgent"] is False
+# On 15 Sep 2026, show Q2 only and mark it due today.
+shown, data = titles(date(2026, 9, 15))
+assert shown == ["Advance Tax – Q2"]
+q2 = data["items"][0]
+assert q2["date"] == "15 September 2026"
+assert q2["urgent"] is True
 
-# From 16 Sep, Q2 rolls to the next FY while Q3 becomes the next/current deadline.
-items = dates(date(2026, 9, 16))
-assert items["Advance Tax – Q2"]["date"] == "15 September 2027"
-assert items["Advance Tax – Q2"]["urgent"] is False
-assert items["Advance Tax – Q3"]["date"] == "15 December 2026"
-assert items["Advance Tax – Q3"]["urgent"] is False
+# From 16 Sep 2026, hide Q2 and show Q3 only.
+shown, data = titles(date(2026, 9, 16))
+assert shown == ["Advance Tax – Q3"]
+q3 = data["items"][0]
+assert q3["date"] == "15 December 2026"
+assert q3["urgent"] is False
 
-# After Q3, it rolls to the next FY and Q2 remains the next instalment.
-items = dates(date(2026, 12, 16))
-assert items["Advance Tax – Q2"]["date"] == "15 September 2027"
-assert items["Advance Tax – Q3"]["date"] == "15 December 2027"
+# Q3 remains the only displayed deadline on its due date.
+shown, data = titles(date(2026, 12, 15))
+assert shown == ["Advance Tax – Q3"]
+assert data["items"][0]["urgent"] is True
 
-print("Advance-tax rollover tests passed.")
+# After Q3, roll forward to Q2 of the next FY.
+shown, data = titles(date(2026, 12, 16))
+assert shown == ["Advance Tax – Q2"]
+assert data["items"][0]["date"] == "15 September 2027"
+
+print("Advance-tax display rollover tests passed.")
