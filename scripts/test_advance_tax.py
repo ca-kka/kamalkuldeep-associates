@@ -33,9 +33,21 @@ shown, data = titles(date(2026, 12, 15))
 assert shown == ["Advance Tax – Q3"]
 assert data["items"][0]["urgent"] is True
 
-# After Q3, roll forward to Q2 of the next FY.
+# From 16 Dec 2026, roll to Q4.
 shown, data = titles(date(2026, 12, 16))
+assert shown == ["Advance Tax – Q4"]
+q4 = data["items"][0]
+assert q4["date"] == "15 March 2027"
+assert q4["urgent"] is False
+
+# Q4 remains the only displayed deadline on its due date.
+shown, data = titles(date(2027, 3, 15))
+assert shown == ["Advance Tax – Q4"]
+assert data["items"][0]["urgent"] is True
+
+# After Q4, restart at Q2 of the following FY for this public panel.
+shown, data = titles(date(2027, 3, 16))
 assert shown == ["Advance Tax – Q2"]
 assert data["items"][0]["date"] == "15 September 2027"
 
-print("Advance-tax display rollover tests passed.")
+print("Advance-tax Q2 -> Q3 -> Q4 rollover tests passed.")
