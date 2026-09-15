@@ -1,0 +1,21 @@
+/*
+  Security headers for the KKA Client Portal when served by Cloudflare Pages.
+  Keep the policy conservative because the portal loads authenticated modules
+  and Supabase/OneDrive integrations.
+*/
+/*
+  Global defaults
+*/
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+
+/index.html
+  Cache-Control: no-store, max-age=0
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/*.html
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
