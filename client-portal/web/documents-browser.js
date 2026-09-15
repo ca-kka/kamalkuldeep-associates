@@ -1,82 +1,26 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-const esc = (v) => String(v ?? "").replace(/[&<>\"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const labels = { gst: "GST", tds: "TDS", income_tax: "Income Tax", accounts: "Accounts", mca: "MCA", other: "Other" };
-const months = { "01":"January", "02":"February", "03":"March", "04":"April", "05":"May", "06":"June", "07":"July", "08":"August", "09":"September", "10":"October", "11":"November", "12":"December" };
-let state = { clients: [], clientId: "", docs: [], area: "", fy: "", period: "", busy: false };
-
-function notify(message, detail = "") { try { window.KKANotify?.error?.(message, detail); } catch {} }
-function clientName(c) { return c?.display_name || c?.legal_name || "Unnamed client"; }
-function periodName(area, value) { return ["gst", "other"].includes(area) ? (months[value] || value) : value; }
-
-async function loadClients() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-  const { data: profile, error: profileError } = await supabase.from("profiles").select("role,active").eq("id", user.id).maybeSingle();
-  if (profileError) throw profileError;
-  if (!profile?.active) return false;
-  const staff = ["admin", "staff"].includes(profile.role);
-  if (staff) {
-    const r = await supabase.from("clients").select("id,legal_name,display_name,cin").eq("active", true).order("legal_name");
-    if (r.error) throw r.error;
-    state.clients = r.data || [];
-  } else {
-    const m = await supabase.from("client_memberships").select("client_id").eq("user_id", user.id).limit(1).maybeSingle();
-    if (m.error || !m.data) throw new Error("No client profile is linked to this login.");
-    const r = await supabase.from("clients").select("id,legal_name,display_name,cin").eq("id", m.data.client_id).eq("active", true).maybeSingle();
-    if (r.error || !r.data) throw new Error("The linked client profile could not be loaded.");
-    state.clients = [r.data];
-  }
-  if (!state.clientId || !state.clients.some(c => c.id === state.clientId)) state.clientId = state.clients.length === 1 ? state.clients[0].id : "";
-  return true;
+const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+const areas=["gst","tds","income_tax","accounts","mca","other"],labels={gst:"GST",tds:"TDS",income_tax:"Income Tax",accounts:"Accounts",mca:"MCA",other:"Other"},months={"01":"January","02":"February","03":"March","04":"April","05":"May","06":"June","07":"July","08":"August","09":"September","10":"October","11":"November","12":"December"};
+let clients=[],docs=[],selectedClientId="",scope={area:null,fy:null,period:null},loading=false,refreshTimer=null;
+const clientLabel=c=>c.display_name||c.legal_name||"Unnamed client",periodLabel=(a,p)=>(["gst","other"].includes(a)?(months[p]||p):p)||"",fySort=(a,b)=>String(b).localeCompare(String(a));
+async function load(){
+ if(loading||document.querySelector("#documents-browser-panel"))return;const main=document.querySelector(".portal-main");if(!main)return;const {data:{user}}=await supabase.auth.getUser();if(!user)return;loading=true;
+ try{const {data:profile}=await supabase.from("profiles").select("role").eq("id",user.id).maybeSingle(),staff=["admin","staff"].includes(profile?.role);
+  if(staff){const r=await supabase.from("clients").select("id,legal_name,display_name,cin").eq("active",true).order("legal_name");if(r.error)throw r.error;clients=r.data||[];selectedClientId=clients.length===1?clients[0].id:""}
+  else{const m=await supabase.from("client_memberships").select("client_id").eq("user_id",user.id).limit(1).maybeSingle();if(m.error||!m.data)throw new Error("No client profile is linked to this login.");const r=await supabase.from("clients").select("id,legal_name,display_name,cin").eq("id",m.data.client_id).eq("active",true).maybeSingle();if(r.error||!r.data)throw new Error("The linked client profile could not be loaded.");clients=[r.data];selectedClientId=r.data.id}
+  await loadDocs();renderPanel(staff);startLiveRefresh();
+ }catch(e){showError(e.message||"Documents could not be loaded")}finally{loading=false}
 }
-
-async function loadDocs() {
-  if (!state.clientId) { state.docs = []; return; }
-  const r = await supabase.from("documents").select("id,client_id,original_filename,area,financial_year,filing_period,status,byte_size,created_at").eq("client_id", state.clientId).eq("status", "accepted").is("deleted_at", null).order("created_at", { ascending: false }).limit(1000);
-  if (r.error) throw r.error;
-  state.docs = r.data || [];
-}
-
-function render() {
-  const main = document.querySelector(".portal-main");
-  if (!main) return;
-  const client = state.clients.find(c => c.id === state.clientId);
-  const areas = [...new Set(state.docs.map(d => d.area).filter(Boolean))];
-  const visible = state.docs.filter(d => (!state.area || d.area === state.area) && (!state.fy || d.financial_year === state.fy) && (!state.period || d.filing_period === state.period));
-  const years = [...new Set(state.docs.filter(d => !state.area || d.area === state.area).map(d => d.financial_year).filter(Boolean))].sort().reverse();
-  const periods = [...new Set(state.docs.filter(d => d.area === state.area && (!state.fy || d.financial_year === state.fy)).map(d => d.filing_period).filter(Boolean))].sort();
-  main.innerHTML = `<header><div><p class="eyebrow">DOCUMENT LIBRARY</p><h1>Documents</h1><p class="muted">Browse accepted documents by client and filing structure.</p></div></header><section class="panel" id="documents-browser-panel"><div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap"><label style="min-width:280px">Client<select id="doc-client" style="width:100%;padding:10px;margin-top:6px"><option value="">Select client</option>${state.clients.map(c => `<option value="${esc(c.id)}" ${c.id===state.clientId?"selected":""}>${esc(clientName(c))}${c.cin?` — ${esc(c.cin)}`:""}</option>`).join("")}</select></label><button class="secondary" id="doc-refresh" type="button">Refresh</button></div><p class="muted" style="margin-top:14px">${client ? esc(clientName(client)) : "Select a client to browse documents."}</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">${areas.map(a => `<button class="${state.area===a?"primary":"secondary"} compact" type="button" data-area="${esc(a)}">${esc(labels[a]||a)}</button>`).join("")}</div>${state.area && years.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">${years.map(y => `<button class="${state.fy===y?"primary":"secondary"} compact" type="button" data-fy="${esc(y)}">FY ${esc(y)}</button>`).join("")}</div>` : ""}${state.area && state.fy && periods.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">${periods.map(p => `<button class="${state.period===p?"primary":"secondary"} compact" type="button" data-period="${esc(p)}">${esc(periodName(state.area,p))}</button>`).join("")}</div>` : ""}<div style="margin-top:20px">${state.clientId ? (visible.length ? visible.map(d => `<div class="row"><div><strong>${esc(d.original_filename)}</strong><p>${esc(labels[d.area]||d.area)}${d.financial_year?` · FY ${esc(d.financial_year)}`:""}${d.filing_period?` · ${esc(periodName(d.area,d.filing_period))}`:""}</p></div><span class="pill success">accepted</span></div>`).join("") : `<div class="browser-empty"><p class="muted">No accepted documents match the selected folder.</p></div>`) : ""}</div></section>`;
-  document.getElementById("doc-client")?.addEventListener("change", async e => { state.clientId=e.target.value; state.area=""; state.fy=""; state.period=""; await refresh(); });
-  document.getElementById("doc-refresh")?.addEventListener("click", refresh);
-  main.querySelectorAll("[data-area]").forEach(b => b.addEventListener("click", () => { state.area=b.dataset.area; state.fy=""; state.period=""; render(); }));
-  main.querySelectorAll("[data-fy]").forEach(b => b.addEventListener("click", () => { state.fy=b.dataset.fy; state.period=""; render(); }));
-  main.querySelectorAll("[data-period]").forEach(b => b.addEventListener("click", () => { state.period=b.dataset.period; render(); }));
-}
-
-async function refresh() {
-  if (state.busy) return;
-  state.busy = true;
-  try { await loadClients(); await loadDocs(); render(); }
-  catch (e) { console.error("KKA Documents", e); notify("Documents could not be loaded.", e?.message || "Database error"); }
-  finally { state.busy = false; }
-}
-
-async function openDocuments() {
-  const main = document.querySelector(".portal-main");
-  if (!main) return;
-  main.innerHTML = `<section class="panel"><p class="muted">Loading Documents…</p></section>`;
-  await refresh();
-}
-
-document.addEventListener("click", (event) => {
-  const link = event.target.closest('a[data-view="documents"]');
-  if (!link) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  openDocuments();
-}, true);
-
-window.KKADocumentsOpen = openDocuments;
+async function loadDocs(){if(!selectedClientId){docs=[];return}const r=await supabase.from("documents").select("id,client_id,original_filename,area,financial_year,filing_period,status,byte_size,content_type,created_at,deleted_at").eq("client_id",selectedClientId).eq("status","accepted").is("deleted_at",null).order("created_at",{ascending:false}).limit(1000);if(r.error)throw r.error;docs=r.data||[]}
+async function refreshBrowser(){if(!document.querySelector("#documents-browser-panel")||loading||!selectedClientId)return;try{await loadDocs();drawBrowser()}catch(e){console.warn("document browser refresh",e)}}
+function startLiveRefresh(){if(refreshTimer)clearInterval(refreshTimer);refreshTimer=setInterval(refreshBrowser,5000);supabase.channel(`kka-documents-browser-${selectedClientId}`).on("postgres_changes",{event:"*",schema:"public",table:"documents",filter:`client_id=eq.${selectedClientId}`},refreshBrowser).subscribe()}
+function clientMatches(c,term){if(!term)return true;const q=term.trim().toLowerCase();return [c.display_name,c.legal_name,c.cin].filter(Boolean).some(v=>String(v).toLowerCase().includes(q))}
+function drawClientPicker(){const box=document.querySelector("#browser-client-picker"),input=document.querySelector("#browser-client-search"),results=document.querySelector("#browser-client-results"),selected=clients.find(c=>c.id===selectedClientId);if(!box||!input||!results)return;const term=input.dataset.term||"";if(document.activeElement!==input&&!term)input.value=selected?clientLabel(selected):"";const matches=clients.filter(c=>clientMatches(c,term)).slice(0,30);results.innerHTML=matches.length?matches.map(c=>`<button type="button" class="browser-client-option ${c.id===selectedClientId?"active":""}" data-client-id="${esc(c.id)}"><strong>${esc(clientLabel(c))}</strong>${c.cin?`<small class="muted">CIN ${esc(c.cin)}</small>`:""}</button>`).join(""):"<div class="browser-client-empty">No active client matches that search.</div>";results.classList.toggle("open",!!term||!selectedClientId);results.querySelectorAll("[data-client-id]").forEach(b=>b.addEventListener("click",async()=>{selectedClientId=b.dataset.clientId;scope={area:null,fy:null,period:null};docs=[];input.dataset.term="";results.classList.remove("open");drawClientPicker();drawBrowser();try{await loadDocs();drawBrowser();startLiveRefresh()}catch(e){showError(e.message||"Documents could not be loaded.")}}))}
+function renderPanel(staff){const main=document.querySelector(".portal-main");if(!main||document.querySelector("#documents-browser-panel"))return;const style=`<style id="documents-browser-style">.folder-browser{margin-bottom:18px}.folder-toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.folder-toolbar label{min-width:320px}.browser-client-picker{position:relative;min-width:320px}.browser-client-picker input{width:100%;box-sizing:border-box}.browser-client-results{display:none;position:absolute;z-index:20;left:0;right:0;top:calc(100% + 6px);max-height:320px;overflow:auto;background:var(--surface,#fff);border:1px solid var(--border,#ddd);border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.12);padding:6px}.browser-client-results.open{display:block}.browser-client-option{display:block;width:100%;border:0;background:transparent;text-align:left;padding:10px 11px;border-radius:8px;cursor:pointer;font:inherit}.browser-client-option:hover,.browser-client-option.active{background:var(--surface-muted,#f3f4f6)}.browser-client-option strong{display:block}.browser-client-option small{display:block;margin-top:3px}.browser-client-empty{padding:12px;color:var(--muted,#666)}.folder-tree{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:18px}.folder-card{border:1px solid var(--border,#ddd);border-radius:12px;padding:15px;background:var(--surface,#fff)}.folder-card.active{border-color:currentColor}.folder-card-title{display:block;width:100%;border:0;background:transparent;padding:0;text-align:left;cursor:pointer;font:inherit}.folder-card-title strong{font-size:16px}.folder-card small{display:block;margin-top:5px}.folder-children{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.folder-child{border:1px solid var(--border,#ddd);background:transparent;border-radius:8px;padding:7px 10px;cursor:pointer}.folder-child.active{font-weight:700}.document-browser-list{margin-top:18px}.browser-empty{padding:20px;border:1px dashed var(--border,#ddd);border-radius:10px}.browser-doc{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border,#ddd)}.browser-doc strong{display:block}.browser-doc small{display:block;margin-top:4px}@media(max-width:650px){.browser-doc{grid-template-columns:1fr}.folder-toolbar label,.browser-client-picker{min-width:100%}}</style>`;main.insertAdjacentHTML("beforeend",`${style}<section class="panel folder-browser" id="documents-browser-panel"><div class="panel-head"><div><p class="eyebrow">DOCUMENT LIBRARY</p><h2>Client folders</h2><p class="muted">Browse documents using KKA's filing structure. MCA appears automatically for clients with a CIN.</p></div></div><div class="folder-toolbar">${staff?`<label>Client<div class="browser-client-picker" id="browser-client-picker"><input id="browser-client-search" type="search" autocomplete="off" placeholder="Search client by name or CIN" aria-label="Search client by name or CIN"><div id="browser-client-results" class="browser-client-results"></div></div></label>`:`<div><strong>${esc(clientLabel(clients[0]))}</strong>${clients[0]?.cin?`<small class="muted"> · CIN ${esc(clients[0].cin)}</small>`:""}</div>`}</div><div id="folder-tree" class="folder-tree"></div><div id="browser-breadcrumb"></div><div id="browser-documents" class="document-browser-list"></div></section>`);const input=document.querySelector("#browser-client-search");if(input){input.addEventListener("focus",()=>{input.dataset.term="";input.value="";drawClientPicker();document.querySelector("#browser-client-results")?.classList.add("open")});input.addEventListener("input",()=>{input.dataset.term=input.value;drawClientPicker();document.querySelector("#browser-client-results")?.classList.add("open")});input.addEventListener("keydown",e=>{if(e.key==="Escape"){input.dataset.term="";input.value=selectedClientId?clientLabel(clients.find(c=>c.id===selectedClientId)):"";input.blur();document.querySelector("#browser-client-results")?.classList.remove("open")}});document.addEventListener("click",e=>{if(!e.target.closest("#browser-client-picker"))document.querySelector("#browser-client-results")?.classList.remove("open")});drawClientPicker()}drawBrowser()}
+function showError(message){const main=document.querySelector(".portal-main");if(main&&!document.querySelector("#documents-browser-panel"))main.insertAdjacentHTML("beforeend",`<section class="panel" id="documents-browser-panel"><p class="muted">${esc(message)}</p></section>`)}
+const clientDocs=()=>docs.filter(d=>d.client_id===selectedClientId),areaDocs=a=>clientDocs().filter(d=>d.area===a),fys=a=>[...new Set(areaDocs(a).map(d=>d.financial_year).filter(Boolean))].sort(fySort);
+function drawBrowser(){const tree=document.querySelector("#folder-tree"),list=document.querySelector("#browser-documents"),crumb=document.querySelector("#browser-breadcrumb");if(!tree||!list)return;const client=clients.find(c=>c.id===selectedClientId);if(!client){tree.innerHTML=`<p class="muted">Search for and select a client to browse its folders.</p>`;list.innerHTML="";crumb.innerHTML="";return}tree.innerHTML=areas.filter(a=>a!=="mca"||!!client.cin).map(a=>{const count=areaDocs(a).length,years=fys(a),active=scope.area===a;return `<div class="folder-card ${active?"active":""}"><button class="folder-card-title" type="button" data-area="${a}"><strong>▰ ${labels[a]}</strong><small class="muted">${count} document${count===1?"":"s"}${a==="gst"?" · FY → Month":a==="tds"?" · FY → Quarter":" · FY → Month"}</small></button>${active&&years.length?`<div class="folder-children">${years.map(y=>`<button type="button" class="folder-child ${scope.fy===y?"active":""}" data-fy="${esc(y)}">FY ${esc(y)}</button>`).join("")}</div>`:""}</div>`}).join("");tree.querySelectorAll("[data-area]").forEach(b=>b.addEventListener("click",()=>{scope={area:b.dataset.area,fy:null,period:null};drawBrowser()}));tree.querySelectorAll("[data-fy]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();scope.fy=b.dataset.fy;scope.period=null;drawBrowser()}));if(!scope.area){crumb.innerHTML=`<p class="muted">${esc(clientLabel(client))} · Select a main folder.</p>`;list.innerHTML="";return}const selected=areaDocs(scope.area).filter(d=>!scope.fy||d.financial_year===scope.fy);let periods=[];if(scope.fy&&["gst","tds","other"].includes(scope.area))periods=[...new Set(selected.map(d=>d.filing_period).filter(Boolean))].sort();crumb.innerHTML=`<p><strong>${esc(clientLabel(client))}</strong> → <strong>${labels[scope.area]}</strong>${scope.fy?` → FY ${esc(scope.fy)}`:""}${scope.period?` → ${esc(periodLabel(scope.area,scope.period))}`:""}</p>`;let html="";if(scope.fy&&["gst","tds","other"].includes(scope.area))html+=periods.length?`<div class="folder-children">${periods.map(p=>`<button type="button" class="folder-child ${scope.period===p?"active":""}" data-period="${esc(p)}">${esc(periodLabel(scope.area,p))}</button>`).join("")}</div>`:`<div class="browser-empty"><p>No documents are stored for this FY yet.</p></div>`;const visible=selected.filter(d=>!scope.period||d.filing_period===scope.period);if((scope.fy&&(scope.area==="mca"||!["gst","tds","other"].includes(scope.area)))||scope.period)html+=visible.length?visible.map(d=>`<div class="browser-doc"><div><strong>${esc(d.original_filename)}</strong><small class="muted">${esc(d.area.toUpperCase())}${d.financial_year?` · FY ${esc(d.financial_year)}`:""}${d.filing_period?` · ${esc(periodLabel(d.area,d.filing_period))}`:""}</small></div><span class="pill success">accepted</span><small class="muted">${formatBytes(d.byte_size)}</small></div>`).join(""):`<div class="browser-empty"><p>No documents in this folder yet.</p></div>`;list.innerHTML=html;list.querySelectorAll("[data-period]").forEach(b=>b.addEventListener("click",()=>{scope.period=b.dataset.period;drawBrowser()}))}
+function formatBytes(n){if(n<1024)return`${n} B`;if(n<1048576)return`${(n/1024).toFixed(1)} KB`;if(n<1073741824)return`${(n/1048576).toFixed(1)} MB`;return`${(n/1073741824).toFixed(2)} GB`}
+document.addEventListener("click",e=>{const link=e.target.closest('a[data-view="documents"]');if(!link)return;e.preventDefault();e.stopImmediatePropagation();setTimeout(load,0)},true);
