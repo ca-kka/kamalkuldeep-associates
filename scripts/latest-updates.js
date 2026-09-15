@@ -31,13 +31,14 @@
       .latest-updates-window { overflow:hidden; position:relative; }
       .latest-updates-track { display:flex; width:max-content; min-width:100%; animation: latestUpdatesScroll 55s linear infinite; }
       .latest-updates-track:hover, .latest-updates-window:focus-within .latest-updates-track { animation-play-state:paused; }
-      .latest-update-link { display:inline-flex; align-items:center; gap:.45rem; padding:.9rem 1.2rem; color:#2a5298; text-decoration:none; font-size:.94rem; white-space:nowrap; border-right:1px solid #eef2f7; }
+      .latest-update-link { display:inline-flex; align-items:center; gap:.55rem; padding:.9rem 1.2rem; color:#2a5298; text-decoration:none; font-size:.94rem; white-space:nowrap; border-right:1px solid #eef2f7; }
       .latest-update-link::after { content:'↗'; font-size:.8rem; opacity:.7; }
       .latest-update-link:hover { color:#1e3c72; background:#f8fafc; }
+      .latest-update-source { display:inline-flex; align-items:center; padding:.16rem .48rem; border:1px solid #dbe5f1; border-radius:999px; background:#f8fafc; color:#667085; font-size:.68rem; font-weight:700; letter-spacing:.02em; flex:0 0 auto; }
       .latest-updates-disclaimer { margin:.65rem 1rem 0; color:#6b7280; font-size:.76rem; line-height:1.5; text-align:center; }
       @keyframes latestUpdatesScroll { from { transform:translateX(0); } to { transform:translateX(-50%); } }
       @media (prefers-reduced-motion: reduce) { .latest-updates-track { animation:none; width:100%; flex-wrap:wrap; } .latest-update-link { white-space:normal; } }
-      @media (max-width:768px) { #${SECTION_ID} { margin:2rem 0 1.5rem; } .latest-updates-heading { font-size:.9rem; } .latest-update-link { font-size:.86rem; padding:.8rem 1rem; } .latest-updates-disclaimer { font-size:.72rem; } }
+      @media (max-width:768px) { #${SECTION_ID} { margin:2rem 0 1.5rem; } .latest-updates-heading { font-size:.9rem; } .latest-update-link { font-size:.86rem; padding:.8rem 1rem; } .latest-update-source { font-size:.62rem; } .latest-updates-disclaimer { font-size:.72rem; } }
     `;
     document.head.appendChild(style);
   }
@@ -60,14 +61,25 @@
       a.href = item.url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
-      a.textContent = item.title;
+
+      const title = document.createElement('span');
+      title.textContent = item.title;
+      a.appendChild(title);
+
+      if (item.source) {
+        const source = document.createElement('span');
+        source.className = 'latest-update-source';
+        source.textContent = item.source;
+        a.appendChild(source);
+      }
+
       a.setAttribute('aria-label', `${item.title} — ${item.source || 'Official source'}`);
       return a;
     };
 
     track.replaceChildren();
-    safeItems.slice(0, 8).forEach(item => track.appendChild(makeLink(item)));
-    safeItems.slice(0, 8).forEach(item => track.appendChild(makeLink(item)));
+    safeItems.slice(0, 12).forEach(item => track.appendChild(makeLink(item)));
+    safeItems.slice(0, 12).forEach(item => track.appendChild(makeLink(item)));
   }
 
   function addFallbackAnchorBehaviour() {
