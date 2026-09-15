@@ -26,6 +26,14 @@ text = re.sub(
     count=1,
 )
 
+# Cache-bust the date-status script whenever this site generator runs.
+text = re.sub(
+    r'<script src="scripts/latest-updates\.js(?:\?[^\"]*)?" defer></script>',
+    '<script src="scripts/latest-updates.js?v=20260915-due-status2" defer></script>',
+    text,
+    count=1,
+)
+
 # Add the professional firm overview and its stylesheet once.
 overview_css = '<link rel="stylesheet" href="styles/firm-overview.css?v=20260814-2">'
 if overview_css not in text:
