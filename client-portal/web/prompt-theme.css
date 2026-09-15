@@ -1,0 +1,36 @@
+/* Shared dark-mode layer for transient prompts, dialogs and access-request surfaces. */
+html[data-theme="dark"] .modal-backdrop{background:rgba(0,0,0,.74)!important}
+html[data-theme="dark"] .modal-backdrop .modal{background:#151e1a!important;color:#edf4ef!important;border-color:#34463e!important;box-shadow:0 24px 70px rgba(0,0,0,.55)!important}
+html[data-theme="dark"] .modal-backdrop .modal h1,html[data-theme="dark"] .modal-backdrop .modal h2,html[data-theme="dark"] .modal-backdrop .modal h3,html[data-theme="dark"] .modal-backdrop .modal strong{color:#edf4ef}
+html[data-theme="dark"] .modal-backdrop .modal .muted,html[data-theme="dark"] .modal-backdrop .modal .eyebrow{color:#a9b8b0}
+html[data-theme="dark"] .modal-backdrop .modal input,html[data-theme="dark"] .modal-backdrop .modal select,html[data-theme="dark"] .modal-backdrop .modal textarea{background:#111915!important;color:#edf4ef!important;border-color:#3a4942!important}
+html[data-theme="dark"] .modal-backdrop .modal input::placeholder,html[data-theme="dark"] .modal-backdrop .modal textarea::placeholder{color:#82948b!important}
+html[data-theme="dark"] .modal-backdrop .modal input:focus,html[data-theme="dark"] .modal-backdrop .modal select:focus,html[data-theme="dark"] .modal-backdrop .modal textarea:focus{outline:2px solid #77b7a4!important;border-color:#63a995!important}
+html[data-theme="dark"] .modal-backdrop .modal .panel,html[data-theme="dark"] .modal-backdrop .modal .profile-details div,html[data-theme="dark"] .modal-backdrop .modal .access-link-panel{background:#1b2722!important;border-color:#34463e!important;color:#edf4ef}
+html[data-theme="dark"] .modal-backdrop .modal .secondary{background:#19231f!important;color:#dbe8e1!important;border-color:#3a4942!important}
+html[data-theme="dark"] .modal-backdrop .modal .secondary:hover{background:#22302a!important;border-color:#4b685d!important}
+html[data-theme="dark"] .modal-backdrop .modal .primary{background:#367763!important;color:#fff!important}
+html[data-theme="dark"] .modal-backdrop .modal .primary:hover{background:#438b75!important}
+html[data-theme="dark"] .modal-backdrop .modal .form-message,html[data-theme="dark"] .modal-backdrop .modal #access-review-message{color:#e7b866!important}
+html[data-theme="dark"] .modal-backdrop .modal .selected-client{background:#1b2923!important;color:#edf4ef!important;border-color:#3a5148!important}
+html[data-theme="dark"] .modal-backdrop .modal .client-search-results [data-client]{background:#18231f!important;color:#edf4ef!important;border-color:#34463e!important}
+html[data-theme="dark"] .modal-backdrop .modal .client-search-results [data-client]:hover{background:#22332c!important;border-color:#4b685d!important}
+
+html[data-theme="dark"] .access-request-shell{background:#0d1411!important}
+html[data-theme="dark"] .access-request-shell .access-request-card{background:#151e1a!important;color:#edf4ef!important;border-color:#34463e!important;box-shadow:0 24px 70px rgba(0,0,0,.48)}
+html[data-theme="dark"] .access-request-card h1{color:#edf4ef!important}
+html[data-theme="dark"] .access-request-card .eyebrow,html[data-theme="dark"] .access-request-card .muted,html[data-theme="dark"] .access-request-card label{color:#a9b8b0!important}
+html[data-theme="dark"] .access-request-card input,html[data-theme="dark"] .access-request-card textarea{background:#111915!important;color:#edf4ef!important;border-color:#3a4942!important}
+html[data-theme="dark"] .access-request-card input::placeholder,html[data-theme="dark"] .access-request-card textarea::placeholder{color:#82948b!important}
+html[data-theme="dark"] .access-request-visual{background:#111915!important;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+
+html[data-theme="dark"] #kka-initial-password-gate{background:var(--paper,#0d1411)!important;color:#edf4ef!important}
+html[data-theme="dark"] #kka-initial-password-gate .kka-password-card{background:#151e1a!important;color:#edf4ef!important;border-color:#34463e!important;box-shadow:0 24px 70px rgba(0,0,0,.55)!important}
+html[data-theme="dark"] #kka-initial-password-gate .brand,html[data-theme="dark"] #kka-initial-password-gate h1,html[data-theme="dark"] #kka-initial-password-gate label{color:#edf4ef!important}
+html[data-theme="dark"] #kka-initial-password-gate .brand small,html[data-theme="dark"] #kka-initial-password-gate .muted,html[data-theme="dark"] #kka-initial-password-gate .eyebrow{color:#a9b8b0!important}
+html[data-theme="dark"] #kka-initial-password-gate input{background:#111915!important;color:#edf4ef!important;border-color:#3a4942!important}
+html[data-theme="dark"] #kka-initial-password-gate input::placeholder{color:#82948b!important}
+html[data-theme="dark"] #kka-initial-password-gate .message{color:#a9b8b0!important}
+html[data-theme="dark"] #kka-initial-password-gate .message.error{color:#f2b0a5!important}
+html[data-theme="dark"] #kka-initial-password-gate .message.success{color:#a8e7bd!important}
+html[data-theme="dark"] #kka-initial-password-gate .primary{background:#367763!important;color:#fff!important}
