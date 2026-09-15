@@ -46,7 +46,7 @@ Deno.serve(async req=>{
     if(!mobileOk(mobile))return json({error:"Mobile number has an invalid format"},400);
 
     // Client names are intentionally not unique. Check each business identifier explicitly.
-    const conflicts:[[string,string|null]]=[ ["PAN",pan],["TAN",tan],["CIN",cin],["GSTIN",gstin] ];
+    const conflicts:Array<[string,string|null]>=[["PAN",pan],["TAN",tan],["CIN",cin],["GSTIN",gstin]];
     for(const [label,value] of conflicts){
       if(!value)continue;
       const {data:existing,error}=await service.from("clients").select("id,legal_name,active").eq(label.toLowerCase(),value).maybeSingle();
