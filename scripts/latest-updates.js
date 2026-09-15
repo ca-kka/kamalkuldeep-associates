@@ -106,11 +106,40 @@
     }
   }
 
+  function addLegalFooterLinks() {
+    const footerBottom = document.querySelector('.footer-bottom');
+    if (!footerBottom || footerBottom.querySelector('[data-kka-legal-links]')) return;
+
+    const legal = document.createElement('div');
+    legal.setAttribute('data-kka-legal-links', 'true');
+    legal.className = 'kka-legal-links';
+    legal.innerHTML = `
+      <a href="privacy-policy.html">Privacy Policy</a>
+      <span aria-hidden="true">|</span>
+      <a href="terms-of-use.html">Terms of Use</a>
+      <span aria-hidden="true">|</span>
+      <a href="disclaimer.html">Disclaimer</a>
+    `;
+    footerBottom.appendChild(legal);
+
+    if (!document.getElementById('kka-legal-links-styles')) {
+      const style = document.createElement('style');
+      style.id = 'kka-legal-links-styles';
+      style.textContent = `
+        .kka-legal-links{display:flex;justify-content:center;align-items:center;gap:.55rem;flex-wrap:wrap;margin-top:.7rem;font-size:.84rem}
+        .kka-legal-links a{color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:.9}
+        .kka-legal-links a:hover{opacity:1}
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
   async function init() {
     updateFooterDate();
     injectStyles();
     addFallbackAnchorBehaviour();
     addClientPortalEntry();
+    addLegalFooterLinks();
 
     const adminLogin = document.querySelector('.admin-login');
     if (adminLogin) adminLogin.href = 'https://files.ca-kka.com/';
