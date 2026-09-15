@@ -9,18 +9,11 @@ IST = ZoneInfo("Asia/Kolkata")
 
 
 def advance_tax_schedule(financial_year_start):
-    """Return statutory advance-tax instalments for an FY.
-
-    FY 2026-27 => 15 Jun 2026, 15 Sep 2026, 15 Dec 2026, 15 Mar 2027.
-    The same schedule is derived for future FYs; it is never hard-coded to
-    the current calendar year.
-    """
+    """Return the Q2/Q3 advance-tax deadlines used by the public due-date panel."""
     y = financial_year_start
     return [
-        ("Q1", date(y, 6, 15), 15, "First instalment"),
         ("Q2", date(y, 9, 15), 45, "Second instalment"),
         ("Q3", date(y, 12, 15), 75, "Third instalment"),
-        ("Q4", date(y + 1, 3, 15), 100, "Fourth and final instalment"),
     ]
 
 
@@ -32,39 +25,62 @@ def display_date(d):
     return d.strftime("%-d %B %Y")
 
 
-def upsert_advance_tax(data, today):
+def next_display_deadline(today):
+    """Return only the next Q2/Q3 deadline, so the panel shows one advance-tax card."""
     fy_start = current_fy_start(today)
-    schedule = advance_tax_schedule(fy_start)
-    items = data.setdefault("items", [])
-    by_title = {item.get("title"): item for item in items}
 
-    changed = False
-    for quarter, due, cumulative, label in schedule:
-        title = f"Advance Tax – {quarter}"
-        item = by_title.get(title)
-        if item is None:
-            item = {"title": title, "category": "Income Tax"}
-            items.append(item)
-            by_title[title] = item
+    # Q2 and Q3 of the current FY.
+    for quarter, due, cumulative, label in advance_tax_schedule(fy_start):
+        if due >= today:
+            return quarter, due, cumulative, label, fy_start
+
+    # Once Q3 has passed, the next displayed advance-tax deadline is Q2 of
+    # the following FY. Q1/Q4 are intentionally not shown in this panel.
+    next_fy = fy_start + 1
+    quarter, due, cumulative, label = advance_tax_schedule(next_fy)[0]
+    return quarter, due, cumulative, label, next_fy
+
+
+def upsert_advance_tax(data, today):
+    items = data.setdefault("items", [])
+    selected_quarter, due, cumulative, label, fy_start = next_display_deadline(today)
+    selected_title = f"Advance Tax – {selected_quarter}"
+    advance_titles = {f"Advance Tax – {q}" for q in ("Q2", "Q3")}
+
+    # Remove the other advance-tax card. This is deliberate: the public panel
+    # is intended to show only the currently relevant Q2/Q3 deadline.
+    existing = [item for item in items if item.get("title") in advance_titles]
+    first_index = next((i for i, item in enumerate(items) if item.get("title") in advance_titles), len(items))
+    retained = [item for item in items if item.get("title") not in advance_titles]
+
+    item = next((item for item in existing if item.get("title") == selected_title), None)
+    if item is None:
+        item = {"title": selected_title, "category": "Income Tax"}
+
+    description = (
+        f"{label} of advance tax for FY {fy_start}-{str(fy_start + 1)[-2:]}, "
+        f"generally {cumulative}% of estimated annual tax liability cumulatively by {display_date(due)}."
+    )
+    values = {
+        "title": selected_title,
+        "category": "Income Tax",
+        "date": display_date(due),
+        "description": description,
+        "urgent": due == today,
+        "source": "https://www.incometax.gov.in/",
+        "generated_from_advance_tax_rule": True,
+    }
+
+    changed = len(existing) != 1 or any(existing_item.get("title") != selected_title for existing_item in existing)
+    for key, value in values.items():
+        if item.get(key) != value:
+            item[key] = value
             changed = True
 
-        description = (
-            f"{label} of advance tax for FY {fy_start}-{str(fy_start + 1)[-2:]}, "
-            f"generally {cumulative}% of estimated annual tax liability cumulatively by {display_date(due)}."
-        )
-        urgent = due >= today and (due - today).days <= 1
-        values = {
-            "date": display_date(due),
-            "description": description,
-            "urgent": urgent,
-            "source": "https://www.incometax.gov.in/",
-            "generated_from_advance_tax_rule": True,
-        }
-        for key, value in values.items():
-            if item.get(key) != value:
-                item[key] = value
-                changed = True
-
+    retained.insert(min(first_index, len(retained)), item)
+    if retained != items:
+        changed = True
+    data["items"] = retained
     return changed
 
 
@@ -74,11 +90,11 @@ def main():
     changed = upsert_advance_tax(data, today)
     if changed:
         data["updated"] = datetime.now(IST).strftime("%-d %B %Y")
-        data["generator_version"] = "2026-09-15-advance-tax-dynamic"
+        data["generator_version"] = "2026-09-15-advance-tax-next-deadline"
         DATA.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"Advance-tax schedule refreshed for FY starting {current_fy_start(today)}.")
+        print(f"Advance-tax panel refreshed for {today.isoformat()}.")
     else:
-        print("Advance-tax schedule already current.")
+        print("Advance-tax panel already current.")
 
 
 if __name__ == "__main__":
