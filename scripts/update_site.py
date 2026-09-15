@@ -10,15 +10,9 @@ DATA = ROOT / "data" / "due-dates.json"
 
 text = INDEX.read_text(encoding="utf-8")
 data = json.loads(DATA.read_text(encoding="utf-8"))
-
-# Always use the latest data timestamp for the public footer.
-# The previous implementation replaced only one hard-coded historical date,
-# so later generated dates could leave the footer stale.
 updated = data.get("updated") or datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%-d %B %Y")
-
 today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
 
-# Keep the existing site intact and replace only the Admin Login target.
 text = re.sub(
     r'<a href="https://mail\.zoho\.com/" target="_blank" class="admin-login">Admin Login</a>',
     '<a href="http://100.88.161.44:8080/" target="_blank" rel="noopener" class="admin-login">Admin Login</a>',
@@ -26,15 +20,14 @@ text = re.sub(
     count=1,
 )
 
-# Cache-bust the date-status script whenever this site generator runs.
+# Cache-bust the dynamic date-status code on every generated site refresh.
 text = re.sub(
     r'<script src="scripts/latest-updates\.js(?:\?[^\"]*)?" defer></script>',
-    '<script src="scripts/latest-updates.js?v=20260915-due-status2" defer></script>',
+    '<script src="scripts/latest-updates.js?v=20260915-due-status3" defer></script>',
     text,
     count=1,
 )
 
-# Add the professional firm overview and its stylesheet once.
 overview_css = '<link rel="stylesheet" href="styles/firm-overview.css?v=20260814-2">'
 if overview_css not in text:
     text = text.replace('</head>', '    ' + overview_css + '\n</head>', 1)
@@ -46,7 +39,6 @@ overview = '''            <div class="firm-overview" aria-labelledby="firm-overv
                 <p>Our professional work encompasses statutory and internal audit assignments, taxation and GST compliance, financial reporting, due diligence and other professional engagements across a range of sectors.</p>
                 <p>Our approach is centred on professional integrity, confidentiality, technical diligence and a practical understanding of the requirements of each engagement.</p>
             </div>\n\n'''
-
 if 'id="firm-overview-title"' not in text:
     marker = '        <div class="content">'
     if marker not in text:
@@ -55,7 +47,6 @@ if 'id="firm-overview-title"' not in text:
 
 
 def parse_due_date(value):
-    """Parse the first statutory date in a due-date display value."""
     if not value:
         return None
     match = re.search(r'\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b', str(value))
@@ -69,12 +60,7 @@ def parse_due_date(value):
 
 items = []
 for item in data.get("items", []):
-    badge = {
-        "GST": "badge-gst",
-        "Income Tax": "badge-income-tax",
-        "TDS": "badge-tds",
-    }.get(item.get("category"), "badge-gst")
-
+    badge = {"GST": "badge-gst", "Income Tax": "badge-income-tax", "TDS": "badge-tds"}.get(item.get("category"), "badge-gst")
     due_date = parse_due_date(item.get("date"))
     if due_date == today:
         status = "⚠️ Due Today"
@@ -84,13 +70,10 @@ for item in data.get("items", []):
         status = "⚠️ Upcoming"
     else:
         status = ""
-
     urgent = (
         '<div class="urgent-notice" style="margin-top:0.75rem;padding:0.6rem;">'
-        f'<strong>{status}</strong></div>'
-        if status else ""
+        f'<strong>{status}</strong></div>' if status else ""
     )
-
     items.append(f'''                        <div class="due-date-card">
                             <h4>{item.get("title", "")}
                                 <span class="category-badge {badge}">{item.get("category", "")}</span>
@@ -130,15 +113,8 @@ text, n = re.subn(r'            <section id="due-dates" class="section">.*?     
 if n != 1:
     raise SystemExit("Could not locate due-dates section")
 
-# Update any existing footer date, not just one historical hard-coded value.
-# Handles formats such as "Last Updated: ..." and "Last Updated - ...".
-footer_patterns = [
-    r'Last Updated\s*:\s*[^<\n]*',
-    r'Last Updated\s*-\s*[^<\n]*',
-]
-replacement = f'Last Updated: {updated}'
-for pattern in footer_patterns:
-    text, count = re.subn(pattern, replacement, text, count=1, flags=re.I)
+for pattern in [r'Last Updated\s*:\s*[^<\n]*', r'Last Updated\s*-\s*[^<\n]*']:
+    text, count = re.subn(pattern, f'Last Updated: {updated}', text, count=1, flags=re.I)
     if count:
         break
 
