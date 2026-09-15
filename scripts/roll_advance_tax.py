@@ -9,11 +9,12 @@ IST = ZoneInfo("Asia/Kolkata")
 
 
 def advance_tax_schedule(financial_year_start):
-    """Return the Q2/Q3 advance-tax deadlines used by the public due-date panel."""
+    """Return the Q2/Q3/Q4 advance-tax deadlines used by the public due-date panel."""
     y = financial_year_start
     return [
         ("Q2", date(y, 9, 15), 45, "Second instalment"),
         ("Q3", date(y, 12, 15), 75, "Third instalment"),
+        ("Q4", date(y + 1, 3, 15), 100, "Fourth instalment"),
     ]
 
 
@@ -26,16 +27,15 @@ def display_date(d):
 
 
 def next_display_deadline(today):
-    """Return only the next Q2/Q3 deadline, so the panel shows one advance-tax card."""
+    """Return only the active/next Q2/Q3/Q4 deadline for the public panel."""
     fy_start = current_fy_start(today)
 
-    # Q2 and Q3 of the current FY.
+    # The public panel intentionally begins with Q2 and then rolls Q2 -> Q3 -> Q4.
     for quarter, due, cumulative, label in advance_tax_schedule(fy_start):
         if due >= today:
             return quarter, due, cumulative, label, fy_start
 
-    # Once Q3 has passed, the next displayed advance-tax deadline is Q2 of
-    # the following FY. Q1/Q4 are intentionally not shown in this panel.
+    # After Q4, restart at Q2 of the following FY for the public panel.
     next_fy = fy_start + 1
     quarter, due, cumulative, label = advance_tax_schedule(next_fy)[0]
     return quarter, due, cumulative, label, next_fy
@@ -44,11 +44,10 @@ def next_display_deadline(today):
 def upsert_advance_tax(data, today):
     items = data.setdefault("items", [])
     selected_quarter, due, cumulative, label, fy_start = next_display_deadline(today)
+    advance_titles = {f"Advance Tax – {q}" for q in ("Q2", "Q3", "Q4")}
     selected_title = f"Advance Tax – {selected_quarter}"
-    advance_titles = {f"Advance Tax – {q}" for q in ("Q2", "Q3")}
 
-    # Remove the other advance-tax card. This is deliberate: the public panel
-    # is intended to show only the currently relevant Q2/Q3 deadline.
+    # Remove all other advance-tax cards so exactly one is shown publicly.
     existing = [item for item in items if item.get("title") in advance_titles]
     first_index = next((i for i, item in enumerate(items) if item.get("title") in advance_titles), len(items))
     retained = [item for item in items if item.get("title") not in advance_titles]
@@ -90,7 +89,7 @@ def main():
     changed = upsert_advance_tax(data, today)
     if changed:
         data["updated"] = datetime.now(IST).strftime("%-d %B %Y")
-        data["generator_version"] = "2026-09-15-advance-tax-next-deadline"
+        data["generator_version"] = "2026-09-15-advance-tax-q4"
         DATA.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"Advance-tax panel refreshed for {today.isoformat()}.")
     else:
