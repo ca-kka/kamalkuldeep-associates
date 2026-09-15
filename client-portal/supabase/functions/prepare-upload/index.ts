@@ -3,6 +3,7 @@ import { cleanFilename, corsHeaders, json, requireStaff } from "../_shared/porta
 const months: Record<string, number> = { jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12 };
 const compact = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 const normal = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+const areas = new Set(["gst","tds","income_tax","accounts","mca","other"]);
 
 function classify(filename: string, clients: Array<any>) {
   const raw = filename.toUpperCase(), flat = compact(filename), words = normal(filename);
@@ -40,11 +41,39 @@ Deno.serve(async req => {
     const byteSize = Number(body.byteSize);
     const contentType = String(body.contentType ?? "application/octet-stream");
     if (!filename || !/^[a-f0-9]{64}$/.test(sha256) || !Number.isSafeInteger(byteSize) || byteSize < 1 || byteSize > 52428800) return json({ error: "Invalid file metadata" }, 400);
-    const { data: duplicate } = await service.from("documents").select("id, client_id").eq("sha256", sha256).limit(1).maybeSingle();
-    if (duplicate) return json({ state: "duplicate", existingDocumentId: duplicate.id, message: "An identical file is already stored; no upload URL was issued." }, 409);
+
     const { data: clients, error: clientError } = await service.from("clients").select("id, legal_name, pan, tan, cin, gstin, filename_aliases").eq("active", true);
     if (clientError) throw clientError;
-    const result = classify(filename, clients ?? []);
+
+    let result = classify(filename, clients ?? []);
+    const manual = body.manual === true;
+    if (manual) {
+      const clientId = String(body.clientId ?? "");
+      const area = String(body.area ?? "");
+      const financialYear = body.financialYear ? String(body.financialYear) : null;
+      const period = body.period ? String(body.period) : null;
+      if (!clientId || !areas.has(area)) return json({ error: "Invalid manual classification" }, 400);
+      const selectedClient = (clients ?? []).find(c => c.id === clientId);
+      if (!selectedClient) return json({ error: "Selected client is not active or could not be found" }, 400);
+      if (area === "mca" && !selectedClient.cin) return json({ error: "MCA is available only for client profiles with a CIN" }, 400);
+      result = { clientId, confidence: 100, reasons: ["Manual classification selected by KKA staff"], area, financialYear, period };
+    }
+
+    // Duplicate protection is scoped to the destination client and active
+    // documents only. The same physical file may legitimately exist for
+    // different clients, and a soft-deleted document must not block re-upload.
+    if (result.clientId) {
+      const { data: duplicate, error: duplicateError } = await service.from("documents")
+        .select("id, client_id")
+        .eq("client_id", result.clientId)
+        .eq("sha256", sha256)
+        .is("deleted_at", null)
+        .limit(1)
+        .maybeSingle();
+      if (duplicateError) throw duplicateError;
+      if (duplicate) return json({ state: "duplicate", existingDocumentId: duplicate.id, message: "An identical file is already stored for this client; no upload URL was issued." }, 409);
+    }
+
     const objectPath = `staging/${crypto.randomUUID()}`;
     const expiresAt = new Date(Date.now() + 8 * 60 * 1000).toISOString();
     const { data: upload, error: uploadError } = await service.from("document_uploads").insert({ requested_by:user.id, original_filename:String(body.filename), sanitized_filename:filename, content_type:contentType, byte_size:byteSize, sha256, object_path:objectPath, proposed_client_id:result.clientId, proposed_area:result.area, proposed_financial_year:result.financialYear, proposed_period:result.period, confidence:result.confidence, reasons:result.reasons, expires_at:expiresAt }).select().single();
@@ -52,6 +81,5 @@ Deno.serve(async req => {
     const { data: signed, error: signedError } = await service.storage.from("client-documents").createSignedUploadUrl(objectPath);
     if (signedError) throw signedError;
     return json({ state: "prepared", uploadId: upload.id, signedUrl: signed.signedUrl, token: signed.token, expiresAt, classification: result });
-  } catch (error) { return json({ error: error instanceof Error ? error.message : "Upload could not be prepared" }, 401); }
+  } catch (error) { return json({ error: error instanceof Error ? error.message : "Upload could not be prepared" }, 400); }
 });
-
