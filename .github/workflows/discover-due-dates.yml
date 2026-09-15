@@ -24,10 +24,15 @@ jobs:
           fetch-depth: 0
 
       - name: Regression-test calendar rollovers
-        run: python3 scripts/test_due_dates.py
+        run: |
+          python3 scripts/test_due_dates.py
+          python3 scripts/test_advance_tax.py
 
       - name: Check official sources and calculate recurring due dates
         run: python3 scripts/discover_due_dates.py
+
+      - name: Calculate advance tax dates from the current date
+        run: python3 scripts/roll_advance_tax.py
 
       - name: Rebuild website only when due-date data changed
         run: python3 scripts/update_site.py
