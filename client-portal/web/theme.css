@@ -29,3 +29,19 @@ html[data-theme="dark"] #client-link-area #client-results [data-client] small{co
 html[data-theme="dark"] #client-link-area #selected-client{background:#1b2923!important;color:#edf4ef!important;border-color:#3a5148!important}
 html[data-theme="dark"] #client-link-area #selected-client small{color:#a9b8b0!important}
 html[data-theme="dark"] #client-link-area .muted{color:#a9b8b0!important}
+
+/* Futuristic glass layer + profile-menu stacking fix. The header owns the top stacking context so animated cards cannot paint over the open menu. */
+.portal-main>header{position:relative;z-index:300}
+.profile-menu{position:relative;z-index:310}
+.profile-dropdown{z-index:320;isolation:isolate;background:rgba(255,255,255,.78);border-color:rgba(203,214,207,.72);backdrop-filter:blur(18px) saturate(145%);-webkit-backdrop-filter:blur(18px) saturate(145%);box-shadow:0 20px 55px rgba(20,34,29,.16),0 1px 0 rgba(255,255,255,.72) inset}
+.user.profile-trigger{background:rgba(255,255,255,.66);border-color:rgba(203,214,207,.76);backdrop-filter:blur(14px) saturate(135%);-webkit-backdrop-filter:blur(14px) saturate(135%)}
+.stats article,.panel{background:rgba(255,255,255,.68);border-color:rgba(203,214,207,.72);backdrop-filter:blur(14px) saturate(125%);-webkit-backdrop-filter:blur(14px) saturate(125%)}
+.portal-main{position:relative;isolation:isolate}
+.portal-main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 82% 8%,rgba(76,142,119,.12),transparent 32%),radial-gradient(circle at 18% 88%,rgba(76,142,119,.07),transparent 30%)}
+html[data-theme="dark"] .portal-main::before{background:radial-gradient(circle at 82% 8%,rgba(99,169,149,.13),transparent 34%),radial-gradient(circle at 12% 88%,rgba(99,169,149,.08),transparent 32%)}
+html[data-theme="dark"] .stats article,html[data-theme="dark"] .panel{background:rgba(21,30,26,.64);border-color:rgba(74,95,86,.68);backdrop-filter:blur(16px) saturate(135%);-webkit-backdrop-filter:blur(16px) saturate(135%);box-shadow:0 14px 36px rgba(0,0,0,.24),0 1px 0 rgba(255,255,255,.035) inset}
+html[data-theme="dark"] .user.profile-trigger{background:rgba(21,30,26,.68);border-color:rgba(74,95,86,.75);color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.04) inset}
+html[data-theme="dark"] .profile-dropdown{background:rgba(21,30,26,.82);border-color:rgba(74,95,86,.78);box-shadow:0 22px 60px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.045) inset}
+html[data-theme="dark"] .profile-dropdown button:hover{background:rgba(99,169,149,.10)}
+@supports not ((backdrop-filter:blur(1px))){.stats article,.panel,.user.profile-trigger,.profile-dropdown{background:var(--white)}}
+@media(max-width:900px){.portal-main>header{z-index:300}.profile-dropdown{max-width:calc(100vw - 32px)}}
