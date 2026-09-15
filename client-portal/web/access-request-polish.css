@@ -22,4 +22,7 @@
 .client-search-empty{margin:10px 0!important}
 .selected-client{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:var(--soft);color:var(--ink)}
 
+.legal-consent{display:flex!important;align-items:flex-start;gap:10px;margin:16px 0 4px!important;font-weight:500!important;font-size:12px;line-height:1.45}.legal-consent input{width:auto!important;flex:0 0 auto;margin:2px 0 0!important}.legal-consent a{color:var(--forest);font-weight:700}
+html[data-theme="dark"] .legal-consent a{color:#83c0ad}
+
 @media(max-width:700px){.access-link-toggle-row{align-items:flex-start;flex-direction:column}.access-link-toggle{align-self:flex-start}}
