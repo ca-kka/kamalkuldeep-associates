@@ -16,6 +16,8 @@ data = json.loads(DATA.read_text(encoding="utf-8"))
 # so later generated dates could leave the footer stale.
 updated = data.get("updated") or datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%-d %B %Y")
 
+today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+
 # Keep the existing site intact and replace only the Admin Login target.
 text = re.sub(
     r'<a href="https://mail\.zoho\.com/" target="_blank" class="admin-login">Admin Login</a>',
@@ -43,6 +45,20 @@ if 'id="firm-overview-title"' not in text:
         raise SystemExit("Could not locate content container in index.html")
     text = text.replace(marker, marker + '\n' + overview, 1)
 
+
+def parse_due_date(value):
+    """Parse the first statutory date in a due-date display value."""
+    if not value:
+        return None
+    match = re.search(r'\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b', str(value))
+    if not match:
+        return None
+    try:
+        return datetime.strptime(match.group(0), "%d %B %Y").date()
+    except ValueError:
+        return None
+
+
 items = []
 for item in data.get("items", []):
     badge = {
@@ -50,7 +66,23 @@ for item in data.get("items", []):
         "Income Tax": "badge-income-tax",
         "TDS": "badge-tds",
     }.get(item.get("category"), "badge-gst")
-    urgent = '<div class="urgent-notice" style="margin-top:0.75rem;padding:0.6rem;"><strong>⚠️ Upcoming</strong></div>' if item.get("urgent") else ""
+
+    due_date = parse_due_date(item.get("date"))
+    if due_date == today:
+        status = "⚠️ Due Today"
+    elif due_date and due_date < today:
+        status = "⚠️ Overdue"
+    elif item.get("urgent"):
+        status = "⚠️ Upcoming"
+    else:
+        status = ""
+
+    urgent = (
+        '<div class="urgent-notice" style="margin-top:0.75rem;padding:0.6rem;">'
+        f'<strong>{status}</strong></div>'
+        if status else ""
+    )
+
     items.append(f'''                        <div class="due-date-card">
                             <h4>{item.get("title", "")}
                                 <span class="category-badge {badge}">{item.get("category", "")}</span>
@@ -103,4 +135,4 @@ for pattern in footer_patterns:
         break
 
 INDEX.write_text(text, encoding="utf-8")
-print(f"Website updated from data/due-dates.json; Last Updated = {updated}")
+print(f"Website updated from data/due-dates.json; Last Updated = {updated}; Today = {today}")
