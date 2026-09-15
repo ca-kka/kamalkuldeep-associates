@@ -54,7 +54,12 @@ async function approvePrimary(form) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Unable to create the primary portal login.");
   modal?.remove();
-  alert(data.emailSent ? "Request approved and the primary login was created. The welcome email was sent." : "Request approved and the primary login was created. The welcome email could not be sent.");
+  const notify = window.KKANotify;
+  if (data.emailSent) {
+    notify?.success?.("Request approved and the primary login was created. The welcome email was sent.");
+  } else {
+    notify?.error?.("Request approved and the primary login was created, but the welcome email could not be sent.");
+  }
   window.KKAPortalAccessAdmin?.render?.();
 }
 
@@ -77,6 +82,7 @@ document.addEventListener("submit", event => {
     const approve = form.querySelector("#approve-request");
     if (message) message.textContent = error.message || "Unable to create the primary portal login.";
     if (approve) approve.disabled = false;
+    window.KKANotify?.error?.(error);
   });
 }, true);
 
