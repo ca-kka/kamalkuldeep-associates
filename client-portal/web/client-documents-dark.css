@@ -1,0 +1,23 @@
+/* Client Documents dark-mode UX. Loaded after the global theme so this component can override its inline/light defaults. */
+html[data-theme="dark"] .client-documents-shell{color:#edf4ef}
+html[data-theme="dark"] .client-documents-shell h1,html[data-theme="dark"] .client-documents-shell h2{color:#edf4ef}
+html[data-theme="dark"] .client-documents-shell .muted{color:#a9b8b0}
+html[data-theme="dark"] .client-documents-summary span{background:#17251f;border-color:#33463e;color:#a9d1c1}
+html[data-theme="dark"] .client-documents-shell>.panel{background:#151e1a;border-color:#33463e;box-shadow:0 14px 36px rgba(0,0,0,.28)}
+html[data-theme="dark"] .client-folder{background:#151e1a;border-color:#34473f;box-shadow:0 8px 22px rgba(0,0,0,.2)}
+html[data-theme="dark"] .client-folder-button{background:#192620;color:#edf4ef}
+html[data-theme="dark"] .client-folder-button:hover,html[data-theme="dark"] .client-folder-button.open{background:#20342c;color:#f5faf7}
+html[data-theme="dark"] .client-folder-icon{background:#111915;border-color:#3b4d45;color:#b9d8cb}
+html[data-theme="dark"] .client-folder-copy strong{color:#edf4ef}
+html[data-theme="dark"] .client-folder-copy small,html[data-theme="dark"] .client-folder-hint{color:#9fb3aa}
+html[data-theme="dark"] .client-folder-files{background:#101713;border-top-color:#34473f}
+html[data-theme="dark"] .client-document-row{background:#101713;border-bottom-color:#2d3b35}
+html[data-theme="dark"] .client-file-type{background:#18231f;border-color:#3b4d45;color:#b9d8cb}
+html[data-theme="dark"] .client-document-name{color:#b9dccd;text-decoration-color:#527366}
+html[data-theme="dark"] .client-document-name:hover{color:#e0f2e9;text-decoration-color:#8fc6b1}
+html[data-theme="dark"] .client-document-main small{color:#9fb3aa}
+html[data-theme="dark"] .client-document-actions .secondary{background:#19231f;color:#edf4ef;border-color:#3a4942}
+html[data-theme="dark"] .client-document-actions .secondary:hover{background:#293b33;border-color:#5b786c;color:#fff}
+html[data-theme="dark"] .client-empty-folders{background:#17221e;border-color:#3c5148;color:#a9b8b0}
+html[data-theme="dark"] .client-empty-folders strong{color:#edf4ef}
+html[data-theme="dark"] .client-empty-folders span{color:#a9b8b0}
