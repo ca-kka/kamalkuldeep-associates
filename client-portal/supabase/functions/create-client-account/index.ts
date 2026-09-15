@@ -2,7 +2,7 @@ import { corsHeaders, json, requireStaff } from "../_shared/portal.ts";
 
 const clean=(v:unknown)=>String(v??"").trim();
 const upper=(v:unknown)=>clean(v).toUpperCase()||null;
-const emailOk=(v:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const emailOk=(v:string)=>/^\S+@\S+\.\S+$/.test(v);
 const panOk=(v:string|null)=>!v||/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v);
 const tanOk=(v:string|null)=>!v||/^[A-Z]{4}[0-9]{5}[A-Z]$/.test(v);
 const cinOk=(v:string|null)=>!v||/^[A-Z0-9]{21}$/.test(v);
@@ -44,9 +44,32 @@ Deno.serve(async req=>{
     if(![pan,tan,cin,gstin].some(Boolean))return json({error:"At least one PAN, TAN, CIN or GSTIN is required"},400);
     if(!panOk(pan)||!tanOk(tan)||!cinOk(cin)||!gstOk(gstin))return json({error:"One or more tax identifiers has an invalid format"},400);
     if(!mobileOk(mobile))return json({error:"Mobile number has an invalid format"},400);
-    const filters=[pan&&`pan.eq.${pan}`,tan&&`tan.eq.${tan}`,cin&&`cin.eq.${cin}`,gstin&&`gstin.eq.${gstin}`].filter(Boolean).join(",");
-    const {data:existing}=await service.from("clients").select("id").or(filters).limit(1).maybeSingle();
-    if(existing)return json({error:"A client with one of these identifiers already exists"},409);
+
+    // Client names are intentionally not unique. Check each business identifier explicitly.
+    const conflicts:[[string,string|null]]=[ ["PAN",pan],["TAN",tan],["CIN",cin],["GSTIN",gstin] ];
+    for(const [label,value] of conflicts){
+      if(!value)continue;
+      const {data:existing,error}=await service.from("clients").select("id,legal_name,active").eq(label.toLowerCase(),value).maybeSingle();
+      if(error)throw error;
+      if(existing)return json({error:`A client with this ${label} already exists. Client: ${existing.legal_name||existing.id}.`},409);
+    }
+
+    // Reconcile an Auth orphan left by an interrupted/legacy deletion, but never touch
+    // an existing staff/admin identity or an identity with a client membership.
+    const {data:authMatches,error:authLookupError}=await service.schema("auth").from("users").select("id,email").eq("email",email).limit(2);
+    if(authLookupError)throw authLookupError;
+    if(authMatches?.length){
+      for(const oldUser of authMatches){
+        const {data:oldProfile}=await service.from("profiles").select("id,role,active").eq("id",oldUser.id).maybeSingle();
+        const {data:membership}=await service.from("client_memberships").select("client_id").eq("user_id",oldUser.id).limit(1).maybeSingle();
+        if(oldProfile && ["admin","staff"].includes(oldProfile.role))return json({error:"This email address belongs to an existing KKA staff or administrator account."},409);
+        if(membership)return json({error:"This email address is already assigned to an existing client login."},409);
+        const {error:deleteError}=await service.auth.admin.deleteUser(oldUser.id);
+        if(deleteError)throw deleteError;
+        await service.from("profiles").delete().eq("id",oldUser.id);
+      }
+    }
+
     const {data:client,error:clientError}=await service.from("clients").insert({legal_name:legalName,display_name:displayName,mobile,pan,tan,cin,gstin,filename_aliases:aliases,active:true}).select("id").single();
     if(clientError)throw clientError;
     clientId=client.id;
@@ -65,6 +88,7 @@ Deno.serve(async req=>{
   }catch(error){
     if(userId)await service.auth.admin.deleteUser(userId);
     if(clientId)await service.from("clients").delete().eq("id",clientId);
-    return json({error:error instanceof Error?error.message:"Client account could not be created"},400);
+    const message=error instanceof Error?error.message:"Client account could not be created";
+    return json({error:message.includes("duplicate key")?"This client or login already exists. Refresh the client list and verify the identifiers before trying again.":message},409);
   }
 });
