@@ -68,7 +68,9 @@ Deno.serve(async req=>{
    if((requestsQ.data??[]).length){const {error:e}=await service.from("portal_access_requests").update({approved_client_id:null}).eq("approved_client_id",clientId);if(e&&!/column .* does not exist/i.test(String(e.message??e)))throw new Error(`Clearing access request links failed: ${e.message}`);}
    if((auditQ.data??[]).length){const {error:e}=await service.from("audit_logs").update({client_id:null}).eq("client_id",clientId);if(e)throw new Error(`Detaching audit history failed: ${e.message}`);}
    const {error:c}=await service.from("clients").delete().eq("id",clientId);if(c)throw new Error(`Client record deletion failed: ${c.message}`);
-   if(userId){const {error:a}=await service.auth.admin.deleteUser(userId);const m=String(a?.message??a??"");if(a&&!/not found|resource cannot be found|user.*not found/i.test(m))throw new Error(`Auth user deletion failed: ${m}`);}
+   // Auth users cannot be deleted while audit_logs.actor_id still references them.
+   // Preserve the audit history but detach the soon-to-be-deleted actor first.
+   if(userId){const {error:e}=await service.from("audit_logs").update({actor_id:null}).eq("actor_id",userId);if(e)throw new Error(`Detaching auth audit history failed: ${e.message}`);const {error:a}=await service.auth.admin.deleteUser(userId);const m=String(a?.message??a??"");if(a&&!/not found|resource cannot be found|user.*not found/i.test(m))throw new Error(`Auth user deletion failed: ${m}`);}
    const {error:ae}=await service.from("audit_logs").insert({actor_id:user.id,client_id:null,action:"client_permanently_deleted",entity_type:"client",entity_id:clientId,metadata:{legal_name:client.legal_name,storage_objects_deleted:uniquePaths.length,onedrive_cleanup:true}});if(ae)throw new Error(`Deletion audit failed: ${ae.message}`);
    return json({ok:true,deleted:true,onedriveDeleted:true,storageObjectsDeleted:uniquePaths.length});
   }
