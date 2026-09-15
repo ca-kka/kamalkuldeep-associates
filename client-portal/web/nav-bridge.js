@@ -1,9 +1,9 @@
 import "./access-requests.js?v=20260914-1";
-// Keep the legacy app navigation handler from overriding dedicated portal views.
-// Dedicated view modules register document-level capture handlers; this runs last and
-// stops the legacy bubble handler after the appropriate view module has handled it.
-// Documents is intentionally excluded: documents-browser.js is the dedicated handler
-// for both admin/staff and client document navigation and must receive the click first.
+
+// Keep the established portal view modules in control of their dedicated routes.
+// This bridge only prevents the legacy bubble navigation handler from overriding
+// views that already have dedicated route modules. Documents is intentionally
+// excluded because documents-browser.js owns that route.
 const handledViews=new Set(["review","activity","staff-access","access-requests"]);
 document.addEventListener("click",event=>{
   const link=event.target.closest?.("a[data-view]");
@@ -11,3 +11,13 @@ document.addEventListener("click",event=>{
   const view=link.dataset.view;
   if(handledViews.has(view))event.stopImmediatePropagation();
 },true);
+
+// Small, unobtrusive home icon for the Overview destination.
+function addHomeIcon(){
+  if(document.getElementById("kka-home-icon-style"))return;
+  const style=document.createElement("style");
+  style.id="kka-home-icon-style";
+  style.textContent=`.sidebar nav a[data-view="dashboard"]{display:flex;align-items:center;gap:8px}.sidebar nav a[data-view="dashboard"]::before{content:"";width:13px;height:13px;display:inline-block;flex:0 0 13px;background:currentColor;clip-path:polygon(50% 5%,95% 43%,84% 43%,84% 95%,60% 95%,60% 64%,40% 64%,40% 95%,16% 95%,16% 43%,5% 43%);opacity:.82}`;
+  document.head.appendChild(style);
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",addHomeIcon,{once:true});else addHomeIcon();
