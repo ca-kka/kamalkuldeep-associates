@@ -19,7 +19,9 @@ HEADERS = {'User-Agent': 'KKA-Official-Updates/1.0 (+https://ca-kka.com/)'}
 ALLOWED_HOSTS = {
     'www.incometax.gov.in', 'incometax.gov.in', 'eportal.incometax.gov.in',
     'www.icai.org', 'icai.org', 'resource.cdn.icai.org',
-    'www.sebi.gov.in', 'sebi.gov.in'
+    'www.sebi.gov.in', 'sebi.gov.in',
+    'taxinformation.cbic.gov.in', 'cbic-gst.gov.in',
+    'www.gstcouncil.gov.in', 'gstcouncil.gov.in'
 }
 RSS_SOURCES = []
 HTML_SOURCES = [
@@ -27,6 +29,8 @@ HTML_SOURCES = [
     ('ICAI', 'https://www.icai.org/category/notifications', 'icai'),
     ('ICAI', 'https://www.icai.org/category/announcements', 'icai'),
     ('SEBI', 'https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListing=yes&sid=1&ssid=7', 'sebi'),
+    ('CBIC GST', 'https://taxinformation.cbic.gov.in/', 'cbic-gst'),
+    ('GST Council', 'https://www.gstcouncil.gov.in/what-s-new', 'gst-council'),
 ]
 
 
@@ -160,6 +164,50 @@ def sebi_items(url: str):
     return items
 
 
+def cbic_gst_items(url: str):
+    soup = BeautifulSoup(get(url), 'html.parser')
+    items = []
+    date_re = re.compile(r'\b\d{2}-[A-Za-z]{3}-\d{4}\b')
+    for text_node in soup.find_all(string=date_re):
+        match = date_re.search(str(text_node))
+        if not match:
+            continue
+        published = parse_date(match.group(0))
+        container = text_node.parent
+        for _ in range(7):
+            if not container:
+                break
+            for anchor in container.find_all('a', href=True):
+                href = urljoin(url, anchor.get('href') or '')
+                title = clean_title(anchor.get_text(' ', strip=True))
+                if not valid_url(href) or len(title) < 18 or len(title) > 240:
+                    continue
+                if title.lower() in {'english', 'hindi', 'view gst notifications >', 'view gst circulars >'}:
+                    continue
+                if not re.search(r'(gst|central tax|rate|notification|circular|clarification|return|input tax|appellate tribunal)', title, re.I):
+                    continue
+                items.append({'title': title, 'url': href, 'source': 'CBIC GST', '_date': published})
+            container = container.parent
+    return items
+
+
+def gst_council_items(url: str):
+    soup = BeautifulSoup(get(url), 'html.parser')
+    items = []
+    seen = set()
+    keywords = re.compile(r'(notification|circular|gst|council|recommendation|amendment|rate|newsletter|faq|appellate|tax)', re.I)
+    for anchor in soup.find_all('a', href=True):
+        href = urljoin(url, anchor.get('href') or '')
+        title = clean_title(anchor.get_text(' ', strip=True))
+        if not valid_url(href) or len(title) < 20 or len(title) > 240 or not keywords.search(title):
+            continue
+        if title.lower() in {'read more', 'view all', 'home'} or href in seen:
+            continue
+        seen.add(href)
+        items.append({'title': title, 'url': href, 'source': 'GST Council', '_date': None})
+    return items[:8]
+
+
 def dedupe(items):
     seen = set()
     result = []
@@ -170,7 +218,7 @@ def dedupe(items):
         seen.add(key)
         item.pop('_date', None)
         result.append(item)
-    return result[:8]
+    return result[:12]
 
 
 def update_index():
@@ -212,6 +260,10 @@ def main():
                 items.extend(icai_items(url))
             elif kind == 'sebi':
                 items.extend(sebi_items(url))
+            elif kind == 'cbic-gst':
+                items.extend(cbic_gst_items(url))
+            elif kind == 'gst-council':
+                items.extend(gst_council_items(url))
         except Exception as exc:
             failures.append(f'{source} HTML: {exc}')
     final_items = dedupe(items)
