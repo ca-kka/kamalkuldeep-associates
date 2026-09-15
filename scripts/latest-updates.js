@@ -19,6 +19,56 @@
     });
   }
 
+  function updateDueDateStatuses() {
+    const formatter = new Intl.DateTimeFormat('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'Asia/Kolkata'
+    });
+    const parts = formatter.formatToParts(new Date());
+    const today = `${parts.find(p => p.type === 'year').value}-${parts.find(p => p.type === 'month').value}-${parts.find(p => p.type === 'day').value}`;
+
+    document.querySelectorAll('.due-date-card').forEach(function (card) {
+      const dateElement = card.querySelector('.date');
+      if (!dateElement) return;
+
+      // Use the first full date when a deadline contains alternatives such as
+      // "22 October 2026 / 24 October 2026".
+      const match = dateElement.textContent.trim().match(/\b(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\b/);
+      if (!match) return;
+
+      const months = {
+        january: '01', february: '02', march: '03', april: '04', may: '05', june: '06',
+        july: '07', august: '08', september: '09', october: '10', november: '11', december: '12'
+      };
+      const month = months[match[2].toLowerCase()];
+      if (!month) return;
+      const dueDate = `${match[3]}-${month}-${String(match[1]).padStart(2, '0')}`;
+
+      let notice = card.querySelector('.urgent-notice');
+      const title = card.querySelector('h4')?.textContent.trim() || 'Due date';
+      const isToday = dueDate === today;
+      const isOverdue = dueDate < today;
+
+      if (isToday || isOverdue) {
+        if (!notice) {
+          notice = document.createElement('div');
+          notice.className = 'urgent-notice';
+          notice.style.marginTop = '0.75rem';
+          notice.style.padding = '0.6rem';
+          const strong = document.createElement('strong');
+          notice.appendChild(strong);
+          card.appendChild(notice);
+        }
+        const strong = notice.querySelector('strong') || notice;
+        strong.textContent = isToday ? '⚠️ Due Today' : '⚠️ Overdue';
+        card.setAttribute('data-due-status', isToday ? 'today' : 'overdue');
+        card.setAttribute('aria-label', `${title}: ${isToday ? 'Due Today' : 'Overdue'}`);
+      }
+    });
+  }
+
   function injectStyles() {
     if (document.getElementById('latest-updates-styles')) return;
     const style = document.createElement('style');
@@ -152,6 +202,7 @@
     addFallbackAnchorBehaviour();
     addClientPortalEntry();
     addLegalFooterLinks();
+    updateDueDateStatuses();
 
     const adminLogin = document.querySelector('.admin-login');
     if (adminLogin) adminLogin.href = 'https://files.ca-kka.com/';
