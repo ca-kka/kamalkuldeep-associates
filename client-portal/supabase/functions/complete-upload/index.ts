@@ -23,11 +23,16 @@ Deno.serve(async req => {
     if (upload.completed_at) return json({ error: "Upload was already completed but its document record could not be found." }, 409);
     if (new Date(upload.expires_at) < new Date()) return json({ error: "Upload URL expired; request a new one" }, 410);
 
-    // Enforce the same client+SHA uniqueness rule before moving the object or
-    // sending anything to OneDrive. This prevents orphan OneDrive duplicates
-    // when the same file is uploaded again.
+    // Duplicate protection is scoped to the destination client and active
+    // documents only. Soft-deleted documents must not block a new upload.
     if (upload.proposed_client_id && upload.sha256) {
-      const { data: duplicate, error: duplicateError } = await service.from("documents").select("id,status,client_id,original_filename,area,financial_year,filing_period,classification_confidence").eq("client_id", upload.proposed_client_id).eq("sha256", upload.sha256).maybeSingle();
+      const { data: duplicate, error: duplicateError } = await service.from("documents")
+        .select("id,status,client_id,original_filename,area,financial_year,filing_period,classification_confidence")
+        .eq("client_id", upload.proposed_client_id)
+        .eq("sha256", upload.sha256)
+        .is("deleted_at", null)
+        .limit(1)
+        .maybeSingle();
       if (duplicateError) throw duplicateError;
       if (duplicate) {
         await service.from("document_uploads").update({ completed_at: new Date().toISOString() }).eq("id", upload.id);
