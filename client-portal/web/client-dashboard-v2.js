@@ -32,23 +32,34 @@ async function getClientContext(){
   if(!user)return null;
   const {data:profile}=await supabase.from("profiles").select("role,full_name,active").eq("id",user.id).maybeSingle();
   if(profile?.role!=="client"||!profile.active)return null;
-  const {data:membership}=await supabase.from("client_memberships").select("client_id,can_upload").eq("user_id",user.id).maybeSingle();
-  if(!membership?.client_id)return null;
-  let accessible=[];
-  const {data:account}=await supabase.from("client_accounts").select("id").eq("primary_client_id",membership.client_id).eq("active",true).maybeSingle();
-  if(account){
-    const {data:members}=await supabase.from("client_account_members").select("client_id,active").eq("account_id",account.id).eq("active",true);
-    const ids=[membership.client_id,...(members??[]).map(m=>m.client_id)].filter(Boolean);
-    const unique=[...new Set(ids)];
-    if(unique.length){const {data:rows}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").in("id",unique).eq("active",true);accessible=rows??[];}
+  const {data:membership,error:membershipError}=await supabase.from("client_memberships").select("client_id,can_upload").eq("user_id",user.id).maybeSingle();
+  if(membershipError||!membership?.client_id)return null;
+
+  // Family membership is intentionally read through a SECURITY DEFINER RPC.
+  // Direct client-side SELECTs on client_accounts/client_account_members are staff-only.
+  const {data:family,error:familyError}=await supabase.rpc("get_my_client_family_profiles");
+  let accessible=(familyError?[]:(family??[])).filter(x=>x?.active!==false);
+
+  // Defensive fallback for accounts created before family support was enabled.
+  if(!accessible.length){
+    const {data:primary}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").eq("id",membership.client_id).eq("active",true).maybeSingle();
+    if(primary)accessible=[{...primary,client_id:primary.id,is_primary:true,relationship:"primary_holder",account_id:null}];
   }
-  if(!accessible.length){const {data:primary}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").eq("id",membership.client_id).eq("active",true).maybeSingle();if(primary)accessible=[primary];}
+
+  // Always keep the authenticated membership client available, but never expose
+  // an unrelated client just because it happens to be visible through RLS.
+  if(!accessible.some(c=>c.client_id===membership.client_id)){
+    const {data:primary}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").eq("id",membership.client_id).eq("active",true).maybeSingle();
+    if(primary)accessible.unshift({...primary,client_id:primary.id,is_primary:true,relationship:"primary_holder",account_id:null});
+  }
+
+  const clients=accessible.map(c=>({id:c.client_id||c.id,legal_name:c.legal_name,display_name:c.display_name,pan:c.pan,gstin:c.gstin,active:c.active,relationship:c.relationship,is_primary:c.is_primary,account_id:c.account_id}));
   const key=storageKey(user.id);
   const saved=localStorage.getItem(key);
-  const selectedId=accessible.some(c=>c.id===saved)?saved:membership.client_id;
-  const client=accessible.find(c=>c.id===selectedId)||accessible.find(c=>c.id===membership.client_id);
+  const selectedId=clients.some(c=>c.id===saved)?saved:membership.client_id;
+  const client=clients.find(c=>c.id===selectedId)||clients.find(c=>c.id===membership.client_id);
   if(!client)return null;
-  return {profile,membership,clients:accessible,client,selectedId,userId:user.id,storageKey:key};
+  return {profile,membership,clients,client,selectedId,userId:user.id,storageKey:key};
 }
 
 async function renderClientDashboard(){
@@ -61,7 +72,7 @@ async function renderClientDashboard(){
   const main=document.querySelector(".portal-main");
   if(!main)return false;
   document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a.dataset.view==="dashboard"));
-  const options=ctx.clients.map(c=>`<option value="${esc(c.id)}" ${c.id===ctx.selectedId?"selected":""}>${esc(c.display_name||c.legal_name)}${c.display_name&&c.legal_name&&c.display_name!==c.legal_name?` — ${esc(c.legal_name)}`:""}</option>`).join("");
+  const options=ctx.clients.map(c=>`<option value="${esc(c.id)}" ${c.id===ctx.selectedId?"selected":""}>${esc(c.display_name||c.legal_name)}${c.display_name&&c.legal_name&&c.display_name!==c.legal_name?` — ${esc(c.legal_name)}`:""}${!c.is_primary?" · Family member":""}</option>`).join("");
   main.innerHTML=`<div class="client-profile-bar"><div class="client-profile-copy"><p class="eyebrow">CURRENT PROFILE</p><strong>Profile &amp; account</strong></div><select class="client-profile-select" id="client-profile-select" aria-label="Change profile">${options}</select></div><header class="client-home-header"><div><p class="eyebrow">PRIVATE KKA WORKSPACE</p><h1>Welcome, ${esc(ctx.client.display_name||ctx.client.legal_name||"Client")}</h1><p class="muted">Your documents, securely organised in one place.</p></div><button class="user" id="client-signout" type="button">Sign out</button></header><section class="client-home-grid"><article class="panel client-welcome-card"><p class="eyebrow">CLIENT PROFILE</p><h2>${esc(ctx.client.display_name||ctx.client.legal_name||"Client profile")}</h2><p class="muted">${esc(ctx.client.legal_name||"")}</p><div class="client-identity"><span>${ctx.client.pan?`PAN · ${esc(ctx.client.pan)}`:"PAN not available"}</span><span>${ctx.client.gstin?`GSTIN · ${esc(ctx.client.gstin)}`:"GSTIN not available"}</span></div></article><article class="panel client-action-card"><p class="eyebrow">DOCUMENTS</p><h2>Document workspace</h2><p class="muted">View documents available for the selected profile.</p><div class="client-home-actions"><button class="primary" id="client-documents" type="button">View documents</button>${ctx.membership.can_upload?`<button class="secondary" id="client-upload" type="button">Upload documents</button>`:`<span class="client-upload-note">Client upload is currently disabled by KKA.</span>`}</div></article></section><section class="panel client-status-card"><div><p class="eyebrow">ACCESS</p><h2>Workspace access</h2><p class="muted">${ctx.membership.can_upload?"Document upload is enabled for this profile.":"Document upload is disabled for this profile. Contact KKA if access needs to change."}</p></div><span class="pill ${ctx.membership.can_upload?"success":"neutral"}">${ctx.membership.can_upload?"Upload enabled":"View only"}</span></section>`;
   document.getElementById("client-profile-select")?.addEventListener("change",async e=>{localStorage.setItem(ctx.storageKey,e.target.value);await renderClientDashboard()});
   document.getElementById("client-signout")?.addEventListener("click",async()=>{await supabase.auth.signOut();localStorage.removeItem(ctx.storageKey);location.reload()});
