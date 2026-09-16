@@ -1,8 +1,7 @@
-/* KKA Admin Portal — independent shell feedback and interaction state. */
+/* KKA Admin Portal — fast, non-blocking interaction feedback. */
 (() => {
   const app = document.getElementById("app");
   if (!app) return;
-
   let bar = null;
   let timer = null;
 
@@ -17,35 +16,29 @@
     return bar;
   }
 
-  function start(message = "Processing…") {
+  function stop() {
+    clearTimeout(timer);
+    if (bar) bar.classList.remove("is-active");
+  }
+
+  function start(message = "Processing…", duration = 700) {
     const el = ensureBar();
     el.querySelector(".kka-admin-progress-label").textContent = message;
     el.classList.add("is-active");
     clearTimeout(timer);
-    timer = setTimeout(stop, 1400);
+    timer = setTimeout(stop, duration);
   }
 
-  function stop() {
-    if (bar) bar.classList.remove("is-active");
-  }
+  document.addEventListener("click", event => {
+    const target = event.target.closest?.("button, a[data-view]");
+    if (!target || target.matches(".modal-close,[data-profile-action='signout']")) return;
+    if (target.matches("a[data-view]")) {
+      start("Opening…", 700);
+    } else if (target.matches("button:not(.mobile-menu-toggle)")) {
+      const text = (target.textContent || "").trim();
+      if (text && !target.disabled) start(`${text.replace(/\s+/g, " ").slice(0, 28)}…`, 700);
+    }
+  }, true);
 
-  function wire() {
-    const observer = new MutationObserver(() => {
-      if (document.querySelector(".portal-shell")) stop();
-    });
-    observer.observe(app, { childList: true, subtree: true });
-
-    document.addEventListener("click", event => {
-      const target = event.target.closest?.("button, a[data-view]");
-      if (!target || target.matches(".modal-close,[data-profile-action='signout']")) return;
-      if (target.matches("a[data-view]")) start("Opening…");
-      else if (target.matches("button:not(.mobile-menu-toggle)")) {
-        const text = (target.textContent || "").trim();
-        if (text) start(`${text.replace(/\s+/g, " ").slice(0, 32)}…`);
-      }
-    }, true);
-  }
-
-  wire();
   window.KKAAdminPortalFeedback = { start, stop };
 })();
