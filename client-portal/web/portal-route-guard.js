@@ -9,7 +9,13 @@ let redirecting = false;
 async function enforceRoute() {
   if (redirecting) return;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) {
+    if (route !== "root") {
+      redirecting = true;
+      window.location.replace("../");
+    }
+    return;
+  }
 
   const { data: profile, error } = await supabase
     .from("profiles")
