@@ -6,7 +6,6 @@ const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 let familyByClient=new Map();
 let membersByClient=new Map();
 let familyLoaded=false;
-let lastRowsSignature="";
 
 const style=document.createElement("style");
 style.textContent=`
@@ -16,7 +15,6 @@ style.textContent=`
 .family-profile-table th,.family-profile-table td{padding:11px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.09)}
 .family-profile-table th{font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;opacity:.72}
 .family-profile-primary{font-weight:700}
-.family-profile-child-row td{background:rgba(255,255,255,.025)}
 .family-profile-badge{display:inline-flex;margin-left:7px;font-size:.72rem;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.08)}
 .family-upload-btn{white-space:nowrap}
 .family-upload-target{margin:12px 0;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -101,41 +99,6 @@ function showFamilyProfiles(members){
   return m;
 }
 
-function addFamilyRowsToClientList(){
-  if(!familyLoaded)return;
-  const tbody=document.querySelector("#client-rows");
-  if(!tbody)return;
-  const baseRows=[...tbody.querySelectorAll("tr")].filter(r=>r.querySelector("[data-manage]")&&!r.classList.contains("family-profile-child-row"));
-  const signature=baseRows.map(r=>r.querySelector("[data-manage]")?.dataset.manage||"").join("|");
-  const hasChildren=!!tbody.querySelector(".family-profile-child-row");
-  if(!signature||hasChildren&&signature===lastRowsSignature)return;
-  lastRowsSignature=signature;
-  tbody.querySelectorAll(".family-profile-child-row").forEach(r=>r.remove());
-  const inserts=[];
-  for(const row of baseRows){
-    const id=row.querySelector("[data-manage]")?.dataset.manage;
-    const members=familyByClient.get(id);
-    if(!members?.length)continue;
-    for(const member of members.filter(x=>!x.is_primary)){
-      const c=member.clients||{};
-      const child=document.createElement("tr");
-      child.className="family-profile-child-row";
-      child.innerHTML=`<td><span style="padding-left:18px">↳ <strong>${esc(clientName(member))}</strong> <span class="family-profile-badge">${esc(relation(member))}</span></span></td><td>${esc(c.pan||"—")}</td><td>${esc(c.gstin||"—")}</td><td><span class="pill ${c.active===false?"neutral":"success"}">${c.active===false?"Inactive":"Family profile"}</span></td><td>—</td><td><button type="button" class="primary compact family-upload-btn" data-family-row-upload="${esc(member.client_id)}">Upload</button></td>`;
-      inserts.push({row,child});
-    }
-  }
-  for(const {row,child} of inserts)row.after(child);
-  tbody.querySelectorAll("[data-family-row-upload]").forEach(button=>button.addEventListener("click",()=>{
-    const member=membersByClient.get(button.dataset.familyRowUpload);
-    if(!member)return;
-    sessionStorage.setItem("kka_family_upload_client_id",member.client_id);
-    sessionStorage.setItem("kka_family_upload_client_name",clientName(member));
-    sessionStorage.setItem("kka_family_upload_account_id",member.account_id||"");
-    document.querySelector('.sidebar nav a[data-view="documents"]')?.click();
-  }));
-  decorateClientRows();
-}
-
 function bridgeUploader(){
   const select=document.querySelector("#manual-client");
   if(!select||!familyLoaded)return;
@@ -161,7 +124,7 @@ function bridgeUploader(){
   label.querySelector("#clear-family-upload-target")?.addEventListener("click",()=>{sessionStorage.removeItem("kka_family_upload_client_id");sessionStorage.removeItem("kka_family_upload_client_name");sessionStorage.removeItem("kka_family_upload_account_id");label.remove();select.value="";select.dispatchEvent(new Event("change",{bubbles:true}))});
 }
 
-const observer=new MutationObserver(()=>{decorateClientRows();addFamilyRowsToClientList();bridgeUploader()});
+const observer=new MutationObserver(()=>{decorateClientRows();bridgeUploader()});
 observer.observe(document.body,{childList:true,subtree:true});
 
-(async()=>{await loadFamilyData();addFamilyRowsToClientList();bridgeUploader()})();
+(async()=>{await loadFamilyData();bridgeUploader()})();
