@@ -6,6 +6,14 @@ const path = window.location.pathname.replace(/\/+$/, "") || "/";
 const route = path.endsWith("/client") ? "client" : path.endsWith("/admin") ? "admin" : "root";
 let redirecting = false;
 
+function prepareRouteTransition() {
+  const currentRoute = route === "client" ? "/client/" : route === "admin" ? "/admin/" : "/";
+  try {
+    localStorage.removeItem("kka-browser-session");
+    localStorage.setItem("kka-last-portal-route", currentRoute);
+  } catch {}
+}
+
 async function enforceRoute() {
   if (redirecting) return;
   const { data: { user } } = await supabase.auth.getUser();
@@ -31,6 +39,7 @@ async function enforceRoute() {
   const currentIsCorrect = route === "client" ? role === "client" : route === "admin" ? ["admin", "staff"].includes(role) : false;
   if (currentIsCorrect) return;
 
+  prepareRouteTransition();
   redirecting = true;
   window.location.replace(destination);
 }
