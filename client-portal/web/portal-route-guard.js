@@ -1,50 +1,50 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
-const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-const path = window.location.pathname.replace(/\/+$/, "") || "/";
-const route = path.endsWith("/client") ? "client" : path.endsWith("/admin") ? "admin" : "root";
-let redirecting = false;
+const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const path=window.location.pathname.replace(/\/+$/,'')||'/';
+const route=path.endsWith('/client')?'client':path.endsWith('/admin')?'admin':'root';
+let redirecting=false;
 
-function prepareRouteTransition() {
-  const currentRoute = route === "client" ? "/client/" : route === "admin" ? "/admin/" : "/";
-  try {
-    localStorage.removeItem("kka-browser-session");
-    localStorage.setItem("kka-last-portal-route", currentRoute);
-  } catch {}
+function prepareRouteTransition(){
+  const currentRoute=route==='client'?'/client/':route==='admin'?'/admin/':'/';
+  try{
+    localStorage.removeItem('kka-browser-session');
+    if(currentRoute==='/client/')localStorage.removeItem('kka-browser-session:client');
+    if(currentRoute==='/admin/')localStorage.removeItem('kka-browser-session:admin');
+    localStorage.setItem('kka-last-portal-route',currentRoute);
+  }catch{}
 }
 
-async function enforceRoute() {
-  if (redirecting) return;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    if (route !== "root") {
-      redirecting = true;
-      window.location.replace("../");
+async function enforceRoute(){
+  if(redirecting)return;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){
+    if(route!=='root'){
+      redirecting=true;
+      window.location.replace('../');
     }
     return;
   }
-
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role,active")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (error || profile?.active === false) return;
-  const role = profile?.role;
-  const destination = role === "client" ? "../client/" : ["admin", "staff"].includes(role) ? "../admin/" : null;
-  if (!destination) return;
-
-  const currentIsCorrect = route === "client" ? role === "client" : route === "admin" ? ["admin", "staff"].includes(role) : false;
-  if (currentIsCorrect) return;
-
+  const {data:profile,error}=await supabase.from('profiles').select('role,active').eq('id',user.id).maybeSingle();
+  if(error)return;
+  if(profile?.active!==true){
+    redirecting=true;
+    await supabase.auth.signOut();
+    if(route!=='root')window.location.replace('../');
+    return;
+  }
+  const role=profile.role;
+  const destination=role==='client'?'../client/':['admin','staff'].includes(role)?'../admin/':null;
+  if(!destination)return;
+  const currentIsCorrect=route==='client'?role==='client':route==='admin'?['admin','staff'].includes(role):false;
+  if(currentIsCorrect)return;
   prepareRouteTransition();
-  redirecting = true;
+  redirecting=true;
   window.location.replace(destination);
 }
 
 void enforceRoute();
-supabase.auth.onAuthStateChange((event, session) => {
-  if (session?.user && ["SIGNED_IN", "INITIAL_SESSION"].includes(event)) void enforceRoute();
+supabase.auth.onAuthStateChange((event,session)=>{
+  if(session?.user&&['SIGNED_IN','INITIAL_SESSION'].includes(event))void enforceRoute();
 });
