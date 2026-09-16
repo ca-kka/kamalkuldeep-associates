@@ -10,6 +10,7 @@ function setMessage(text,type=""){
   if(!m)return;
   m.className=`message${type?` ${type}`:""}`;
   m.textContent=text||"";
+  if(type==="error")m.setAttribute("role","alert");else m.removeAttribute("role");
 }
 
 function setupPasswordToggle(){
@@ -23,6 +24,22 @@ function setupPasswordToggle(){
     toggle.setAttribute("aria-pressed",String(!visible));
     input.focus();
   });
+}
+
+function clearLoginError(){
+  document.querySelector("#auth-message")?.classList.remove("error");
+  document.querySelector("#email")?.classList.remove("login-input-error");
+  document.querySelector("#password")?.classList.remove("login-input-error");
+}
+
+function showLoginError(text="Incorrect email or password. Please try again."){
+  const message=document.querySelector("#auth-message");
+  const email=document.querySelector("#email");
+  const password=document.querySelector("#password");
+  if(message){message.className="message error";message.textContent=text;message.setAttribute("role","alert");}
+  email?.classList.add("login-input-error");
+  password?.classList.add("login-input-error");
+  password?.focus();
 }
 
 async function redirectForRole(){
@@ -51,18 +68,21 @@ function renderLogin(){
   setupPasswordToggle();
   const form=document.querySelector("#login-form");
   if(!form)return;
+  form.querySelector("#email")?.addEventListener("input",clearLoginError);
+  form.querySelector("#password")?.addEventListener("input",clearLoginError);
   form.addEventListener("submit",async event=>{
     event.preventDefault();
     const email=String(document.querySelector("#email")?.value||"").trim().toLowerCase();
     const password=String(document.querySelector("#password")?.value||"");
     const submit=form.querySelector('button[type="submit"]');
     if(!email||!password)return;
+    clearLoginError();
     if(submit)submit.disabled=true;
     setMessage("Signing in securely…");
     try{
       const {error}=await supabase.auth.signInWithPassword({email,password});
       if(error){
-        setMessage("Unable to sign in. Check your credentials or contact KKA.","error");
+        showLoginError("Incorrect email or password. Please try again.");
         try{window.KKALoginFeedback?.hide?.()}catch{}
         if(submit)submit.disabled=false;
         return;
@@ -70,7 +90,7 @@ function renderLogin(){
       setMessage("Verification successful. Opening your KKA workspace…","success");
       await redirectForRole();
     }catch(error){
-      setMessage(error?.message||"The KKA authentication service could not be reached. Please try again.","error");
+      showLoginError(error?.message||"The KKA authentication service could not be reached. Please try again.");
       try{window.KKALoginFeedback?.hide?.()}catch{}
       if(submit)submit.disabled=false;
     }
