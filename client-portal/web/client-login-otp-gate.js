@@ -21,13 +21,6 @@ EventTarget.prototype.addEventListener = function(type, listener, options) {
   return originalAddEventListener.call(this, type, listener, options);
 };
 
-function releaseOriginalHandler(form) {
-  if (!interceptedLoginHandler) return;
-  originalAddEventListener.call(form, "submit", interceptedLoginHandler, interceptedLoginOptions);
-  interceptedLoginHandler = null;
-  interceptedLoginOptions = undefined;
-}
-
 function invokeOriginalLogin(form) {
   const handler = interceptedLoginHandler;
   if (!handler) return;
@@ -74,6 +67,43 @@ function closeOverlay() {
   if (button) button.disabled = false;
 }
 
+function bindOtpCubes(wrap) {
+  const cubes = [...wrap.querySelectorAll(".kka-otp-cube")];
+  const form = wrap.querySelector("#kka-otp-form");
+  const value = () => cubes.map(input => input.value).join("");
+  const focusFirstEmpty = () => (cubes.find(input => !input.value) || cubes[cubes.length - 1])?.focus();
+
+  cubes.forEach((input, index) => {
+    input.addEventListener("input", () => {
+      input.value = input.value.replace(/\D/g, "").slice(-1);
+      if (input.value && index < cubes.length - 1) cubes[index + 1].focus();
+    });
+    input.addEventListener("keydown", event => {
+      if (event.key === "Backspace" && !input.value && index > 0) {
+        cubes[index - 1].value = "";
+        cubes[index - 1].focus();
+      } else if (event.key === "ArrowLeft" && index > 0) {
+        event.preventDefault();
+        cubes[index - 1].focus();
+      } else if (event.key === "ArrowRight" && index < cubes.length - 1) {
+        event.preventDefault();
+        cubes[index + 1].focus();
+      }
+    });
+    input.addEventListener("paste", event => {
+      event.preventDefault();
+      const pasted = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 6);
+      pasted.split("").forEach((digit, offset) => {
+        if (cubes[index + offset]) cubes[index + offset].value = digit;
+      });
+      focusFirstEmpty();
+    });
+  });
+
+  form.dataset.getOtp = value;
+  cubes[0]?.focus();
+}
+
 function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 300, resendAfter = 60 }, email, password, form) {
   closeOverlay();
   const wrap = document.createElement("div");
@@ -94,8 +124,9 @@ function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 30
       #kka-client-otp-overlay .destination span{color:var(--muted,#68756f)}
       #kka-client-otp-overlay .destination strong{font-weight:700;text-align:right}
       #kka-client-otp-overlay form{display:grid;gap:13px}
-      #kka-client-otp-overlay input{width:100%;box-sizing:border-box;padding:14px;text-align:center;letter-spacing:.35em;font-size:26px;font-weight:800;border:1px solid var(--input-border,#cbd6cf);border-radius:10px;background:var(--input-bg,#fff);color:var(--ink,#14221d)}
-      #kka-client-otp-overlay input:focus{outline:2px solid var(--focus,#b9d2c3);border-color:var(--accent,#1e493d)}
+      #kka-client-otp-overlay .otp-cubes{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:4px 0 3px}
+      #kka-client-otp-overlay .kka-otp-cube{width:100%;height:58px;box-sizing:border-box;padding:0;text-align:center;font-size:25px;font-weight:800;border:1px solid var(--input-border,#cbd6cf);border-radius:11px;background:var(--input-bg,#fff);color:var(--ink,#14221d);caret-color:var(--accent,#1e493d)}
+      #kka-client-otp-overlay .kka-otp-cube:focus{outline:2px solid var(--focus,#b9d2c3);border-color:var(--accent,#1e493d)}
       #kka-client-otp-overlay button{padding:12px 16px;border:0;border-radius:9px;font-weight:700;cursor:pointer}
       #kka-client-otp-overlay button:disabled{opacity:.55;cursor:not-allowed}
       #kka-client-otp-overlay .primary{background:var(--forest,#1e493d);color:#fff}
@@ -104,6 +135,7 @@ function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 30
       #kka-client-otp-overlay .message{min-height:20px;font-size:13px;color:var(--muted,#68756f);margin:0}
       #kka-client-otp-overlay .message.error{color:#a33a2d}
       #kka-client-otp-overlay .message.success{color:#245b3d}
+      @media(max-width:420px){#kka-client-otp-overlay .card{padding:22px 18px}#kka-client-otp-overlay .otp-cubes{gap:6px}#kka-client-otp-overlay .kka-otp-cube{height:52px;font-size:22px}}
     </style>
     <section class="card" role="dialog" aria-modal="true" aria-labelledby="kka-otp-title">
       <div class="brand"><strong>KKA</strong><small>CLIENT PLATFORM</small></div>
@@ -115,7 +147,14 @@ function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 30
         <div class="destination"><span>Mobile</span><strong>${esc(maskedMobile || "Not available")}</strong></div>
       </div>
       <form id="kka-otp-form">
-        <input id="kka-otp-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" minlength="6" aria-label="6 digit verification code" required>
+        <div class="otp-cubes" role="group" aria-label="6 digit verification code">
+          <input class="kka-otp-cube" inputmode="numeric" autocomplete="one-time-code" maxlength="1" aria-label="Digit 1" required>
+          <input class="kka-otp-cube" inputmode="numeric" maxlength="1" aria-label="Digit 2" required>
+          <input class="kka-otp-cube" inputmode="numeric" maxlength="1" aria-label="Digit 3" required>
+          <input class="kka-otp-cube" inputmode="numeric" maxlength="1" aria-label="Digit 4" required>
+          <input class="kka-otp-cube" inputmode="numeric" maxlength="1" aria-label="Digit 5" required>
+          <input class="kka-otp-cube" inputmode="numeric" maxlength="1" aria-label="Digit 6" required>
+        </div>
         <p id="kka-otp-message" class="message">The code expires in 5 minutes. Do not share it with anyone.</p>
         <button class="primary" id="kka-otp-verify" type="submit">Verify &amp; continue</button>
       </form>
@@ -127,27 +166,26 @@ function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 30
   document.body.appendChild(wrap);
   activeOverlay = wrap;
 
-  const codeInput = wrap.querySelector("#kka-otp-code");
+  const otpForm = wrap.querySelector("#kka-otp-form");
+  const cubes = [...wrap.querySelectorAll(".kka-otp-cube")];
+  bindOtpCubes(wrap);
   const message = wrap.querySelector("#kka-otp-message");
   const verify = wrap.querySelector("#kka-otp-verify");
   const resend = wrap.querySelector("#kka-otp-resend");
-
-  codeInput.focus();
   startResendTimer(resend, resendAfter);
 
   wrap.querySelector("#kka-otp-change").addEventListener("click", () => {
     closeOverlay();
-    const emailInput = document.querySelector("#email");
-    emailInput?.focus();
+    document.querySelector("#email")?.focus();
   });
 
-  wrap.querySelector("#kka-otp-form").addEventListener("submit", async event => {
+  otpForm.addEventListener("submit", async event => {
     event.preventDefault();
-    const otp = codeInput.value.replace(/\D/g, "");
+    const otp = cubes.map(input => input.value).join("");
     if (!/^\d{6}$/.test(otp)) {
       message.className = "message error";
-      message.textContent = "Enter the 6-digit security code.";
-      codeInput.focus();
+      message.textContent = "Enter all 6 digits of the security code.";
+      (cubes.find(input => !input.value) || cubes[0])?.focus();
       return;
     }
     verify.disabled = true;
@@ -164,7 +202,8 @@ function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 30
         message.className = "message error";
         message.textContent = result.error || "The security code could not be verified.";
         verify.disabled = false;
-        codeInput.select();
+        cubes.forEach(input => input.value = "");
+        cubes[0]?.focus();
         return;
       }
       message.className = "message success";
