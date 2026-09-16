@@ -1,4 +1,4 @@
-/* KKA Client Portal — independent shell feedback and interaction state. */
+/* KKA Client Portal — fast, non-blocking interaction feedback. */
 (() => {
   const app = document.getElementById("app");
   if (!app) return;
@@ -15,33 +15,30 @@
     document.body.appendChild(bar);
     return bar;
   }
-  function start(message = "Processing…") {
+
+  function stop() {
+    clearTimeout(timer);
+    if (bar) bar.classList.remove("is-active");
+  }
+
+  function start(message = "Processing…", duration = 650) {
     const el = ensureBar();
     el.querySelector(".kka-client-progress-label").textContent = message;
     el.classList.add("is-active");
     clearTimeout(timer);
-    timer = setTimeout(stop, 1200);
+    timer = setTimeout(stop, duration);
   }
-  function stop() { if (bar) bar.classList.remove("is-active"); }
 
   document.addEventListener("click", event => {
     const target = event.target.closest?.("button, a[data-view]");
     if (!target || target.matches(".modal-close,[data-profile-action='signout']")) return;
-    if (target.matches("a[data-view]")) start("Opening…");
-    else if (target.matches("button:not(.mobile-menu-toggle)")) {
+    if (target.matches("a[data-view]")) {
+      start("Opening…", 700);
+    } else if (target.matches("button:not(.mobile-menu-toggle)")) {
       const text = (target.textContent || "").trim();
-      if (text && !target.disabled) start(`${text.replace(/\s+/g, " ").slice(0, 32)}…`);
+      if (text && !target.disabled) start(`${text.replace(/\s+/g, " ").slice(0, 28)}…`, 650);
     }
   }, true);
-
-  new MutationObserver(() => {
-    const form = document.querySelector("#login-form");
-    if (form && !form.dataset.feedbackBound) {
-      form.dataset.feedbackBound = "1";
-      form.addEventListener("submit", () => start("Signing in securely…"), true);
-    }
-    if (document.querySelector(".portal-shell")) stop();
-  }).observe(app, { childList: true, subtree: true });
 
   window.KKAClientPortalFeedback = { start, stop };
 })();
