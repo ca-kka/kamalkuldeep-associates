@@ -1,0 +1,258 @@
+import { SUPABASE_URL } from "./config.js";
+
+const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/client-login-otp`;
+let interceptedLoginHandler = null;
+let interceptedLoginOptions = undefined;
+let activeOverlay = null;
+let resendTimer = null;
+let resendRemaining = 0;
+
+const esc = v => String(v ?? "").replace(/[&<>'"]/g, c => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+}[c]));
+
+const originalAddEventListener = EventTarget.prototype.addEventListener;
+EventTarget.prototype.addEventListener = function(type, listener, options) {
+  if (this instanceof HTMLFormElement && this.id === "login-form" && type === "submit" && typeof listener === "function") {
+    interceptedLoginHandler = listener;
+    interceptedLoginOptions = options;
+    return;
+  }
+  return originalAddEventListener.call(this, type, listener, options);
+};
+
+function releaseOriginalHandler(form) {
+  if (!interceptedLoginHandler) return;
+  originalAddEventListener.call(form, "submit", interceptedLoginHandler, interceptedLoginOptions);
+  interceptedLoginHandler = null;
+  interceptedLoginOptions = undefined;
+}
+
+function invokeOriginalLogin(form) {
+  const handler = interceptedLoginHandler;
+  if (!handler) return;
+  interceptedLoginHandler = null;
+  interceptedLoginOptions = undefined;
+  void handler({
+    preventDefault() {},
+    currentTarget: form,
+    target: form,
+    submitter: form.querySelector('button[type="submit"]'),
+  });
+}
+
+function stopResendTimer() {
+  if (resendTimer) clearInterval(resendTimer);
+  resendTimer = null;
+  resendRemaining = 0;
+}
+
+function startResendTimer(button, seconds = 60) {
+  stopResendTimer();
+  resendRemaining = seconds;
+  button.disabled = true;
+  const tick = () => {
+    if (!activeOverlay) return stopResendTimer();
+    if (resendRemaining <= 0) {
+      button.disabled = false;
+      button.textContent = "Resend code";
+      return stopResendTimer();
+    }
+    button.textContent = `Resend code (${resendRemaining}s)`;
+    resendRemaining -= 1;
+  };
+  tick();
+  resendTimer = setInterval(tick, 1000);
+}
+
+function closeOverlay() {
+  stopResendTimer();
+  activeOverlay?.remove();
+  activeOverlay = null;
+  const form = document.querySelector("#login-form");
+  const button = form?.querySelector('button[type="submit"]');
+  if (button) button.disabled = false;
+}
+
+function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 300, resendAfter = 60 }, email, password, form) {
+  closeOverlay();
+  const wrap = document.createElement("div");
+  wrap.id = "kka-client-otp-overlay";
+  wrap.innerHTML = `
+    <style>
+      #kka-client-otp-overlay{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;padding:20px;background:rgba(8,18,14,.48);backdrop-filter:blur(5px)}
+      #kka-client-otp-overlay .card{width:min(470px,100%);box-sizing:border-box;background:var(--white,#fff);color:var(--ink,#14221d);border:1px solid var(--line,#dfe5df);border-radius:20px;padding:30px;box-shadow:0 28px 90px rgba(0,0,0,.25)}
+      #kka-client-otp-overlay .brand{margin-bottom:22px;color:var(--forest,#1e493d)}
+      #kka-client-otp-overlay .brand strong{font-size:24px;letter-spacing:.08em}
+      #kka-client-otp-overlay .brand small{display:block;color:var(--muted,#68756f);margin-top:4px;letter-spacing:.18em;font-size:9px}
+      #kka-client-otp-overlay h2{margin:6px 0 8px}
+      #kka-client-otp-overlay p{line-height:1.5}
+      #kka-client-otp-overlay .muted{color:var(--muted,#68756f)}
+      #kka-client-otp-overlay .eyebrow{color:var(--muted,#68756f);letter-spacing:.13em;font-size:10px;font-weight:800}
+      #kka-client-otp-overlay .destinations{display:grid;gap:8px;margin:20px 0;padding:14px;border-radius:12px;background:var(--soft,#eef2ee);font-size:13px}
+      #kka-client-otp-overlay .destination{display:flex;justify-content:space-between;gap:14px}
+      #kka-client-otp-overlay .destination span{color:var(--muted,#68756f)}
+      #kka-client-otp-overlay .destination strong{font-weight:700;text-align:right}
+      #kka-client-otp-overlay form{display:grid;gap:13px}
+      #kka-client-otp-overlay input{width:100%;box-sizing:border-box;padding:14px;text-align:center;letter-spacing:.35em;font-size:26px;font-weight:800;border:1px solid var(--input-border,#cbd6cf);border-radius:10px;background:var(--input-bg,#fff);color:var(--ink,#14221d)}
+      #kka-client-otp-overlay input:focus{outline:2px solid var(--focus,#b9d2c3);border-color:var(--accent,#1e493d)}
+      #kka-client-otp-overlay button{padding:12px 16px;border:0;border-radius:9px;font-weight:700;cursor:pointer}
+      #kka-client-otp-overlay button:disabled{opacity:.55;cursor:not-allowed}
+      #kka-client-otp-overlay .primary{background:var(--forest,#1e493d);color:#fff}
+      #kka-client-otp-overlay .secondary{background:transparent;color:var(--forest,#1e493d);border:1px solid var(--line,#dfe5df)}
+      #kka-client-otp-overlay .actions{display:flex;justify-content:space-between;gap:10px;margin-top:4px}
+      #kka-client-otp-overlay .message{min-height:20px;font-size:13px;color:var(--muted,#68756f);margin:0}
+      #kka-client-otp-overlay .message.error{color:#a33a2d}
+      #kka-client-otp-overlay .message.success{color:#245b3d}
+    </style>
+    <section class="card" role="dialog" aria-modal="true" aria-labelledby="kka-otp-title">
+      <div class="brand"><strong>KKA</strong><small>CLIENT PLATFORM</small></div>
+      <p class="eyebrow">SECURITY VERIFICATION</p>
+      <h2 id="kka-otp-title">Enter your verification code</h2>
+      <p class="muted">A 6-digit KKA security code has been sent to the registered email address below.</p>
+      <div class="destinations" aria-label="Registered verification destinations">
+        <div class="destination"><span>Email</span><strong>${esc(maskedEmail || "Registered email")}</strong></div>
+        <div class="destination"><span>Mobile</span><strong>${esc(maskedMobile || "Not available")}</strong></div>
+      </div>
+      <form id="kka-otp-form">
+        <input id="kka-otp-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" minlength="6" aria-label="6 digit verification code" required>
+        <p id="kka-otp-message" class="message">The code expires in 5 minutes. Do not share it with anyone.</p>
+        <button class="primary" id="kka-otp-verify" type="submit">Verify &amp; continue</button>
+      </form>
+      <div class="actions">
+        <button class="secondary" id="kka-otp-change" type="button">Use different account</button>
+        <button class="secondary" id="kka-otp-resend" type="button">Resend code</button>
+      </div>
+    </section>`;
+  document.body.appendChild(wrap);
+  activeOverlay = wrap;
+
+  const codeInput = wrap.querySelector("#kka-otp-code");
+  const message = wrap.querySelector("#kka-otp-message");
+  const verify = wrap.querySelector("#kka-otp-verify");
+  const resend = wrap.querySelector("#kka-otp-resend");
+
+  codeInput.focus();
+  startResendTimer(resend, resendAfter);
+
+  wrap.querySelector("#kka-otp-change").addEventListener("click", () => {
+    closeOverlay();
+    const emailInput = document.querySelector("#email");
+    emailInput?.focus();
+  });
+
+  wrap.querySelector("#kka-otp-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const otp = codeInput.value.replace(/\D/g, "");
+    if (!/^\d{6}$/.test(otp)) {
+      message.className = "message error";
+      message.textContent = "Enter the 6-digit security code.";
+      codeInput.focus();
+      return;
+    }
+    verify.disabled = true;
+    message.className = "message";
+    message.textContent = "Verifying your KKA security code…";
+    try {
+      const response = await fetch(FUNCTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify", email, password, challengeId, otp }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        message.className = "message error";
+        message.textContent = result.error || "The security code could not be verified.";
+        verify.disabled = false;
+        codeInput.select();
+        return;
+      }
+      message.className = "message success";
+      message.textContent = "Verification successful. Opening your KKA workspace…";
+      stopResendTimer();
+      closeOverlay();
+      invokeOriginalLogin(form);
+    } catch {
+      message.className = "message error";
+      message.textContent = "The security service could not be reached. Please try again.";
+      verify.disabled = false;
+    }
+  });
+
+  resend.addEventListener("click", async () => {
+    if (resend.disabled) return;
+    resend.disabled = true;
+    resend.textContent = "Sending…";
+    message.className = "message";
+    message.textContent = "Sending a new KKA security code…";
+    try {
+      const response = await fetch(FUNCTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "request", email, password }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.requiresOtp) {
+        message.className = "message error";
+        message.textContent = result.error || "A new security code could not be sent.";
+        resend.disabled = false;
+        resend.textContent = "Resend code";
+        return;
+      }
+      showOtpOverlay(result, email, password, form);
+    } catch {
+      message.className = "message error";
+      message.textContent = "The security service could not be reached. Please try again.";
+      resend.disabled = false;
+      resend.textContent = "Resend code";
+    }
+  });
+}
+
+async function handleLoginSubmit(event, form) {
+  event.preventDefault();
+  if (!interceptedLoginHandler) return;
+
+  const email = String(form.querySelector("#email")?.value || "").trim().toLowerCase();
+  const password = String(form.querySelector("#password")?.value || "");
+  const message = form.querySelector("#auth-message");
+  const submit = form.querySelector('button[type="submit"]');
+  if (!email || !password) return;
+
+  submit.disabled = true;
+  if (message) message.textContent = "Checking your KKA sign-in…";
+
+  try {
+    const response = await fetch(FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "request", email, password }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (message) message.textContent = result.error || "Unable to sign in. Check your credentials or contact KKA.";
+      submit.disabled = false;
+      return;
+    }
+
+    if (!result.requiresOtp) {
+      if (message) message.textContent = "Signing in…";
+      invokeOriginalLogin(form);
+      return;
+    }
+
+    showOtpOverlay(result, email, password, form);
+  } catch {
+    if (message) message.textContent = "The security service could not be reached. Please try again.";
+    submit.disabled = false;
+  }
+}
+
+const observer = new MutationObserver(() => {
+  const form = document.querySelector("#login-form");
+  if (!form || form.dataset.kkaOtpBound === "1") return;
+  form.dataset.kkaOtpBound = "1";
+  originalAddEventListener.call(form, "submit", event => handleLoginSubmit(event, form));
+});
+observer.observe(document.documentElement, { childList: true, subtree: true });
