@@ -28,6 +28,7 @@ async function loadFamilyData(){
   const {data,error}=await supabase.from("client_account_members").select("account_id,client_id,relationship,is_primary,active,clients(id,display_name,legal_name,pan,tan,cin,gstin,mobile,active)").eq("active",true);
   if(error){console.warn("KKA family bridge could not load family profiles",error);return false}
   const groups=new Map();
+  membersByClient=new Map();
   for(const member of data||[]){
     if(!member.client_id||!member.account_id)continue;
     if(!groups.has(member.account_id))groups.set(member.account_id,[]);
@@ -90,14 +91,12 @@ function showFamilyProfiles(members){
   m.querySelectorAll("[data-family-upload]").forEach(button=>button.addEventListener("click",()=>{
     const member=members.find(x=>x.client_id===button.dataset.familyUpload);
     if(!member)return;
-    const c=member.clients||{};
     sessionStorage.setItem("kka_family_upload_client_id",member.client_id);
     sessionStorage.setItem("kka_family_upload_client_name",clientName(member));
     sessionStorage.setItem("kka_family_upload_account_id",member.account_id||"");
     m.remove();
     const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
-    if(nav)nav.click();
-    else window.location.hash="#documents";
+    if(nav)nav.click();else window.location.hash="#documents";
   }));
   return m;
 }
@@ -108,7 +107,8 @@ function addFamilyRowsToClientList(){
   if(!tbody)return;
   const baseRows=[...tbody.querySelectorAll("tr")].filter(r=>r.querySelector("[data-manage]")&&!r.classList.contains("family-profile-child-row"));
   const signature=baseRows.map(r=>r.querySelector("[data-manage]")?.dataset.manage||"").join("|");
-  if(!signature||signature===lastRowsSignature)return;
+  const hasChildren=!!tbody.querySelector(".family-profile-child-row");
+  if(!signature||hasChildren&&signature===lastRowsSignature)return;
   lastRowsSignature=signature;
   tbody.querySelectorAll(".family-profile-child-row").forEach(r=>r.remove());
   const inserts=[];
@@ -116,9 +116,7 @@ function addFamilyRowsToClientList(){
     const id=row.querySelector("[data-manage]")?.dataset.manage;
     const members=familyByClient.get(id);
     if(!members?.length)continue;
-    const familyMembers=members.filter(x=>!x.is_primary);
-    if(!familyMembers.length)continue;
-    for(const member of familyMembers){
+    for(const member of members.filter(x=>!x.is_primary)){
       const c=member.clients||{};
       const child=document.createElement("tr");
       child.className="family-profile-child-row";
@@ -154,8 +152,7 @@ function bridgeUploader(){
   }
   select.value=id;
   select.dispatchEvent(new Event("change",{bubbles:true}));
-  const old=document.querySelector(".family-upload-target");
-  if(old)old.remove();
+  if(document.querySelector(".family-upload-target"))return;
   const label=document.createElement("div");
   label.className="family-upload-target";
   label.innerHTML=`<div><strong>Uploading for: ${esc(name||clientName(member))}</strong><div class="muted">Family profile · ${esc(relation(member))}</div></div><button type="button" class="secondary compact" id="clear-family-upload-target">Change</button>`;
@@ -167,8 +164,4 @@ function bridgeUploader(){
 const observer=new MutationObserver(()=>{decorateClientRows();addFamilyRowsToClientList();bridgeUploader()});
 observer.observe(document.body,{childList:true,subtree:true});
 
-(async()=>{
-  await loadFamilyData();
-  addFamilyRowsToClientList();
-  bridgeUploader();
-})();
+(async()=>{await loadFamilyData();addFamilyRowsToClientList();bridgeUploader()})();
