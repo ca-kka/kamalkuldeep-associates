@@ -2,9 +2,10 @@ import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/s
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-const STORAGE_KEY="kka-selected-client";
+const STORAGE_PREFIX="kka-selected-client:";
 const STYLE_ID="kka-client-dashboard-v2-style";
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+const storageKey=userId=>`${STORAGE_PREFIX}${userId}`;
 
 function installStyles(){
   if(document.getElementById(STYLE_ID))return;
@@ -22,9 +23,7 @@ function syncUploadNav(enabled){
   const nav=document.querySelector(".sidebar nav");
   if(!nav)return;
   let link=nav.querySelector('a[data-view="upload"]');
-  if(enabled&&!link){
-    link=document.createElement("a");link.dataset.view="upload";link.href="#upload";link.textContent="Upload";nav.insertBefore(link,nav.querySelector('a[data-view="review"]')||null);
-  }
+  if(enabled&&!link){link=document.createElement("a");link.dataset.view="upload";link.href="#upload";link.textContent="Upload";nav.insertBefore(link,nav.querySelector('a[data-view="review"]')||null)}
   if(link)link.hidden=!enabled;
 }
 
@@ -43,15 +42,13 @@ async function getClientContext(){
     const unique=[...new Set(ids)];
     if(unique.length){const {data:rows}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").in("id",unique).eq("active",true);accessible=rows??[];}
   }
-  if(!accessible.length){
-    const {data:primary}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").eq("id",membership.client_id).eq("active",true).maybeSingle();
-    if(primary)accessible=[primary];
-  }
-  const saved=localStorage.getItem(STORAGE_KEY);
+  if(!accessible.length){const {data:primary}=await supabase.from("clients").select("id,legal_name,display_name,pan,gstin,active").eq("id",membership.client_id).eq("active",true).maybeSingle();if(primary)accessible=[primary];}
+  const key=storageKey(user.id);
+  const saved=localStorage.getItem(key);
   const selectedId=accessible.some(c=>c.id===saved)?saved:membership.client_id;
   const client=accessible.find(c=>c.id===selectedId)||accessible.find(c=>c.id===membership.client_id);
   if(!client)return null;
-  return {profile,membership,clients:accessible,client,selectedId};
+  return {profile,membership,clients:accessible,client,selectedId,userId:user.id,storageKey:key};
 }
 
 async function renderClientDashboard(){
@@ -59,19 +56,15 @@ async function renderClientDashboard(){
   const ctx=await getClientContext();
   if(!ctx){window.KKAClientSession=false;syncUploadNav(false);return false;}
   window.KKAClientSession=true;
-  localStorage.setItem(STORAGE_KEY,ctx.selectedId);
+  localStorage.setItem(ctx.storageKey,ctx.selectedId);
   syncUploadNav(ctx.membership.can_upload===true);
   const main=document.querySelector(".portal-main");
   if(!main)return false;
   document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a.dataset.view==="dashboard"));
   const options=ctx.clients.map(c=>`<option value="${esc(c.id)}" ${c.id===ctx.selectedId?"selected":""}>${esc(c.display_name||c.legal_name)}${c.display_name&&c.legal_name&&c.display_name!==c.legal_name?` — ${esc(c.legal_name)}`:""}</option>`).join("");
-  main.innerHTML=`<div class="client-profile-bar"><div class="client-profile-copy"><p class="eyebrow">CURRENT PROFILE</p><strong>Profile &amp; account</strong></div><select class="client-profile-select" id="client-profile-select" aria-label="Change profile">${options}</select></div>
-<header class="client-home-header"><div><p class="eyebrow">PRIVATE KKA WORKSPACE</p><h1>Welcome, ${esc(ctx.client.display_name||ctx.client.legal_name||"Client")}</h1><p class="muted">Your documents, securely organised in one place.</p></div><button class="user" id="client-signout" type="button">Sign out</button></header>
-<section class="client-home-grid"><article class="panel client-welcome-card"><p class="eyebrow">CLIENT PROFILE</p><h2>${esc(ctx.client.display_name||ctx.client.legal_name||"Client profile")}</h2><p class="muted">${esc(ctx.client.legal_name||"")}</p><div class="client-identity"><span>${ctx.client.pan?`PAN · ${esc(ctx.client.pan)}`:"PAN not available"}</span><span>${ctx.client.gstin?`GSTIN · ${esc(ctx.client.gstin)}`:"GSTIN not available"}</span></div></article>
-<article class="panel client-action-card"><p class="eyebrow">DOCUMENTS</p><h2>Document workspace</h2><p class="muted">View documents available for the selected profile.</p><div class="client-home-actions"><button class="primary" id="client-documents" type="button">View documents</button>${ctx.membership.can_upload?`<button class="secondary" id="client-upload" type="button">Upload documents</button>`:`<span class="client-upload-note">Client upload is currently disabled by KKA.</span>`}</div></article></section>
-<section class="panel client-status-card"><div><p class="eyebrow">ACCESS</p><h2>Workspace access</h2><p class="muted">${ctx.membership.can_upload?"Document upload is enabled for this profile.":"Document upload is disabled for this profile. Contact KKA if access needs to change."}</p></div><span class="pill ${ctx.membership.can_upload?"success":"neutral"}">${ctx.membership.can_upload?"Upload enabled":"View only"}</span></section>`;
-  document.getElementById("client-profile-select")?.addEventListener("change",async e=>{localStorage.setItem(STORAGE_KEY,e.target.value);await renderClientDashboard()});
-  document.getElementById("client-signout")?.addEventListener("click",async()=>{await supabase.auth.signOut();localStorage.removeItem(STORAGE_KEY);location.reload()});
+  main.innerHTML=`<div class="client-profile-bar"><div class="client-profile-copy"><p class="eyebrow">CURRENT PROFILE</p><strong>Profile &amp; account</strong></div><select class="client-profile-select" id="client-profile-select" aria-label="Change profile">${options}</select></div><header class="client-home-header"><div><p class="eyebrow">PRIVATE KKA WORKSPACE</p><h1>Welcome, ${esc(ctx.client.display_name||ctx.client.legal_name||"Client")}</h1><p class="muted">Your documents, securely organised in one place.</p></div><button class="user" id="client-signout" type="button">Sign out</button></header><section class="client-home-grid"><article class="panel client-welcome-card"><p class="eyebrow">CLIENT PROFILE</p><h2>${esc(ctx.client.display_name||ctx.client.legal_name||"Client profile")}</h2><p class="muted">${esc(ctx.client.legal_name||"")}</p><div class="client-identity"><span>${ctx.client.pan?`PAN · ${esc(ctx.client.pan)}`:"PAN not available"}</span><span>${ctx.client.gstin?`GSTIN · ${esc(ctx.client.gstin)}`:"GSTIN not available"}</span></div></article><article class="panel client-action-card"><p class="eyebrow">DOCUMENTS</p><h2>Document workspace</h2><p class="muted">View documents available for the selected profile.</p><div class="client-home-actions"><button class="primary" id="client-documents" type="button">View documents</button>${ctx.membership.can_upload?`<button class="secondary" id="client-upload" type="button">Upload documents</button>`:`<span class="client-upload-note">Client upload is currently disabled by KKA.</span>`}</div></article></section><section class="panel client-status-card"><div><p class="eyebrow">ACCESS</p><h2>Workspace access</h2><p class="muted">${ctx.membership.can_upload?"Document upload is enabled for this profile.":"Document upload is disabled for this profile. Contact KKA if access needs to change."}</p></div><span class="pill ${ctx.membership.can_upload?"success":"neutral"}">${ctx.membership.can_upload?"Upload enabled":"View only"}</span></section>`;
+  document.getElementById("client-profile-select")?.addEventListener("change",async e=>{localStorage.setItem(ctx.storageKey,e.target.value);await renderClientDashboard()});
+  document.getElementById("client-signout")?.addEventListener("click",async()=>{await supabase.auth.signOut();localStorage.removeItem(ctx.storageKey);location.reload()});
   document.getElementById("client-documents")?.addEventListener("click",()=>document.querySelector('a[data-view="documents"]')?.click());
   document.getElementById("client-upload")?.addEventListener("click",()=>document.querySelector('a[data-view="upload"]')?.click());
   return true;
