@@ -17,12 +17,12 @@
     return notice;
   }
 
-  function show(message = "Processing…") {
+  function show(message = "Processing…", duration = 700) {
     const el = ensureNotice();
     el.querySelector(".kka-login-processing-text").textContent = message;
     el.classList.add("is-active");
     clearTimeout(safetyTimer);
-    safetyTimer = setTimeout(hide, 8000);
+    safetyTimer = setTimeout(hide, duration);
   }
 
   function hide() {
@@ -30,34 +30,31 @@
     if (notice) notice.classList.remove("is-active");
   }
 
-  function bind() {
-    const form = document.querySelector("#login-form");
-    if (form && !form.dataset.loginFeedbackBound) {
-      form.dataset.loginFeedbackBound = "1";
-      form.addEventListener("submit", () => show("Verifying credentials…"), true);
-    }
+  // Do NOT attach a submit listener to #login-form. The OTP gate deliberately
+  // intercepts that listener and stores the real application login handler.
+  // Attaching another listener here would replace it and prevent login.
+  document.addEventListener("click", event => {
+    const target = event.target.closest?.("button");
+    if (!target || target.disabled) return;
 
-    const otp = document.querySelector("#otp-form");
-    if (otp && !otp.dataset.loginFeedbackBound) {
-      otp.dataset.loginFeedbackBound = "1";
-      otp.addEventListener("submit", () => show("Verifying security code…"), true);
+    if (target.matches("#login-form button[type='submit']")) {
+      show("Verifying credentials…", 700);
+      return;
     }
-
-    const message = document.querySelector("#auth-message");
-    if (message && !message.dataset.loginFeedbackBound) {
-      message.dataset.loginFeedbackBound = "1";
-      new MutationObserver(() => {
-        if ((message.textContent || "").trim()) hide();
-      }).observe(message, { childList: true, characterData: true, subtree: true });
+    if (target.matches("#kka-otp-verify")) {
+      show("Verifying security code…", 700);
+      return;
     }
-  }
+    if (target.matches("#kka-otp-resend")) {
+      show("Sending a new security code…", 700);
+    }
+  }, true);
 
-  const observer = new MutationObserver(() => {
-    bind();
-    if (document.querySelector(".portal-shell")) hide();
-  });
-  observer.observe(app, { childList: true, subtree: true });
-  bind();
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    const form = event.target.closest?.("#login-form");
+    if (form) show("Verifying credentials…", 700);
+  }, true);
 
   window.KKALoginFeedback = { show, hide };
 })();
