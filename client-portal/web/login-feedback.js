@@ -1,38 +1,63 @@
-/* KKA authentication gateway — visible processing state for sign-in and OTP flows. */
+/* KKA authentication gateway — compact, non-blocking processing feedback. */
 (() => {
   const app = document.getElementById("app");
   if (!app) return;
-  let overlay = null;
 
-  function show(message = "Please wait…") {
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.className = "kka-login-processing";
-      overlay.setAttribute("role", "status");
-      overlay.setAttribute("aria-live", "polite");
-      overlay.innerHTML = '<div class="kka-login-processing-card"><span class="kka-login-spinner"></span><strong>KKA Secure Portal</strong><span class="kka-login-processing-text"></span></div>';
-      document.body.appendChild(overlay);
-    }
-    overlay.querySelector(".kka-login-processing-text").textContent = message;
-    overlay.classList.add("is-active");
+  let notice = null;
+  let safetyTimer = null;
+
+  function ensureNotice() {
+    if (notice) return notice;
+    notice = document.createElement("div");
+    notice.className = "kka-login-processing";
+    notice.setAttribute("role", "status");
+    notice.setAttribute("aria-live", "polite");
+    notice.innerHTML = '<div class="kka-login-processing-card"><span class="kka-login-spinner" aria-hidden="true"></span><span class="kka-login-processing-copy"><strong>KKA Secure Portal</strong><span class="kka-login-processing-text"></span></span></div>';
+    document.body.appendChild(notice);
+    return notice;
   }
 
-  function hide() { overlay?.classList.remove("is-active"); }
+  function show(message = "Processing…") {
+    const el = ensureNotice();
+    el.querySelector(".kka-login-processing-text").textContent = message;
+    el.classList.add("is-active");
+    clearTimeout(safetyTimer);
+    safetyTimer = setTimeout(hide, 8000);
+  }
+
+  function hide() {
+    clearTimeout(safetyTimer);
+    if (notice) notice.classList.remove("is-active");
+  }
 
   function bind() {
     const form = document.querySelector("#login-form");
     if (form && !form.dataset.loginFeedbackBound) {
       form.dataset.loginFeedbackBound = "1";
-      form.addEventListener("submit", () => show("Verifying your credentials…"), true);
+      form.addEventListener("submit", () => show("Verifying credentials…"), true);
     }
+
     const otp = document.querySelector("#otp-form");
     if (otp && !otp.dataset.loginFeedbackBound) {
       otp.dataset.loginFeedbackBound = "1";
-      otp.addEventListener("submit", () => show("Verifying your KKA security code…"), true);
+      otp.addEventListener("submit", () => show("Verifying security code…"), true);
+    }
+
+    const message = document.querySelector("#auth-message");
+    if (message && !message.dataset.loginFeedbackBound) {
+      message.dataset.loginFeedbackBound = "1";
+      new MutationObserver(() => {
+        if ((message.textContent || "").trim()) hide();
+      }).observe(message, { childList: true, characterData: true, subtree: true });
     }
   }
 
-  new MutationObserver(() => { bind(); if (document.querySelector(".portal-shell")) hide(); }).observe(app, { childList: true, subtree: true });
+  const observer = new MutationObserver(() => {
+    bind();
+    if (document.querySelector(".portal-shell")) hide();
+  });
+  observer.observe(app, { childList: true, subtree: true });
   bind();
+
   window.KKALoginFeedback = { show, hide };
 })();
