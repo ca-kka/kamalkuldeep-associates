@@ -1,7 +1,9 @@
 import "./access-requests.js?v=20260914-1";
 
-/* Admin-only compatibility guard. Dedicated Admin view modules own every non-dashboard route. */
-const dedicatedViews=new Set(["documents","clients","storage","review","activity","staff-access","access-requests","filing-structure"]);
+/* Admin-only compatibility guard.
+   app.js still owns the Clients screen, while dedicated modules own the other
+   non-dashboard routes. Do not intercept Clients or the shared dashboard. */
+const dedicatedViews=new Set(["documents","storage","review","activity","staff-access","access-requests","filing-structure"]);
 
 document.addEventListener("click",event=>{
   const link=event.target.closest?.("a[data-view]");
