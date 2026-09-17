@@ -40,12 +40,12 @@
     },
     {
       "id": "KKA-002",
-      "status": "published",
+      "status": "draft",
       "title": "TDS on Purchase of Property from NRI: Changes from 1 October 2026",
       "slug": "tds-on-purchase-of-property-from-nri-changes-from-1-october-2026",
-      "category": "GST",
+      "category": "Income Tax",
       "author": "CA Kamal Jain",
-      "publishedAt": "2026-09-17",
+      "publishedAt": "",
       "updatedAt": "2026-09-17",
       "summary": "Know the major TDS compliance change from 1 October 2026 when a resident individual or HUF purchases immovable property from an NRI, including the removal of TAN requirement.",
       "tags": [
