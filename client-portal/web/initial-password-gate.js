@@ -19,13 +19,30 @@ function showGate(){
     const m=wrap.querySelector("#kka-password-message");
     if(password!==confirm){m.className="message error";m.textContent="Passwords do not match.";return}
     m.className="message";m.textContent="Securing your account…";
-    const {data:{session}}=await supabase.auth.getSession();
-    if(!session?.access_token){m.className="message error";m.textContent="Your session expired. Please sign in again.";return}
-    const r=await fetch(`${SUPABASE_URL}/functions/v1/complete-initial-password`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({password})});
-    const result=await r.json().catch(()=>({}));
-    if(!r.ok){m.className="message error";m.textContent=result.error||"Password could not be updated.";return}
-
-    await supabase.auth.signOut();
+    const submit=wrap.querySelector("button[type=submit]");
+    if(submit)submit.disabled=true;
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      if(!session?.access_token){m.className="message error";m.textContent="Your session expired. Please sign in again.";return}
+      const requestId=crypto.randomUUID();
+      console.info("[KKA initial-password] request started",{requestId,userId:session.user?.id||null,mustChange:session.user?.app_metadata?.must_change_password===true});
+      const r=await fetch(`${SUPABASE_URL}/functions/v1/complete-initial-password`,{method:"POST",headers:{"Content-Type":"application/json","X-KKA-Request-ID":requestId,Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({password})});
+      const result=await r.json().catch(()=>({}));
+      console.info("[KKA initial-password] response",{requestId,status:r.status,ok:r.ok,error:result.error||null});
+      if(!r.ok){m.className="message error";m.textContent=(result.error||"Password could not be updated.")+` (Reference: ${requestId.slice(0,8)})`;return}
+      const {data:{user:verifiedUser},error:verifyError}=await supabase.auth.getUser();
+      const verified=verifyError==null&&verifiedUser?.app_metadata?.must_change_password!==true;
+      console.info("[KKA initial-password] post-update verification",{requestId,verified,verifyError:verifyError?.message||null,mustChange:verifiedUser?.app_metadata?.must_change_password??null});
+      if(!verified){m.className="message error";m.textContent="The server reported success, but your account was not confirmed as updated. Please try again. Reference: "+requestId.slice(0,8);return}
+      await supabase.auth.signOut();
+    }catch(error){
+      console.error("[KKA initial-password] request failed",error);
+      m.className="message error";
+      m.textContent="We could not complete the password change. Please try again. Reference: "+(crypto.randomUUID().slice(0,8));
+    }finally{
+      const currentSubmit=wrap.querySelector("button[type=submit]");
+      if(currentSubmit)currentSubmit.disabled=false;
+    }
     const emailNote=result.emailSent===true
       ? `<p class="message success">A password-change confirmation has been sent to your registered email address.</p>`
       : `<p class="message">Your password was changed, but the confirmation email could not be sent. Please continue and contact KKA if you do not receive it.</p>`;
