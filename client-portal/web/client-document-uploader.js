@@ -2,7 +2,7 @@ import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/s
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-const STORAGE_KEY="kka-selected-client";
+const STORAGE_PREFIX="kka-selected-client:";
 const ROOT_ID="kka-client-upload-panel";
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 
@@ -20,7 +20,7 @@ async function context(){
   if(profile?.role!=="client"||!profile.active)return null;
   const {data:membership}=await supabase.from("client_memberships").select("client_id,can_upload").eq("user_id",user.id).maybeSingle();
   if(!membership?.client_id)return null;
-  const clientId=localStorage.getItem(STORAGE_KEY)||membership.client_id;
+  const clientId=localStorage.getItem(`${STORAGE_PREFIX}${user.id}`)||membership.client_id;
   const {data:client}=await supabase.from("clients").select("id,display_name,legal_name").eq("id",clientId).eq("active",true).maybeSingle();
   if(!client)return null;
   return {user,membership,client};
