@@ -1,7 +1,4 @@
-/* Client portal: dedicated Client view modules own non-dashboard navigation. */
+/* Client portal navigation guard. Dedicated Documents and Upload modules handle their own routes. */
+// Do not intercept these links here: doing so prevents the dedicated modules from receiving the click.
 const dedicatedViews=new Set(["documents","upload"]);
-document.addEventListener("click",event=>{
-  const link=event.target.closest?.("a[data-view]");
-  if(!link||!dedicatedViews.has(link.dataset.view))return;
-  event.stopImmediatePropagation();
-},true);
+window.KKADedicatedClientViews=dedicatedViews;
