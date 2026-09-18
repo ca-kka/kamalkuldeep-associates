@@ -104,7 +104,7 @@ function bindOtpCubes(wrap) {
   cubes[0]?.focus();
 }
 
-function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 300, resendAfter = 60 }, email, password, form) {
+function showOtpOverlay({ maskedEmail, challengeId, expiresIn = 300, resendAfter = 60 }, email, password, form) {
   closeOverlay();
   const wrap = document.createElement("div");
   wrap.id = "kka-client-otp-overlay";
@@ -142,9 +142,8 @@ function showOtpOverlay({ maskedEmail, maskedMobile, challengeId, expiresIn = 30
       <p class="eyebrow">SECURITY VERIFICATION</p>
       <h2 id="kka-otp-title">Enter your verification code</h2>
       <p class="muted">A 6-digit KKA security code has been sent to the registered email address below.</p>
-      <div class="destinations" aria-label="Registered verification destinations">
+      <div class="destinations" aria-label="Registered verification destination">
         <div class="destination"><span>Email</span><strong>${esc(maskedEmail || "Registered email")}</strong></div>
-        <div class="destination"><span>Mobile</span><strong>${esc(maskedMobile || "Not available")}</strong></div>
       </div>
       <form id="kka-otp-form">
         <div class="otp-cubes" role="group" aria-label="6 digit verification code">
