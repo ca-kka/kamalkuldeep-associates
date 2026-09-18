@@ -2,24 +2,102 @@ import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/s
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-const route=(location.pathname.replace(/\/+$/,'')||'/').endsWith('/admin')?'admin':(location.pathname.replace(/\/+$/,'')||'/').endsWith('/client')?'client':'root';
-const BROWSER_MARKER=`kka-browser-session:${route}`;
+const path=location.pathname.replace(/\/+$/,"")||"/";
+const route=path.endsWith("/admin")?"admin":path.endsWith("/client")?"client":"root";
+const TAB_MARKER=`kka-tab-session:${route}`;
 const LAST_ACTIVITY=`kka-last-activity:${route}`;
 const INACTIVITY_MS=5*60*1000,WARNING_MS=30*1000;
 const EVENTS=["pointerdown","pointermove","keydown","touchstart","wheel","scroll"];
 let lastActivity=Date.now(),timer=null,warningTimer=null,loggedOut=false,listenersInstalled=false;
+
 function clearTimers(){if(timer)clearTimeout(timer);if(warningTimer)clearTimeout(warningTimer);timer=warningTimer=null}
-function touch(){if(loggedOut||route==='root')return;lastActivity=Date.now();try{localStorage.setItem(LAST_ACTIVITY,String(lastActivity));localStorage.setItem(BROWSER_MARKER,String(lastActivity))}catch(_e){}schedule()}
-function schedule(){if(route==='root')return;clearTimers();const remaining=Math.max(0,INACTIVITY_MS-(Date.now()-lastActivity));warningTimer=setTimeout(showWarning,Math.max(0,remaining-WARNING_MS));timer=setTimeout(autoLogout,remaining)}
-function showWarning(){if(loggedOut||route==='root'||document.getElementById('kka-session-warning'))return;const box=document.createElement('div');box.id='kka-session-warning';box.setAttribute('role','alertdialog');box.setAttribute('aria-live','assertive');box.innerHTML=`<div class="kka-session-warning-card"><strong>Session expiring</strong><p>For security, the portal will automatically sign you out in <span id="kka-session-countdown">30</span> seconds because there has been no activity.</p><div><button type="button" id="kka-session-stay">Stay signed in</button><button type="button" id="kka-session-now">Sign out now</button></div></div></div>`;document.body.appendChild(box);let seconds=30;const interval=setInterval(()=>{seconds--;const el=document.getElementById('kka-session-countdown');if(el)el.textContent=String(Math.max(0,seconds));if(seconds<=0)clearInterval(interval)},1000);box.querySelector('#kka-session-stay')?.addEventListener('click',()=>{box.remove();touch()});box.querySelector('#kka-session-now')?.addEventListener('click',()=>{box.remove();manualLogout()})}
-async function autoLogout(){if(loggedOut||route==='root')return;loggedOut=true;clearTimers();sessionStorage.setItem('kka-logout-reason','inactivity');try{await supabase.auth.signOut()}catch(_e){}try{localStorage.removeItem(BROWSER_MARKER);localStorage.removeItem(LAST_ACTIVITY)}catch(_e){}location.reload()}
-async function manualLogout(){if(loggedOut||route==='root')return;loggedOut=true;clearTimers();sessionStorage.setItem('kka-logout-reason','manual');try{await supabase.auth.signOut()}catch(_e){}try{localStorage.removeItem(BROWSER_MARKER);localStorage.removeItem(LAST_ACTIVITY)}catch(_e){}location.reload()}
-function loginNotice(){if(route!=='root')return;const reason=sessionStorage.getItem('kka-logout-reason');if(!reason)return;sessionStorage.removeItem('kka-logout-reason');const apply=()=>{const message=document.querySelector('#auth-message');if(!message)return false;message.className='message session-ended';message.textContent=reason==='inactivity'?'Automatically signed out after 5 minutes of inactivity. Please sign in again to continue.':reason==='manual'?'You have been signed out securely.':'The previous browser session was closed. Please sign in again to continue.';return true};if(!apply())setTimeout(apply,0)}
-function injectStyles(){if(document.getElementById('kka-session-security-style'))return;const s=document.createElement('style');s.id='kka-session-security-style';s.textContent=`#kka-session-warning{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px;background:rgb(0 0 0 / .48);backdrop-filter:blur(3px)}.kka-session-warning-card{width:min(460px,100%);padding:26px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--text);box-shadow:0 20px 60px rgb(0 0 0 / .22)}.kka-session-warning-card strong{font-size:20px}.kka-session-warning-card p{margin:10px 0 20px;color:var(--text-muted);line-height:1.55}.kka-session-warning-card div{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.kka-session-warning-card button{border:1px solid var(--border);border-radius:10px;padding:9px 14px;background:var(--surface-2);color:var(--text);cursor:pointer}.kka-session-warning-card #kka-session-stay{background:var(--accent);color:#fff;border-color:var(--accent)}#auth-message.session-ended{display:block;padding:11px 13px;border-radius:10px;margin-top:12px;line-height:1.45;background:var(--soft);border:1px solid var(--border);color:var(--text)}`;document.head.appendChild(s)}
-function installActivityListeners(){if(route==='root'||listenersInstalled)return;listenersInstalled=true;EVENTS.forEach(e=>document.addEventListener(e,touch,{passive:true,capture:true}))}
-function installManualLogoutCapture(){if(route==='root')return;document.addEventListener('click',e=>{const target=e.target.closest?.('#client-signout,[data-profile-action=signout],button.user[title="Sign out"]');if(!target)return;e.preventDefault();e.stopImmediatePropagation();manualLogout()},true)}
-function installBrowserCloseGuard(){if(route==='root')return;window.addEventListener('beforeunload',()=>{if(loggedOut||!document.querySelector('.portal-shell'))return;try{localStorage.setItem(BROWSER_MARKER,'closed')}catch(_e){}})}
-function init(){injectStyles();loginNotice();if(route==='root')return;installActivityListeners();installManualLogoutCapture();installBrowserCloseGuard();let marker=null;try{marker=localStorage.getItem(BROWSER_MARKER)}catch(_e){}const nav=performance.getEntriesByType('navigation')[0];const isReload=nav?.type==='reload';if(marker&&!isReload){sessionStorage.setItem('kka-logout-reason','browser-close');supabase.auth.signOut().finally(()=>{try{localStorage.removeItem(BROWSER_MARKER);localStorage.removeItem(LAST_ACTIVITY)}catch(_e){}location.reload()});return}supabase.auth.getSession().then(({data:{session}})=>{if(!session?.user){clearTimers();return}lastActivity=Date.now();try{localStorage.setItem(LAST_ACTIVITY,String(lastActivity));localStorage.setItem(BROWSER_MARKER,String(lastActivity))}catch(_e){}schedule()}).catch(()=>{})}
-supabase.auth.onAuthStateChange((_event,session)=>{if(route==='root')return;if(!session?.user){clearTimers();return}if(!loggedOut){lastActivity=Date.now();try{localStorage.setItem(LAST_ACTIVITY,String(lastActivity));localStorage.setItem(BROWSER_MARKER,String(lastActivity))}catch(_e){}schedule()}});
+function clearTabState(){try{sessionStorage.removeItem(TAB_MARKER);localStorage.removeItem(LAST_ACTIVITY)}catch{}}
+function markTabActive(){try{sessionStorage.setItem(TAB_MARKER,String(Date.now()));localStorage.setItem(LAST_ACTIVITY,String(Date.now()))}catch{}}
+function touch(){if(loggedOut||route==="root")return;lastActivity=Date.now();markTabActive();schedule()}
+function schedule(){if(route==="root")return;clearTimers();const remaining=Math.max(0,INACTIVITY_MS-(Date.now()-lastActivity));warningTimer=setTimeout(showWarning,Math.max(0,remaining-WARNING_MS));timer=setTimeout(autoLogout,remaining)}
+
+function showWarning(){
+  if(loggedOut||route==="root"||document.getElementById("kka-session-warning"))return;
+  const box=document.createElement("div");
+  box.id="kka-session-warning";
+  box.setAttribute("role","alertdialog");
+  box.setAttribute("aria-live","assertive");
+  box.innerHTML=`<div class="kka-session-warning-card"><strong>Session expiring</strong><p>For security, the portal will automatically sign you out in <span id="kka-session-countdown">30</span> seconds because there has been no activity.</p><div><button type="button" id="kka-session-stay">Stay signed in</button><button type="button" id="kka-session-now">Sign out now</button></div></div></div>`;
+  document.body.appendChild(box);
+  let seconds=30;
+  const interval=setInterval(()=>{seconds--;const el=document.getElementById("kka-session-countdown");if(el)el.textContent=String(Math.max(0,seconds));if(seconds<=0)clearInterval(interval)},1000);
+  box.querySelector("#kka-session-stay")?.addEventListener("click",()=>{box.remove();touch()});
+  box.querySelector("#kka-session-now")?.addEventListener("click",()=>{box.remove();manualLogout()});
+}
+
+async function finishLogout(reason){
+  if(loggedOut||route==="root")return;
+  loggedOut=true;
+  clearTimers();
+  try{sessionStorage.setItem("kka-logout-reason",reason)}catch{}
+  try{await supabase.auth.signOut()}catch{}
+  clearTabState();
+  location.reload();
+}
+async function autoLogout(){await finishLogout("inactivity")}
+async function manualLogout(){await finishLogout("manual")}
+
+function injectStyles(){
+  if(document.getElementById("kka-session-security-style"))return;
+  const s=document.createElement("style");
+  s.id="kka-session-security-style";
+  s.textContent=`#kka-session-warning{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px;background:rgb(0 0 0 / .48);backdrop-filter:blur(3px)}.kka-session-warning-card{width:min(460px,100%);padding:26px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--text);box-shadow:0 20px 60px rgb(0 0 0 / .22)}.kka-session-warning-card strong{font-size:20px}.kka-session-warning-card p{margin:10px 0 20px;color:var(--text-muted);line-height:1.55}.kka-session-warning-card div{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.kka-session-warning-card button{border:1px solid var(--border);border-radius:10px;padding:9px 14px;background:var(--surface-2);color:var(--text);cursor:pointer}.kka-session-warning-card #kka-session-stay{background:var(--accent);color:#fff;border-color:var(--accent)}`;
+  document.head.appendChild(s)
+}
+function installActivityListeners(){
+  if(route==="root"||listenersInstalled)return;
+  listenersInstalled=true;
+  EVENTS.forEach(e=>document.addEventListener(e,touch,{passive:true,capture:true}))
+}
+function installManualLogoutCapture(){
+  if(route==="root")return;
+  document.addEventListener("click",e=>{
+    const target=e.target.closest?.("#client-signout,[data-profile-action=signout],button.user[title=\"Sign out\"]");
+    if(!target)return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    manualLogout();
+  },true)
+}
+
+function init(){
+  injectStyles();
+  if(route==="root")return;
+  installActivityListeners();
+  installManualLogoutCapture();
+
+  let tabMarker=null;
+  try{tabMarker=sessionStorage.getItem(TAB_MARKER)}catch{}
+
+  supabase.auth.getSession().then(async({data:{session}})=>{
+    if(!session?.user){clearTimers();return}
+
+    // sessionStorage survives reloads but is destroyed when the tab/browser is closed.
+    // Therefore a protected page with no tab marker is a previously closed session.
+    if(!tabMarker){
+      try{sessionStorage.setItem("kka-logout-reason","browser-close")}catch{}
+      await supabase.auth.signOut();
+      clearTabState();
+      location.reload();
+      return;
+    }
+
+    lastActivity=Date.now();
+    markTabActive();
+    schedule();
+  }).catch(()=>{})
+}
+
+supabase.auth.onAuthStateChange((_event,session)=>{
+  if(route==="root")return;
+  if(!session?.user){clearTimers();return}
+  if(!loggedOut){lastActivity=Date.now();markTabActive();schedule()}
+});
+
 window.KKASessionManualLogout=manualLogout;
 init();
