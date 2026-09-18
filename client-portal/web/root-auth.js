@@ -10,64 +10,34 @@ function setMessage(text,type=""){
   if(!m)return;
   m.className=`message${type?` ${type}`:""}`;
   m.textContent=text||"";
-  if(type==="error")m.setAttribute("role","alert");else m.removeAttribute("role");
+  if(type==="error")m.setAttribute("role","alert");else m.removeAttribute("role")
 }
-
-function setupPasswordToggle(){
-  const input=document.querySelector("#password"),toggle=document.querySelector("#password-toggle");
-  if(!input||!toggle)return;
-  toggle.addEventListener("click",()=>{
-    const visible=input.type==="text";
-    input.type=visible?"password":"text";
-    toggle.textContent=visible?"Show":"Hide";
-    toggle.setAttribute("aria-label",visible?"Show password":"Hide password");
-    toggle.setAttribute("aria-pressed",String(!visible));
-    input.focus();
-  });
+function showSessionReason(){
+  let reason=null;
+  try{reason=sessionStorage.getItem("kka-logout-reason");if(reason)sessionStorage.removeItem("kka-logout-reason")}catch{}
+  if(!reason)return;
+  const message=reason==="inactivity"?"Automatically signed out after 5 minutes of inactivity. Please sign in again to continue.":reason==="manual"?"You have been signed out securely.":"The previous client tab/browser session was closed. Please sign in again to continue.";
+  setMessage(message)
 }
-
-function clearLoginError(){
-  document.querySelector("#auth-message")?.classList.remove("error");
-  document.querySelector("#email")?.classList.remove("login-input-error");
-  document.querySelector("#password")?.classList.remove("login-input-error");
-}
-
-function showLoginError(text="Incorrect email or password. Please try again."){
-  const message=document.querySelector("#auth-message");
-  const email=document.querySelector("#email");
-  const password=document.querySelector("#password");
-  if(message){message.className="message error";message.textContent=text;message.setAttribute("role","alert");}
-  email?.classList.add("login-input-error");
-  password?.classList.add("login-input-error");
-  password?.focus();
-}
-
+function setupPasswordToggle(){const input=document.querySelector("#password"),toggle=document.querySelector("#password-toggle");if(!input||!toggle)return;toggle.addEventListener("click",()=>{const visible=input.type==="text";input.type=visible?"password":"text";toggle.textContent=visible?"Show":"Hide";toggle.setAttribute("aria-label",visible?"Show password":"Hide");toggle.setAttribute("aria-pressed",String(!visible));input.focus()})}
+function clearLoginError(){document.querySelector("#auth-message")?.classList.remove("error");document.querySelector("#email")?.classList.remove("login-input-error");document.querySelector("#password")?.classList.remove("login-input-error")}
+function showLoginError(text="Incorrect email or password. Please try again."){const message=document.querySelector("#auth-message"),email=document.querySelector("#email"),password=document.querySelector("#password");if(message){message.className="message error";message.textContent=text;message.setAttribute("role","alert")}email?.classList.add("login-input-error");password?.classList.add("login-input-error");password?.focus()}
+function markClientTabForLogin(){try{sessionStorage.setItem("kka-tab-session:client",String(Date.now()))}catch{}}
+function markAdminTabForLogin(){try{sessionStorage.setItem("kka-tab-session:admin",String(Date.now()))}catch{}}
 async function redirectForRole(){
   const {data:{user}}=await supabase.auth.getUser();
-  if(!user){setMessage("Authentication could not be completed. Please try again.","error");return false;}
+  if(!user){setMessage("Authentication could not be completed. Please try again.","error");return false}
   const {data:profile,error}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();
-  if(error||!profile){setMessage("Your KKA profile could not be loaded. Please contact KKA.","error");return false;}
-  if(profile.active!==true){await supabase.auth.signOut();setMessage("This KKA portal account is currently inactive. Please contact KKA.","error");return false;}
-  if(profile.role==="client"){
-    window.location.replace("client/");
-    return true;
-  }
-  if(profile.role==="admin"||profile.role==="staff"){
-    window.location.replace("admin/");
-    return true;
-  }
-  await supabase.auth.signOut();
-  setMessage("This account is not configured for KKA portal access.","error");
-  return false;
+  if(error||!profile){setMessage("Your KKA profile could not be loaded. Please contact KKA.","error");return false}
+  if(profile.active!==true){await supabase.auth.signOut();setMessage("This KKA portal account is currently inactive. Please contact KKA.","error");return false}
+  if(profile.role==="client"){markClientTabForLogin();window.location.replace("client/");return true}
+  if(profile.role==="admin"||profile.role==="staff"){markAdminTabForLogin();window.location.replace("admin/");return true}
+  await supabase.auth.signOut();setMessage("This account is not configured for KKA portal access.","error");return false
 }
-
 function renderLogin(){
-  const t=template("#login-template");
-  if(!t||!root)return;
-  root.replaceChildren(t);
-  setupPasswordToggle();
-  const form=document.querySelector("#login-form");
-  if(!form)return;
+  const t=template("#login-template");if(!t||!root)return;
+  root.replaceChildren(t);setupPasswordToggle();showSessionReason();
+  const form=document.querySelector("#login-form");if(!form)return;
   form.querySelector("#email")?.addEventListener("input",clearLoginError);
   form.querySelector("#password")?.addEventListener("input",clearLoginError);
   form.addEventListener("submit",async event=>{
@@ -76,35 +46,15 @@ function renderLogin(){
     const password=String(document.querySelector("#password")?.value||"");
     const submit=form.querySelector('button[type="submit"]');
     if(!email||!password)return;
-    clearLoginError();
-    if(submit)submit.disabled=true;
-    setMessage("Signing in securely…");
+    clearLoginError();if(submit)submit.disabled=true;setMessage("Signing in securely…");
     try{
       const {error}=await supabase.auth.signInWithPassword({email,password});
-      if(error){
-        showLoginError("Incorrect email or password. Please try again.");
-        try{window.KKALoginFeedback?.hide?.()}catch{}
-        if(submit)submit.disabled=false;
-        return;
-      }
+      if(error){showLoginError("Incorrect email or password. Please try again.");try{window.KKALoginFeedback?.hide?.()}catch{}if(submit)submit.disabled=false;return}
       setMessage("Verification successful. Opening your KKA workspace…","success");
       await redirectForRole();
-    }catch(error){
-      showLoginError(error?.message||"The KKA authentication service could not be reached. Please try again.");
-      try{window.KKALoginFeedback?.hide?.()}catch{}
-      if(submit)submit.disabled=false;
-    }
-  });
+    }catch(error){showLoginError(error?.message||"The KKA authentication service could not be reached. Please try again.");try{window.KKALoginFeedback?.hide?.()}catch{}if(submit)submit.disabled=false}
+  })
 }
-
-async function bootstrap(){
-  renderLogin();
-  const {data:{session}}=await supabase.auth.getSession();
-  if(session?.user)await redirectForRole();
-}
-
-supabase.auth.onAuthStateChange((event,session)=>{
-  if(session?.user&&event==="SIGNED_IN")void redirectForRole();
-});
-
+async function bootstrap(){renderLogin();const {data:{session}}=await supabase.auth.getSession();if(session?.user)await redirectForRole()}
+supabase.auth.onAuthStateChange((event,session)=>{if(session?.user&&event==="SIGNED_IN")void redirectForRole()});
 void bootstrap();
