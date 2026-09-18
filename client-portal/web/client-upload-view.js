@@ -1,7 +1,8 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
-const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);\nconst STORAGE_PREFIX="kka-selected-client:";
+const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const STORAGE_PREFIX="kka-selected-client:";
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 const fmtSize=n=>n<1024?`${n} B`:n<1048576?`${Math.ceil(n/1024)} KB`:`${(n/1048576).toFixed(1)} MB`;
 const sha256=async file=>{const h=await crypto.subtle.digest("SHA-256",await file.arrayBuffer());return [...new Uint8Array(h)].map(v=>v.toString(16).padStart(2,"0")).join("")};
@@ -15,7 +16,8 @@ async function isClient(){
 }
 
 async function getSelectedClient(){
-  const {data:{user}}=await supabase.auth.getUser();\n  const id=user?.id?localStorage.getItem(`${STORAGE_PREFIX}${user.id}`):null;
+  const {data:{user}}=await supabase.auth.getUser();
+  const id=user?.id?localStorage.getItem(`${STORAGE_PREFIX}${user.id}`):null;
   if(!id)return null;
   const {data,error}=await supabase.from("clients").select("id,display_name,legal_name,pan,gstin").eq("id",id).maybeSingle();
   if(error||!data)return null;
