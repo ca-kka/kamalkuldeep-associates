@@ -247,6 +247,20 @@ function showOtpOverlay({ maskedEmail, challengeId, expiresIn = 300, resendAfter
   });
 }
 
+function showCredentialError(form, text = "Incorrect email or password. Please try again.") {
+  const message = form?.querySelector("#auth-message");
+  const emailInput = form?.querySelector("#email");
+  const passwordInput = form?.querySelector("#password");
+  if (message) {
+    message.className = "message error kka-credential-error";
+    message.textContent = text;
+    message.setAttribute("role", "alert");
+  }
+  emailInput?.classList.add("login-input-error");
+  passwordInput?.classList.add("login-input-error");
+  passwordInput?.focus();
+}
+
 async function handleLoginSubmit(event, form) {
   event.preventDefault();
   if (!interceptedLoginHandler) return;
@@ -269,7 +283,9 @@ async function handleLoginSubmit(event, form) {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      if (message) message.textContent = result.error || "Unable to sign in. Check your credentials or contact KKA.";
+      showCredentialError(form, response.status === 401 || response.status === 403
+        ? "Incorrect email or password. Please try again."
+        : (result.error || "Unable to sign in. Please try again."));
       submit.disabled = false;
       return;
     }
@@ -282,7 +298,7 @@ async function handleLoginSubmit(event, form) {
 
     showOtpOverlay(result, email, password, form);
   } catch {
-    if (message) message.textContent = "The security service could not be reached. Please try again.";
+    showCredentialError(form, "The KKA authentication service could not be reached. Please try again.");
     submit.disabled = false;
   }
 }
@@ -294,3 +310,7 @@ const observer = new MutationObserver(() => {
   originalAddEventListener.call(form, "submit", event => handleLoginSubmit(event, form));
 });
 observer.observe(document.documentElement, { childList: true, subtree: true });
+
+const style = document.createElement("style");
+style.textContent = `.kka-credential-error{display:block!important;margin-top:12px;padding:11px 13px;border:1px solid #c94a3d;border-radius:10px;background:rgba(201,74,61,.10);color:#9f2f25!important;font-weight:600;line-height:1.45}.login-input-error{border-color:#c94a3d!important;box-shadow:0 0 0 2px rgba(201,74,61,.10)}`;
+document.head.appendChild(style);
