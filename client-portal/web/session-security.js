@@ -37,7 +37,7 @@ async function finishLogout(reason){
   try{sessionStorage.setItem("kka-logout-reason",reason)}catch{}
   try{await supabase.auth.signOut()}catch{}
   clearTabState();
-  location.reload();
+  location.replace('../');
 }
 async function autoLogout(){await finishLogout("inactivity")}
 async function manualLogout(){await finishLogout("manual")}
