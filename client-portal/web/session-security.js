@@ -10,7 +10,7 @@ const route=/\/admin(?:\/|$)/.test(path)||path.endsWith("/admin/index.html")?"ad
 const TAB_MARKER=`kka-tab-session:${route}`;
 const LAST_ACTIVITY=`kka-last-activity:${route}`;
 const INACTIVITY_MS=5*60*1000,WARNING_MS=30*1000;
-const EVENTS=["pointerdown","pointermove","keydown","touchstart","wheel","scroll"];
+const EVENTS=["pointerdown","keydown","touchstart","wheel"];
 let lastActivity=0,timer=null,warningTimer=null,loggedOut=false,listenersInstalled=false;
 
 function clearTimers(){if(timer)clearTimeout(timer);if(warningTimer)clearTimeout(warningTimer);timer=warningTimer=null}
