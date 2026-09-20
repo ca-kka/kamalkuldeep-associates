@@ -24,14 +24,14 @@ function clearLoginError(){document.querySelector("#auth-message")?.classList.re
 function showLoginError(text="Incorrect email or password. Please try again."){const message=document.querySelector("#auth-message"),email=document.querySelector("#email"),password=document.querySelector("#password");if(message){message.className="message error";message.textContent=text;message.setAttribute("role","alert")}email?.classList.add("login-input-error");password?.classList.add("login-input-error");password?.focus()}
 function markClientTabForLogin(){try{sessionStorage.setItem("kka-tab-session:client",String(Date.now()))}catch{}}
 function markAdminTabForLogin(){try{sessionStorage.setItem("kka-tab-session:admin",String(Date.now()))}catch{}}
-async function redirectForRole(){
+async function redirectForRole(markSession=true){
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){setMessage("Authentication could not be completed. Please try again.","error");return false}
   const {data:profile,error}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();
   if(error||!profile){setMessage("Your KKA profile could not be loaded. Please contact KKA.","error");return false}
   if(profile.active!==true){await supabase.auth.signOut();setMessage("This KKA portal account is currently inactive. Please contact KKA.","error");return false}
-  if(profile.role==="client"){markClientTabForLogin();window.location.replace("client/");return true}
-  if(profile.role==="admin"||profile.role==="staff"){markAdminTabForLogin();window.location.replace("admin/");return true}
+  if(profile.role==="client"){if(markSession)markClientTabForLogin();window.location.replace("client/");return true}
+  if(profile.role==="admin"||profile.role==="staff"){if(markSession)markAdminTabForLogin();window.location.replace("admin/");return true}
   await supabase.auth.signOut();setMessage("This account is not configured for KKA portal access.","error");return false
 }
 function renderLogin(){
@@ -55,6 +55,26 @@ function renderLogin(){
     }catch(error){showLoginError(error?.message||"The KKA authentication service could not be reached. Please try again.");try{window.KKALoginFeedback?.hide?.()}catch{}if(submit)submit.disabled=false}
   })
 }
-async function bootstrap(){renderLogin();const {data:{session}}=await supabase.auth.getSession();if(session?.user)await redirectForRole()}
+async function bootstrap(){
+  renderLogin();
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.user)return;
+  // Supabase persists authentication, but KKA deliberately binds a login to
+  // the current browser session. sessionStorage disappears when the browser
+  // session ends, so an authenticated user without our marker must sign in again.
+  const {data:profile}=await supabase.from("profiles").select("role,active").eq("id",session.user.id).maybeSingle();
+  const marker=profile?.role==="client"
+    ?sessionStorage.getItem("kka-tab-session:client")
+    :profile?.role==="admin"||profile?.role==="staff"
+      ?sessionStorage.getItem("kka-tab-session:admin")
+      :null;
+  if(profile?.active===true&&profile?.role&&marker){
+    await redirectForRole(false);
+    return;
+  }
+  try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
+  await supabase.auth.signOut({scope:"local"});
+  renderLogin();
+}
 supabase.auth.onAuthStateChange((event,session)=>{if(session?.user&&event==="SIGNED_IN")void redirectForRole()});
 void bootstrap();
