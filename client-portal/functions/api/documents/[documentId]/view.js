@@ -39,8 +39,5 @@ export async function onRequestGet(context) {
   headers.set("Content-Disposition", file.headers.get("Content-Disposition") || `inline; filename="${String(data.filename || "document").replace(/[\r\n"]/g, "_")}"`);
   headers.set("Cache-Control", "private, no-store, max-age=0");
   headers.set("X-Content-Type-Options", "nosniff");
-  const length = file.headers.get("Content-Length");
-  if (length) headers.set("Content-Length", length);
-
   return new Response(file.body, { status: 200, headers });
 }
