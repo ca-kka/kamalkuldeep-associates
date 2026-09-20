@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const path=location.pathname.replace(/\/+$/,"")||"/";
-const route=path.endsWith("/admin")?"admin":path.endsWith("/client")?"client":"root";
+const route=/\/admin(?:\/|$)/.test(path)||path.endsWith("/admin/index.html")?"admin":/\/client(?:\/|$)/.test(path)||path.endsWith("/client/index.html")?"client":"root";
 const TAB_MARKER=`kka-tab-session:${route}`;
 const LAST_ACTIVITY=`kka-last-activity:${route}`;
 const INACTIVITY_MS=5*60*1000,WARNING_MS=30*1000;
