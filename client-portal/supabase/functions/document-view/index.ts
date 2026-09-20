@@ -1,4 +1,4 @@
-import { withSupabase } from "npm:@supabase/server@^1";
+import { createSupabaseContext } from "npm:@supabase/server@^1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED = Deno.env.get("PORTAL_ALLOWED_ORIGIN") ?? "https://portal.ca-kka.com";
@@ -16,13 +16,15 @@ function filename(name:string){
 }
 
 export default {
-  fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
+  fetch: async (req: Request) => {
+    const { data: ctx, error: authError } = await createSupabaseContext(req, { auth: "user" });
+    if (authError || !ctx) return fail(authError?.message || "Authentication required.", authError?.status || 401);
     if(req.method === "OPTIONS") return new Response("ok",{headers:corsHeaders});
     if(req.method !== "GET") return fail("GET requests only.",405);
 
     try {
-      const userId = ctx.userClaims?.id ?? ctx.userClaims?.sub;
-      if(!userId) return fail("Authentication required.",401);
+    const userId = ctx.userClaims?.id ?? ctx.userClaims?.sub;
+    if(!userId) return fail("Authentication required.",401);
 
       const service = createClient(
         Deno.env.get("SUPABASE_URL")!,
@@ -98,5 +100,5 @@ export default {
       console.error("document-view",error);
       return fail("The document could not be opened.",500);
     }
-  })
+  }
 };
