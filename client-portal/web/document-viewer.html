@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KKA Document</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#f5f6f7;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:grid;place-items:center;color:#222}
+#status{padding:24px;text-align:center}.muted{color:#666;margin-top:8px}
+iframe{border:0;width:100%;height:100%;display:block}
+</style>
+</head>
+<body>
+<div id="status"><strong>Opening document…</strong><div class="muted">Please wait.</div></div>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const status=document.getElementById("status");
+function message(text){status.innerHTML="<strong>"+String(text).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))+"</strong>"}
+async function openDocument(){
+  const id=new URLSearchParams(location.search).get("documentId");
+  if(!id){message("Document ID is missing.");return}
+  const current=await supabase.auth.getSession();
+  if(!current.data.session?.access_token){message("Your KKA session has expired. Please sign in again.");return}
+  const refreshed=await supabase.auth.refreshSession();
+  if(refreshed.error||!refreshed.data.session?.access_token){message("Your KKA session is no longer valid. Please sign in again.");return}
+  const session=refreshed.data.session;
+  const endpoint=SUPABASE_URL+"/functions/v1/document-view?documentId="+encodeURIComponent(id);
+  let r=await fetch(endpoint,{headers:{Authorization:"Bearer "+session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
+  if(r.status===401||r.status===403){
+    const retry=await supabase.auth.refreshSession();
+    if(retry.data.session?.access_token){
+      r=await fetch(endpoint,{headers:{Authorization:"Bearer "+retry.data.session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
+    }
+  }
+  if(!r.ok){const text=await r.text().catch(()=>"" );message(text||("The document could not be opened (HTTP "+r.status+")."));return}
+  const bytes=await r.arrayBuffer();
+  if(bytes.byteLength<5){message("The document response was empty.");return}
+  const probe=new Uint8Array(bytes.slice(0,Math.min(bytes.byteLength,1024)));
+  let found=false;
+  for(let i=0;i<=probe.length-5;i++)if(probe[i]===37&&probe[i+1]===80&&probe[i+2]===68&&probe[i+3]===70&&probe[i+4]===45){found=true;break}
+  if(!found){message("The document server returned a non-PDF response.");return}
+  const url=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
+  document.title=r.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/i)?.[1]||"KKA Document";
+  document.body.innerHTML="<iframe title=\"KKA Document\" src=\""+url+"\"></iframe>";
+  setTimeout(()=>URL.revokeObjectURL(url),120000);
+}
+openDocument().catch(()=>message("The document could not be opened."));
+</script>
+</body>
+</html>
