@@ -17,9 +17,9 @@ function filename(name:string){
 
 export default {
   fetch: async (req: Request) => {
+    if(req.method === "OPTIONS") return new Response("ok",{headers:corsHeaders});
     const { data: ctx, error: authError } = await createSupabaseContext(req, { auth: "user" });
     if (authError || !ctx) return fail(authError?.message || "Authentication required.", authError?.status || 401);
-    if(req.method === "OPTIONS") return new Response("ok",{headers:corsHeaders});
     if(req.method !== "GET") return fail("GET requests only.",405);
 
     try {
