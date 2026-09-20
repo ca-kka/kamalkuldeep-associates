@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>KKA System Diagnostics</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1110;color:#e8f0ec}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#0b1110,#111b17);min-height:100vh}
+header{position:sticky;top:0;z-index:5;background:rgba(11,17,16,.96);backdrop-filter:blur(12px);border-bottom:1px solid #26352f;padding:22px 24px}
+h1{margin:0;font-size:24px}.muted{color:#91a39a;font-size:13px;margin-top:5px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+input,select,button{background:#121d19;color:#e8f0ec;border:1px solid #31443b;border-radius:8px;padding:9px 11px}
+input{min-width:220px}button{cursor:pointer}button:hover{border-color:#5d7b6c}
+main{padding:20px 24px;max-width:1600px;margin:auto}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}.stat{padding:12px 15px;border:1px solid #26352f;border-radius:10px;background:#101a16;min-width:130px}.stat strong{display:block;font-size:20px}.stat span{font-size:11px;color:#91a39a}
+.table{border:1px solid #26352f;border-radius:12px;overflow:auto;background:#0f1815}
+table{border-collapse:collapse;width:100%;min-width:1100px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #202d28;font-size:12px;vertical-align:top}th{position:sticky;top:0;background:#15201c;color:#9fb2a8;font-size:11px;text-transform:uppercase}tr{cursor:pointer}tr:hover{background:#14201b}.error{color:#ff9c8f}.warn{color:#e9c77c}.success{color:#9be0b4}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.details{white-space:pre-wrap;word-break:break-word;color:#b9c8c1;max-width:650px}
+.empty{padding:40px;text-align:center;color:#91a39a}
+#count{margin-left:auto}
+</style>
+</head>
+<body>
+<header><div style="display:flex;align-items:center;gap:15px"><div><h1>System Diagnostics</h1><div class="muted">KKA portal diagnostic stream · no normal portal navigation</div></div><span id="count" class="muted"></span></div>
+<div class="toolbar">
+<input id="search" placeholder="Search operation, message, request ID…">
+<select id="level"><option value="">All levels</option><option value="error">Errors</option><option value="warn">Warnings</option><option value="info">Info</option><option value="debug">Debug</option></select>
+<select id="limit"><option>100</option><option>250</option><option>500</option><option>1000</option></select>
+<button id="refresh">Refresh</button><button id="live">Live: ON</button>
+</div></header>
+<main><div class="stats"><div class="stat"><strong id="errors">0</strong><span>Errors</span></div><div class="stat"><strong id="warnings">0</strong><span>Warnings</span></div><div class="stat"><strong id="events">0</strong><span>Loaded events</span></div></div>
+<div class="table"><table><thead><tr><th>Time</th><th>Level</th><th>Operation</th><th>Status</th><th>HTTP</th><th>Message</th><th>Request ID</th><th>Page</th><th>Details</th></tr></thead><tbody id="rows"></tbody></table><div id="empty" class="empty" hidden>No diagnostic events found.</div></div></main>
+<script type="module">
+import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
+const supabase=createClient("https://wvyjyncgxtstyquecfdg.supabase.co","sb_publishable_bz_IaZtgADuIBvBca25h7g_G0xLb_T3");
+const rows=document.querySelector("#rows"),empty=document.querySelector("#empty"),search=document.querySelector("#search"),level=document.querySelector("#level"),limit=document.querySelector("#limit");
+let live=true,timer=null;
+const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+async function load(){
+  const n=Number(limit.value)||100;
+  let q=supabase.from("system_diagnostic_logs").select("*").order("created_at",{ascending:false}).limit(n);
+  if(level.value)q=q.eq("level",level.value);
+  const {data,error}=await q;
+  if(error){rows.innerHTML=`<tr><td colspan="9" class="error">${esc(error.message)}</td></tr>`;return}
+  const needle=search.value.trim().toLowerCase();
+  const filtered=(data||[]).filter(x=>!needle||[x.operation,x.message,x.request_id,x.page,x.path,JSON.stringify(x.details)].join(" ").toLowerCase().includes(needle));
+  const errors=filtered.filter(x=>x.level==="error").length,warns=filtered.filter(x=>x.level==="warn").length;
+  document.querySelector("#errors").textContent=errors;document.querySelector("#warnings").textContent=warns;document.querySelector("#events").textContent=filtered.length;document.querySelector("#count").textContent=`Updated ${new Date().toLocaleTimeString()}`;
+  empty.hidden=filtered.length!==0;
+  rows.innerHTML=filtered.map(x=>`<tr title="Click for full diagnostic details" data-id="${esc(x.id)}">
+    <td class="mono">${esc(new Date(x.created_at).toLocaleString())}</td>
+    <td class="${x.level==="error"?"error":x.level==="warn"?"warn":"success"}">${esc(x.level)}</td>
+    <td class="mono">${esc(x.operation||"—")}</td><td>${esc(x.status||"—")}</td><td>${esc(x.http_status||"—")}</td>
+    <td>${esc(x.message)}</td><td class="mono">${esc(x.request_id||"—")}</td><td>${esc(x.page||"—")}</td>
+    <td class="details">${esc(JSON.stringify(x.details||{}))}</td></tr>`).join("");
+}
+function schedule(){clearInterval(timer);if(live)timer=setInterval(load,2000)}
+document.querySelector("#refresh").onclick=load;document.querySelector("#live").onclick=e=>{live=!live;e.currentTarget.textContent=`Live: ${live?"ON":"OFF"}`;schedule();load()};
+search.oninput=load;level.onchange=load;limit.onchange=load;load();schedule();
+</script>
+</body></html>
