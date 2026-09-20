@@ -6,14 +6,26 @@ const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const clean=v=>String(v??"").trim();
 
 const style=document.createElement("style");
-style.textContent=`.client-create-email-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}.client-create-email-row input{width:100%!important}.client-create-email-row button{min-width:104px!important}.client-create-mobile-row{display:grid!important;grid-template-columns:150px minmax(0,1fr)!important;gap:8px!important}.client-create-mobile-row select,.client-create-mobile-row input{width:100%!important}.client-create-relation{display:none}.client-create-relation.visible{display:block}@media(max-width:520px){.client-create-email-row{grid-template-columns:1fr!important}.client-create-email-row button{width:100%!important}.client-create-mobile-row{grid-template-columns:125px minmax(0,1fr)!important}}`;
+style.textContent=`.client-create-email-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}.client-create-email-row input{width:100%!important}.client-create-email-row button{min-width:104px!important}.client-create-mobile-row{display:grid!important;grid-template-columns:150px minmax(0,1fr)!important;gap:8px!important}.client-create-mobile-row select,.client-create-mobile-mobile-row input,.client-create-mobile-row input{width:100%!important}.client-create-relation{display:none}.client-create-relation.visible{display:block}.client-create-success-backdrop{z-index:99999!important}.client-create-success-backdrop .modal{max-width:520px!important;text-align:center}.client-create-success-icon{font-size:42px;line-height:1;margin:4px 0 14px}.client-create-success-backdrop .modal-actions{justify-content:center}.client-create-success-backdrop #client-create-success-ok{min-width:120px}@media(max-width:520px){.client-create-email-row{grid-template-columns:1fr!important}.client-create-email-row button{width:100%!important}.client-create-mobile-row{grid-template-columns:125px minmax(0,1fr)!important}}`;
 document.head.appendChild(style);
 
 async function sessionToken(){const {data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error("The session has expired. Please sign in again.");return session.access_token}
 async function verifyEmail(email){const {data,error}=await supabase.rpc("resolve_client_email_account",{p_email:email});if(error)throw new Error(error.message||"Email could not be checked.");return data||{linked:false,message:"Email could not be checked."}}
 async function callFunction(slug,payload){const token=await sessionToken();const r=await fetch(`${SUPABASE_URL}/functions/v1/${slug}`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(payload)});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||data.message||`Operation failed (HTTP ${r.status}).`);return data}
 
-function closeExistingClientModals(){document.querySelectorAll(".client-login-modal-backdrop").forEach(x=>x.remove())}
+function closeExistingClientModals(){document.querySelectorAll(".client-login-modal-backdrop,.client-create-success-backdrop").forEach(x=>x.remove())}
+
+function showClientCreationSuccess(m,email){
+  const success=document.createElement("div");
+  success.className="modal-backdrop client-create-success-backdrop";
+  success.innerHTML=`<section class="modal" role="alertdialog" aria-modal="true" aria-labelledby="client-create-success-title"><div class="client-create-success-icon" aria-hidden="true">✓</div><h2 id="client-create-success-title">Client created successfully</h2><p class="muted">The client login has been created and the welcome email has been sent successfully to <strong>${esc(email)}</strong>.</p><div class="modal-actions"><button class="primary" id="client-create-success-ok" type="button">OK</button></div></section>`;
+  document.body.appendChild(success);
+  const ok=success.querySelector("#client-create-success-ok");
+  const acknowledge=()=>{success.remove();m.remove();document.getElementById("refresh-clients")?.click()};
+  ok.addEventListener("click",acknowledge);
+  ok.focus();
+  success.addEventListener("click",e=>e.stopPropagation());
+}
 
 function showAdminClientCreation(){
   closeExistingClientModals();
@@ -66,9 +78,15 @@ function showAdminClientCreation(){
         message.textContent="Family profile added successfully. No separate login was created.";
       }else{
         const result=await callFunction("create-client-account",{...base,email:verifiedEmail,canUpload:d.get("canUpload")==="on"});
-        message.textContent=result.emailSent?"Client login created and welcome email sent successfully.":"Client login created, but the welcome email could not be sent.";
+        if(result.emailSent){
+          showClientCreationSuccess(m,verifiedEmail);
+          return;
+        }
+        message.textContent="Client login created, but the welcome email could not be sent.";
       }
-      setTimeout(()=>{m.remove();document.getElementById("refresh-clients")?.click()},700);
+      if(linkedAccount){
+        setTimeout(()=>{m.remove();document.getElementById("refresh-clients")?.click()},700);
+      }
     }catch(err){message.textContent=err.message;submit.disabled=false}
   });
 }
