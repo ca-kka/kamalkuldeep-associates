@@ -3,7 +3,18 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);let installed=false;
 const esc=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 const bytes=n=>n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:n<1073741824?`${(n/1048576).toFixed(1)} MB`:`${(n/1073741824).toFixed(2)} GB`;
-async function freshSession(){let {data:{session}}=await supabase.auth.getSession();if(!session?.access_token){const refreshed=await supabase.auth.refreshSession();session=refreshed.data.session}return session}
+async function freshSession(){
+  const current=await supabase.auth.getSession();
+  let session=current.data.session;
+  const expiresSoon=!session?.expires_at || (Number(session.expires_at)*1000-Date.now()<120000);
+  if(session?.access_token && !expiresSoon)return session;
+  const refreshed=await supabase.auth.refreshSession();
+  if(refreshed.error||!refreshed.data.session){
+    await supabase.auth.signOut({scope:"local"}).catch(()=>{});
+    throw new Error("Your KKA session has expired. Please sign in again.");
+  }
+  return refreshed.data.session;
+}
 async function call(body){let session=await freshSession();if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");let r=await fetch(SUPABASE_URL+"/functions/v1/onedrive-directory",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify(body)});if(r.status===401||r.status===403){const refreshed=await supabase.auth.refreshSession();session=refreshed.data.session;if(session?.access_token)r=await fetch(SUPABASE_URL+"/functions/v1/onedrive-directory",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify(body)})}const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"OneDrive request failed (HTTP "+r.status+")");return d}
 
 function controls(){return{client:document.querySelector("#manual-client"),area:document.querySelector("#manual-area"),fy:document.querySelector("#manual-fy"),period:document.querySelector("#manual-period")}}
