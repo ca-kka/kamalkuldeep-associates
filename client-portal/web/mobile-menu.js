@@ -7,7 +7,9 @@ const app = document.querySelector('#app');
 function setupMobileMenu() {
   const shell = document.querySelector('.portal-shell');
   const sidebar = shell?.querySelector('.sidebar');
-  const nav = sidebar?.querySelector('nav[aria-label="Portal navigation"]');
+  // Both client and admin portals use the same drawer. Keep the legal-footer
+  // navigation out of the selector by targeting the labelled primary nav.
+  const nav = sidebar?.querySelector('nav[aria-label="Portal navigation"], nav[aria-label="Admin navigation"]');
   if (!shell || !sidebar || !nav || shell.querySelector('.mobile-menu-toggle')) return;
 
   const toggle = document.createElement('button');
