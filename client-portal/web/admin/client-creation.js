@@ -6,7 +6,7 @@ const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const clean=v=>String(v??"").trim();
 
 const style=document.createElement("style");
-style.textContent=`.client-create-email-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}.client-create-email-row input{width:100%!important}.client-create-email-row button{min-width:104px!important}.client-create-mobile-row{display:grid!important;grid-template-columns:150px minmax(0,1fr)!important;gap:8px!important}.client-create-mobile-row select,.client-create-mobile-mobile-row input,.client-create-mobile-row input{width:100%!important}.client-create-relation{display:none}.client-create-relation.visible{display:block}.client-create-success-backdrop{z-index:99999!important}.client-create-success-backdrop .modal{max-width:520px!important;text-align:center}.client-create-success-icon{font-size:42px;line-height:1;margin:4px 0 14px}.client-create-success-backdrop .modal-actions{justify-content:center}.client-create-success-backdrop #client-create-success-ok{min-width:120px}@media(max-width:520px){.client-create-email-row{grid-template-columns:1fr!important}.client-create-email-row button{width:100%!important}.client-create-mobile-row{grid-template-columns:125px minmax(0,1fr)!important}}`;
+style.textContent=`.client-create-email-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important}.client-create-email-row input{width:100%!important}.client-create-email-row button{min-width:104px!important}.client-create-mobile-row{display:grid!important;grid-template-columns:150px minmax(0,1fr)!important;gap:8px!important}.client-create-mobile-row select,.client-create-mobile-row input{width:100%!important}.client-create-relation{display:none}.client-create-relation.visible{display:block}.client-create-success-backdrop{z-index:99999!important}.client-create-success-backdrop .modal{max-width:520px!important;text-align:center}.client-create-success-icon{font-size:42px;line-height:1;margin:4px 0 14px}.client-create-success-backdrop .modal-actions{justify-content:center}.client-create-success-backdrop #client-create-success-ok{min-width:120px}@media(max-width:520px){.client-create-email-row{grid-template-columns:1fr!important}.client-create-email-row button{width:100%!important}.client-create-mobile-row{grid-template-columns:125px minmax(0,1fr)!important}}`;
 document.head.appendChild(style);
 
 async function sessionToken(){const {data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error("The session has expired. Please sign in again.");return session.access_token}
@@ -25,6 +25,7 @@ function showClientCreationSuccess(m,email){
   ok.addEventListener("click",acknowledge);
   ok.focus();
   success.addEventListener("click",e=>e.stopPropagation());
+  success.addEventListener("keydown",e=>{if(e.key==="Escape")e.preventDefault()});
 }
 
 function showAdminClientCreation(){
