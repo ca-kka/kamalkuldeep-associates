@@ -86,15 +86,22 @@ function showFamilyProfiles(members){
     return `<tr><td class="${member.is_primary?"family-profile-primary":""}">${esc(name)} ${member.is_primary?`<span class="family-profile-badge">PRIMARY</span>`:`<span class="family-profile-badge">FAMILY</span>`}</td><td>${esc(pan)}</td><td>${esc(relation(member))}</td><td>${esc(status)}</td><td><button type="button" class="primary compact family-upload-btn" data-family-upload="${esc(member.client_id)}">Upload</button></td></tr>`;
   }).join("");
   const m=modal(`<div class="modal-head"><div><p class="eyebrow">FAMILY ACCOUNT</p><h2>Family / Profiles</h2><p class="muted">All profiles use the primary holder's single KKA login. No separate family-member login is created.</p></div><button class="modal-close" type="button">×</button></div><table class="family-profile-table"><thead><tr><th>Profile</th><th>PAN</th><th>Relationship</th><th>Status</th><th>Documents</th></tr></thead><tbody>${rows}</tbody></table><div class="modal-actions"><button type="button" class="secondary modal-close">Close</button></div>`);
-  m.querySelectorAll("[data-family-upload]").forEach(button=>button.addEventListener("click",()=>{
+  m.querySelectorAll("[data-family-upload]").forEach(button=>button.addEventListener("click",e=>{
+    e.preventDefault();
+    e.stopPropagation();
     const member=members.find(x=>x.client_id===button.dataset.familyUpload);
     if(!member)return;
     sessionStorage.setItem("kka_family_upload_client_id",member.client_id);
     sessionStorage.setItem("kka_family_upload_client_name",clientName(member));
     sessionStorage.setItem("kka_family_upload_account_id",member.account_id||"");
     m.remove();
-    const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
-    if(nav)nav.click();else window.location.hash="#documents";
+    const openDocuments=window.KKADocumentUploaderRender;
+    if(typeof openDocuments==="function"){
+      try{openDocuments()}catch(error){console.error("KKA family upload navigation failed",error);alert("Documents could not be opened. Please refresh the portal and try again.")}
+    }else{
+      const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
+      if(nav)nav.click();else window.location.hash="#documents";
+    }
   }));
   return m;
 }
