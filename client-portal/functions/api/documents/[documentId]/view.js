@@ -26,5 +26,21 @@ export async function onRequestGet(context) {
     });
   }
 
-  return Response.redirect(data.url, 302);
+  const file = await fetch(data.url);
+  if (!file.ok || !file.body) {
+    return new Response("The document file could not be retrieved.", {
+      status: file.status || 502,
+      headers: { "Cache-Control": "private, no-store, max-age=0" },
+    });
+  }
+
+  const headers = new Headers();
+  headers.set("Content-Type", data.contentType || file.headers.get("Content-Type") || "application/octet-stream");
+  headers.set("Content-Disposition", file.headers.get("Content-Disposition") || `inline; filename="${String(data.filename || "document").replace(/[\r\n"]/g, "_")}"`);
+  headers.set("Cache-Control", "private, no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
+  const length = file.headers.get("Content-Length");
+  if (length) headers.set("Content-Length", length);
+
+  return new Response(file.body, { status: 200, headers });
 }
