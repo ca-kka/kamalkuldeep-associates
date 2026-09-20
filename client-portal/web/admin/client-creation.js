@@ -54,11 +54,15 @@ function showAdminClientCreation(){
     if(!pan&&!tan&&!cin&&!gstin){message.textContent="Enter at least one PAN, TAN, CIN or GSTIN.";return}
     if(linkedAccount&&!clean(d.get("relationship"))){message.textContent="Select the relationship to the primary account.";return}
     const mobileNumber=clean(d.get("mobileNumber")),countryCode=clean(d.get("mobileCountryCode"));
-    const base={legalName:clean(d.get("legalName")),displayName:clean(d.get("displayName")),fullName:clean(d.get("fullName")),mobile:mobileNumber?countryCode+mobileNumber.replace(/\D/g,""):"",pan,tan,cin,gstin,aliases:clean(d.get("aliases"))};\n    if(!base.legalName){message.textContent="Enter the legal name for the family profile.";submit.disabled=false;return}
+    const base={legalName:clean(d.get("legalName")),displayName:clean(d.get("displayName")),fullName:clean(d.get("fullName")),mobile:mobileNumber?countryCode+mobileNumber.replace(/\D/g,""):"",pan,tan,cin,gstin,aliases:clean(d.get("aliases"))};
+    if(!base.legalName){message.textContent="Enter the legal name for the family profile.";submit.disabled=false;return}
     submit.disabled=true;message.textContent=linkedAccount?"Adding family profile under the existing primary login…":"Creating client login and sending the welcome email…";
     try{
       if(linkedAccount){
-        const resolvedAccountId=clean(linkedAccount?.accountId||linkedAccount?.account_id);\n        const resolvedClientId=clean(linkedAccount?.clientId||linkedAccount?.client_id);\n        if(!resolvedAccountId&&!resolvedClientId){throw new Error("The primary family account could not be resolved. Please check the primary email again.");}\n        await callFunction("manage-client-family",{action:"create_family_member",accountId:resolvedAccountId,clientId:resolvedClientId,relationship:clean(d.get("relationship")),...base});
+        const resolvedAccountId=clean(linkedAccount?.accountId||linkedAccount?.account_id);
+        const resolvedClientId=clean(linkedAccount?.clientId||linkedAccount?.client_id);
+        if(!resolvedAccountId&&!resolvedClientId){throw new Error("The primary family account could not be resolved. Please check the primary email again.");}
+        await callFunction("manage-client-family",{action:"create_family_member",accountId:resolvedAccountId,clientId:resolvedClientId,relationship:clean(d.get("relationship")),...base});
         message.textContent="Family profile added successfully. No separate login was created.";
       }else{
         const result=await callFunction("create-client-account",{...base,email:verifiedEmail,canUpload:d.get("canUpload")==="on"});
