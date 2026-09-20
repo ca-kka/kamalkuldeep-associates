@@ -30,8 +30,35 @@ Deno.serve(async req=>{
   const {data:client,error:ce}=await service.from("clients").select("*").eq("id",clientId).maybeSingle();if(ce)throw ce;if(!client)return json({error:"Client not found"},404);
   const {data:membership}=await service.from("client_memberships").select("user_id,can_upload").eq("client_id",clientId).limit(1).maybeSingle();const userId=membership?.user_id??null;
   if(action==="get_details"){
-   let email=null,fullName=null;if(userId){const {data:a}=await service.auth.admin.getUserById(userId);email=a.user?.email??null;const {data:p}=await service.from("profiles").select("full_name").eq("id",userId).maybeSingle();fullName=p?.full_name??null;}
-   return json({ok:true,email,fullName,client:{id:client.id,legal_name:client.legal_name,display_name:client.display_name,pan:client.pan,tan:client.tan,cin:client.cin,gstin:client.gstin,mobile:client.mobile,filename_aliases:client.filename_aliases,active:client.active,can_upload:membership?.can_upload??false}});
+   let email=null,fullName=null,email2FAEnabled=true;
+   if(userId){
+    const {data:a}=await service.auth.admin.getUserById(userId);
+    email=a.user?.email??null;
+    const {data:p}=await service.from("profiles").select("full_name,email_2fa_enabled").eq("id",userId).maybeSingle();
+    fullName=p?.full_name??null;
+    email2FAEnabled=p?.email_2fa_enabled!==false;
+   }
+   return json({ok:true,email,fullName,client:{id:client.id,legal_name:client.legal_name,display_name:client.display_name,pan:client.pan,tan:client.tan,cin:client.cin,gstin:client.gstin,mobile:client.mobile,filename_aliases:client.filename_aliases,active:client.active,can_upload:membership?.can_upload??false,email_2fa_enabled:email2FAEnabled}});
+  }
+  if(action==="set_email_2fa"){
+   if(!userId)return json({error:"This client has no linked login"},409);
+   const enabled=b.enabled===true;
+   const {data:profile,error:pe}=await service.from("profiles").select("email_2fa_enabled").eq("id",userId).maybeSingle();
+   if(pe)throw pe;
+   const previous=profile?.email_2fa_enabled!==false;
+   if(previous===enabled)return json({ok:true,email2FAEnabled:enabled,changed:false});
+   const {error:e}=await service.from("profiles").update({email_2fa_enabled:enabled}).eq("id",userId);
+   if(e)throw e;
+   const {error:ae}=await service.from("audit_logs").insert({
+    actor_id:user.id,
+    client_id:clientId,
+    action:enabled?"client_email_2fa_enabled":"client_email_2fa_disabled",
+    entity_type:"client_security",
+    entity_id:clientId,
+    metadata:{previous_enabled:previous,new_enabled:enabled}
+   });
+   if(ae)throw ae;
+   return json({ok:true,email2FAEnabled:enabled,changed:true});
   }
   if(action==="update_profile"){
    const legalName=clean(b.legalName),displayName=clean(b.displayName)||legalName,fullName=clean(b.fullName)||displayName,email=clean(b.email).toLowerCase(),mobile=clean(b.mobile),pan=upper(b.pan),tan=upper(b.tan),cin=upper(b.cin),gstin=upper(b.gstin),aliases=Array.isArray(b.aliases)?b.aliases.map(clean).filter(Boolean).slice(0,20):[];
