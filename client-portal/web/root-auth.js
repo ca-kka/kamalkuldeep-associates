@@ -24,10 +24,7 @@ function clearLoginError(){document.querySelector("#auth-message")?.classList.re
 function showLoginError(text="Incorrect email or password. Please try again."){const message=document.querySelector("#auth-message"),email=document.querySelector("#email"),password=document.querySelector("#password");if(message){message.className="message error";message.textContent=text;message.setAttribute("role","alert")}email?.classList.add("login-input-error");password?.classList.add("login-input-error");password?.focus()}
 function markClientTabForLogin(){try{sessionStorage.setItem("kka-tab-session:client",String(Date.now()))}catch{}}
 function markAdminTabForLogin(){try{sessionStorage.setItem("kka-tab-session:admin",String(Date.now()))}catch{}}
-let roleRedirectPromise=null;
 async function redirectForRole(markSession=true){
-  if(roleRedirectPromise)return roleRedirectPromise;
-  roleRedirectPromise=(async()=>{
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){setMessage("Authentication could not be completed. Please try again.","error");return false}
   const {data:profile,error}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();
@@ -36,8 +33,6 @@ async function redirectForRole(markSession=true){
   if(profile.role==="client"){if(markSession)markClientTabForLogin();window.location.replace("client/");return true}
   if(profile.role==="admin"||profile.role==="staff"){if(markSession)markAdminTabForLogin();window.location.replace("admin/");return true}
   await supabase.auth.signOut();setMessage("This account is not configured for KKA portal access.","error");return false
-  })();
-  try{return await roleRedirectPromise}finally{roleRedirectPromise=null}
 }
 function renderLogin(){
   const t=template("#login-template");if(!t||!root)return;
