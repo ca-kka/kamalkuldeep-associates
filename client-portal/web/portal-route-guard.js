@@ -7,10 +7,6 @@ const route=path.endsWith("/client")?"client":path.endsWith("/admin")?"admin":"r
 let redirecting=false;
 
 async function enforceRoute(){
-  // The root login page has a dedicated authentication controller (root-auth.js).
-  // Keeping the route guard completely out of the root flow prevents two
-  // independent redirect controllers from racing after SIGNED_IN.
-  if(route==="root")return;
   if(redirecting)return;
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){if(route!=="root"){redirecting=true;window.location.replace("../")}return}
