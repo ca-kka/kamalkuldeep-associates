@@ -21,13 +21,14 @@ function showGate(){
     m.className="message";m.textContent="Securing your account…";
     const submit=wrap.querySelector("button[type=submit]");
     if(submit)submit.disabled=true;
+    let result={};
     try{
       const {data:{session}}=await supabase.auth.getSession();
       if(!session?.access_token){m.className="message error";m.textContent="Your session expired. Please sign in again.";return}
       const requestId=crypto.randomUUID();
       console.info("[KKA initial-password] request started",{requestId,userId:session.user?.id||null,mustChange:session.user?.app_metadata?.must_change_password===true});
       const r=await fetch(`${SUPABASE_URL}/functions/v1/complete-initial-password`,{method:"POST",headers:{"Content-Type":"application/json","X-KKA-Request-ID":requestId,Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({password})});
-      const result=await r.json().catch(()=>({}));
+      result=await r.json().catch(()=>({}));
       console.info("[KKA initial-password] response",{requestId,status:r.status,ok:r.ok,error:result.error||null});
       if(!r.ok){m.className="message error";m.textContent=(result.error||"Password could not be updated.")+` (Reference: ${requestId.slice(0,8)})`;return}
       const {data:{user:verifiedUser},error:verifyError}=await supabase.auth.getUser();
