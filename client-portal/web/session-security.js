@@ -3,7 +3,11 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const path=location.pathname.replace(/\/+$/,"")||"/";
-const route=/\/admin(?:\/|$)/.test(path)||path.endsWith("/admin/index.html")?"admin":/\/client(?:\/|$)/.test(path)||path.endsWith("/client/index.html")?"client":"root";
+const pathRoute=/\/admin(?:\/|$)/.test(path)||path.endsWith("/admin/index.html")?"admin":/\/client(?:\/|$)/.test(path)||path.endsWith("/client/index.html")?"client":"root";
+// Some hosts rewrite /admin/ and /client/ to the root document. If that happens,
+// use the rendered portal shell to keep session protection active on the real page.
+const domRoute=document.querySelector('nav[aria-label="Admin navigation"]')?"admin":document.querySelector('nav[aria-label="Portal navigation"]')?"client":"root";
+const route=pathRoute!=="root"?pathRoute:domRoute;
 const TAB_MARKER=`kka-tab-session:${route}`;
 const LAST_ACTIVITY=`kka-last-activity:${route}`;
 const INACTIVITY_MS=5*60*1000,WARNING_MS=30*1000;
@@ -21,6 +25,11 @@ function schedule(){
   const remaining=Math.max(0,INACTIVITY_MS-(Date.now()-lastActivity));
   warningTimer=setTimeout(showWarning,Math.max(0,remaining-WARNING_MS));
   timer=setTimeout(()=>finishLogout("inactivity"),remaining);
+}
+function checkIdle(){
+  if(route==="root"||loggedOut||!lastActivity)return;
+  if(Date.now()-lastActivity>=INACTIVITY_MS){void finishLogout("inactivity");return}
+  schedule();
 }
 function showWarning(){
   if(loggedOut||route==="root"||document.getElementById("kka-session-warning"))return;
@@ -53,6 +62,10 @@ function installActivityListeners(){
   if(route==="root"||listenersInstalled)return;
   listenersInstalled=true;
   EVENTS.forEach(e=>document.addEventListener(e,touch,{passive:true,capture:true}));
+  // Mobile browsers may throttle timers while a tab is backgrounded. Never
+  // treat returning to the portal as activity; first enforce the elapsed idle time.
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkIdle()});
+  window.addEventListener("focus",checkIdle);
 }
 function installManualLogoutCapture(){
   if(route==="root")return;
@@ -70,11 +83,7 @@ async function init(){
   try{tabMarker=sessionStorage.getItem(TAB_MARKER);lastStored=sessionStorage.getItem(LAST_ACTIVITY)}catch{}
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){clearTimers();return}
-  // A new tab has its own sessionStorage and therefore may not have a tab marker.
-  // Never call Supabase signOut here: signOut invalidates the shared auth session
-  // for other KKA tabs and produces "session_id claim in JWT does not exist".
-  // Establish this tab's marker instead and let the normal inactivity policy apply.
-  if(!tabMarker) markTab();
+  if(!tabMarker)markTab();
   const parsed=Number(lastStored);
   if(Number.isFinite(parsed)&&parsed>0)lastActivity=parsed;else setActivity();
   if(Date.now()-lastActivity>=INACTIVITY_MS){await finishLogout("inactivity");return}
@@ -83,7 +92,6 @@ async function init(){
 supabase.auth.onAuthStateChange((event,session)=>{
   if(route==="root")return;
   if(!session?.user){clearTimers();return}
-  // Do not create a new tab marker here. root-auth.js creates it only after a fresh login.
   if(event==="SIGNED_IN"&&!sessionStorage.getItem(TAB_MARKER))return;
   if(!loggedOut&&!lastActivity){const stored=Number(sessionStorage.getItem(LAST_ACTIVITY)||0);lastActivity=stored||Date.now();if(!stored)setActivity(lastActivity);schedule()}
 });
