@@ -3,11 +3,10 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const path=location.pathname.replace(/\/+$/,"")||"/";
-const pathRoute=/\/admin(?:\/|$)/.test(path)||path.endsWith("/admin/index.html")?"admin":/\/client(?:\/|$)/.test(path)||path.endsWith("/client/index.html")?"client":"root";
-// Some hosts rewrite /admin/ and /client/ to the root document. If that happens,
-// use the rendered portal shell to keep session protection active on the real page.
-const domRoute=document.querySelector('nav[aria-label="Admin navigation"]')?"admin":document.querySelector('nav[aria-label="Portal navigation"]')?"client":"root";
-const route=pathRoute!=="root"?pathRoute:domRoute;
+// The client portal is served from the root path, while the admin portal is
+// served from /admin/. Do not depend on rendered DOM here: this module loads
+// before app.js has cloned the portal template.
+const route=/\/admin(?:\/|$)/.test(path)||path.endsWith("/admin/index.html")?"admin":"client";
 const TAB_MARKER=`kka-tab-session:${route}`;
 const LAST_ACTIVITY=`kka-last-activity:${route}`;
 const INACTIVITY_MS=5*60*1000,WARNING_MS=30*1000;
@@ -92,8 +91,17 @@ async function init(){
 supabase.auth.onAuthStateChange((event,session)=>{
   if(route==="root")return;
   if(!session?.user){clearTimers();return}
-  if(event==="SIGNED_IN"&&!sessionStorage.getItem(TAB_MARKER))return;
-  if(!loggedOut&&!lastActivity){const stored=Number(sessionStorage.getItem(LAST_ACTIVITY)||0);lastActivity=stored||Date.now();if(!stored)setActivity(lastActivity);schedule()}
+  if(event==="SIGNED_IN"){
+    if(!sessionStorage.getItem(TAB_MARKER))markTab();
+    if(!loggedOut){lastActivity=Date.now();setActivity(lastActivity);schedule()}
+    return;
+  }
+  if(!loggedOut&&!lastActivity){
+    const stored=Number(sessionStorage.getItem(LAST_ACTIVITY)||0);
+    lastActivity=stored||Date.now();
+    if(!stored)setActivity(lastActivity);
+    schedule();
+  }
 });
 window.KKASessionManualLogout=()=>finishLogout("manual");
 void init();
