@@ -82,7 +82,15 @@ async function init(){
   try{tabMarker=sessionStorage.getItem(TAB_MARKER);lastStored=sessionStorage.getItem(LAST_ACTIVITY)}catch{}
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){clearTimers();return}
-  if(!tabMarker)markTab();
+  // A Supabase session can survive a browser restart. KKA sessions may not:
+  // if the per-browser session marker is gone, require a fresh sign-in.
+  if(!tabMarker){
+    try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
+    await supabase.auth.signOut({scope:"local"}).catch(()=>{});
+    clearTabState();
+    location.replace("../");
+    return;
+  }
   const parsed=Number(lastStored);
   if(Number.isFinite(parsed)&&parsed>0)lastActivity=parsed;else setActivity();
   if(Date.now()-lastActivity>=INACTIVITY_MS){await finishLogout("inactivity");return}
