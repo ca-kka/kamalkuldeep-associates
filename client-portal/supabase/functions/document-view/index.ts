@@ -66,13 +66,26 @@ export default {
 
       const bytes=await file.arrayBuffer();
       if(bytes.byteLength<5) return fail("The stored document is empty.",500);
-      const magic=new TextDecoder().decode(new Uint8Array(bytes.slice(0,5)));
-      if(magic!=="%PDF-"){
-        console.error("document-view non-pdf object",{documentId,storagePath:doc.storage_path,magic,contentType:doc.content_type});
+
+      // PDF readers commonly locate the %PDF- header within the first 1024
+      // bytes. Do not reject otherwise-valid PDFs merely because a producer
+      // prepended a BOM/whitespace or other harmless prefix.
+      const probe=new Uint8Array(bytes.slice(0,Math.min(bytes.byteLength,1024)));
+      let pdfHeaderOffset=-1;
+      for(let i=0;i<=probe.length-5;i++){
+        if(probe[i]===0x25&&probe[i+1]===0x50&&probe[i+2]===0x44&&probe[i+3]===0x46&&probe[i+4]===0x2d){
+          pdfHeaderOffset=i;
+          break;
+        }
+      }
+      if(pdfHeaderOffset<0){
+        const signature=Array.from(probe.slice(0,32)).map(v=>v.toString(16).padStart(2,"0")).join(" ");
+        console.error("document-view non-pdf object",{documentId,storagePath:doc.storage_path,signature,contentType:doc.content_type,byteLength:bytes.byteLength});
         return fail("The stored document is not a valid PDF.",500);
       }
 
       const headers=new Headers(corsHeaders);
+      headers.set("X-KKA-PDF-Header-Offset",String(pdfHeaderOffset));
       headers.set("Content-Type","application/pdf");
       headers.set("Content-Disposition",`inline; filename="${filename(doc.original_filename)}"`);
       headers.set("Content-Length",String(bytes.byteLength));
