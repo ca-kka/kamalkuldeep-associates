@@ -70,10 +70,11 @@ async function init(){
   try{tabMarker=sessionStorage.getItem(TAB_MARKER);lastStored=sessionStorage.getItem(LAST_ACTIVITY)}catch{}
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){clearTimers();return}
-  // A protected page without this tab marker means its previous tab/browser session was closed.
-  // Supabase may still retain its auth session, so invalidate it before showing protected content.
-  if(!tabMarker){try{sessionStorage.setItem("kka-logout-reason","browser-close")}catch{};try{await supabase.auth.signOut()}catch{};clearTabState();location.replace("../");return}
-  markTab();
+  // A new tab has its own sessionStorage and therefore may not have a tab marker.
+  // Never call Supabase signOut here: signOut invalidates the shared auth session
+  // for other KKA tabs and produces "session_id claim in JWT does not exist".
+  // Establish this tab's marker instead and let the normal inactivity policy apply.
+  if(!tabMarker) markTab();
   const parsed=Number(lastStored);
   if(Number.isFinite(parsed)&&parsed>0)lastActivity=parsed;else setActivity();
   if(Date.now()-lastActivity>=INACTIVITY_MS){await finishLogout("inactivity");return}
