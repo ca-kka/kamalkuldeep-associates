@@ -44,6 +44,15 @@ async function openDocument(){
   if(!found){message("The document server returned a non-PDF response.");return}
   const url=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));
   document.title=r.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/i)?.[1]||"KKA Document";
+  // Desktop keeps the existing iframe viewer exactly as-is.
+  // Android/mobile browsers handle PDF Blob URLs more reliably when the PDF
+  // is navigated as the top-level document instead of embedded in an iframe.
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints>0 && window.matchMedia?.("(max-width: 900px)").matches);
+  if(isMobile){
+    location.replace(url);
+    return;
+  }
   document.body.innerHTML="<iframe title=\"KKA Document\" src=\""+url+"\"></iframe>";
   setTimeout(()=>URL.revokeObjectURL(url),120000);
 }
