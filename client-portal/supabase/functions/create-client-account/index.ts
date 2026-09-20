@@ -23,15 +23,14 @@ const mobileOk = (v: string | null) =>
   !v || /^[0-9+()\-\s]{7,20}$/.test(v);
 
 function generatePassword() {
-  const alphabet =
-    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
-
-  const bytes = new Uint8Array(24);
+  // Temporary client passwords are numeric and never exceed 10 digits.
+  // crypto.getRandomValues() provides the randomness.
+  const bytes = new Uint8Array(10);
   crypto.getRandomValues(bytes);
 
   return Array.from(
     bytes,
-    b => alphabet[b % alphabet.length],
+    b => String(b % 10),
   ).join("");
 }
 
