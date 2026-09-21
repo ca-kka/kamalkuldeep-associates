@@ -1,0 +1,63 @@
+name: Knowledge Centre Sitemap
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'knowledge/data/articles.json'
+      - '.github/workflows/knowledge-sitemap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate sitemap
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          from urllib.parse import quote
+          from xml.sax.saxutils import escape
+
+          data = json.loads(Path("knowledge/data/articles.json").read_text(encoding="utf-8"))
+          urls = [
+              "https://ca-kka.com/",
+              "https://ca-kka.com/knowledge/",
+              "https://ca-kka.com/knowledge/categories.html",
+              "https://ca-kka.com/knowledge/authors.html",
+              "https://ca-kka.com/knowledge/case-laws.html",
+              "https://ca-kka.com/knowledge/compliance.html",
+          ]
+
+          for article in data.get("items", []):
+              if article.get("status") == "published" and article.get("slug"):
+                  urls.append("https://ca-kka.com/knowledge/article.html?slug=" + quote(article["slug"]))
+
+          xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+          for url in dict.fromkeys(urls):
+              xml.append(f"  <url><loc>{escape(url)}</loc></url>")
+          xml.append("</urlset>")
+          Path("sitemap.xml").write_text("\n".join(xml) + "\n", encoding="utf-8")
+
+      - name: Commit sitemap if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- sitemap.xml; then
+            echo "Sitemap is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sitemap.xml
+          git commit -m "chore: refresh Knowledge Centre sitemap"
+          git push

@@ -204,7 +204,10 @@ export default {
           id, status: 'draft', title, slug, category: typeof p.category === 'string' && p.category.trim() ? p.category.trim() : 'GST',
           author: publishers.includes(p.author) ? p.author : 'CA Kamal Jain', publishedAt: validDate(p.publishedAt) ? p.publishedAt : '',
           updatedAt: now, summary: typeof p.summary === 'string' ? p.summary.trim() : '', tags: cleanTags(p.tags),
-          contentHtml: typeof p.contentHtml === 'string' ? p.contentHtml.trim() : ''
+          contentHtml: typeof p.contentHtml === 'string' ? p.contentHtml.trim() : '',
+          seoTitle: typeof p.seoTitle === 'string' ? p.seoTitle.trim().slice(0, 70) : '',
+          metaDescription: typeof p.metaDescription === 'string' ? p.metaDescription.trim().slice(0, 170) : '',
+          featuredImage: typeof p.featuredImage === 'string' ? p.featuredImage.trim().slice(0, 500) : ''
         };
         const i = data.items.findIndex(x => x.id === id);
         if (i >= 0) data.items[i] = { ...data.items[i], ...draft };
@@ -228,7 +231,10 @@ export default {
         if (typeof p.contentHtml !== 'string' || !p.contentHtml.trim()) return json({ error: 'Article content is required.' }, 400, cors);
         const normalized = {
           id: p.id.trim(), status: 'published', title: p.title.trim(), slug: p.slug.trim(), category: p.category.trim(), author: p.author,
-          publishedAt: p.publishedAt, updatedAt: p.updatedAt, summary: p.summary.trim(), tags: cleanTags(p.tags), contentHtml: p.contentHtml.trim()
+          publishedAt: p.publishedAt, updatedAt: p.updatedAt, summary: p.summary.trim(), tags: cleanTags(p.tags), contentHtml: p.contentHtml.trim(),
+          seoTitle: typeof p.seoTitle === 'string' ? p.seoTitle.trim().slice(0, 70) : '',
+          metaDescription: typeof p.metaDescription === 'string' ? p.metaDescription.trim().slice(0, 170) : '',
+          featuredImage: typeof p.featuredImage === 'string' ? p.featuredImage.trim().slice(0, 500) : ''
         };
         if (data.items.some(x => x.slug === normalized.slug && x.id !== normalized.id)) return json({ error: 'Another article already uses this slug.' }, 409, cors);
         const i = data.items.findIndex(x => x.id === normalized.id);

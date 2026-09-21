@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://ca-kka.com/</loc>
-  </url>
+  <url><loc>https://ca-kka.com/</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/categories.html</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/authors.html</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/case-laws.html</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/compliance.html</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/article.html?slug=kka-knowledge-centre-coming-soon</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/article.html?slug=mastering-section-43b-h-compliance-guide-for-payments-to-micro-and-small-enterprises</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/article.html?slug=tds-on-purchase-of-property-from-nri-changes-from-1-october-2026</loc></url>
+  <url><loc>https://ca-kka.com/knowledge/article.html?slug=rule-46-8-india-based-backup-of-electronic-books-practical-challenges</loc></url>
 </urlset>
