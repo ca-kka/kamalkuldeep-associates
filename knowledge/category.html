@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" id="category-description" content="KKA Knowledge Centre category overview.">
+  <meta name="theme-color" content="#142d5c">
+  <title id="category-title">KKA Knowledge Centre — Category</title>
+  <link rel="icon" href="../images/favicon-circle.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/knowledge.css?v=20260921-category1">
+</head>
+<body>
+  <header class="kc-header">
+    <div class="wrap topbar">
+      <a class="back" href="index.html">← Knowledge Centre</a>
+      <div class="topbar-actions">
+        <span class="eyebrow">KAMAL KULDEEP & ASSOCIATES</span>
+        <a class="admin-button" href="admin/">Admin Login</a>
+      </div>
+    </div>
+  </header>
+  <main class="wrap category-page">
+    <section class="category-page-hero">
+      <a class="category-back" href="index.html#categories">← All categories</a>
+      <p class="kicker">KKA KNOWLEDGE CENTRE</p>
+      <h1 id="category-heading">Category</h1>
+      <p id="category-intro">A focused area of the KKA knowledge library.</p>
+    </section>
+    <section class="category-page-body">
+      <div class="category-panel">
+        <h2>What you'll find here</h2>
+        <p id="category-summary">Practical subject areas and professional resources.</p>
+        <div id="topics" class="topic-list"></div>
+        <div class="category-actions">
+          <a id="explore-link" class="category-action primary" href="index.html">Explore published insights →</a>
+          <a class="category-action secondary" href="categories.html">Browse all categories</a>
+        </div>
+        <p class="category-note">Published insights open separately so this page remains a focused category overview.</p>
+      </div>
+      <aside class="category-panel">
+        <h2>How to use this section</h2>
+        <p>Start with the subject areas above, then use the dedicated insights view when you want to read published KKA content.</p>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const categoryData={
+      "GST":{intro:"Goods & Services Tax resources structured around practical indirect-tax work.",summary:"Registration, returns, input tax credit, invoicing and other GST compliance areas.",topics:["Registration & amendments","Returns & reconciliation","Input Tax Credit","E-invoicing & e-way bills","Refunds & assessments","Practical compliance"]},
+      "Income Tax":{intro:"Direct tax updates and practical guidance for individuals, businesses and professionals.",summary:"Core income-tax compliance, assessments, deductions, payments and procedural developments.",topics:["Assessments & notices","Deductions & disallowances","TDS-linked matters","Tax payments & returns","Business taxation","Practical compliance"]},
+      "TDS / TCS":{intro:"Withholding-tax resources focused on rates, applicability and compliance.",summary:"Practical guidance on deduction, collection, reporting, certificates and related obligations.",topics:["Applicability & rates","Deduction timing","TDS returns","TDS certificates","TCS provisions","Common compliance issues"]},
+      "MCA":{intro:"Companies and LLP compliance resources covering corporate filings and governance.",summary:"ROC filings, company-law obligations and recurring corporate compliance areas.",topics:["ROC filings","Companies Act compliance","LLP compliance","Annual filings","Corporate records","Practical checklists"]},
+      "Audit & Accounting":{intro:"Professional resources for audit, accounting standards and practice.",summary:"Audit methodology, accounting considerations, documentation and practical professional guidance.",topics:["Audit planning","Accounting standards","Documentation","Internal controls","Financial reporting","Professional practice"]},
+      "FEMA / RBI":{intro:"Foreign-exchange and banking regulatory resources for practical compliance.",summary:"FEMA, RBI directions and banking-related regulatory developments.",topics:["FEMA compliance","RBI directions","Foreign remittances","Banking regulation","Reporting requirements","Practical guidance"]},
+      "SEBI":{intro:"Capital-markets and securities-regulation resources.",summary:"Regulatory developments and practical resources across securities and capital-market compliance.",topics:["Securities regulation","Disclosure requirements","Listed entities","Capital markets","Regulatory updates","Compliance guidance"]},
+      "Case Laws":{intro:"Judgments and rulings organised for professional reference.",summary:"A structured entry point for legal decisions and their practical professional relevance.",topics:["Income-tax rulings","GST rulings","Corporate law decisions","Regulatory orders","Key principles","Practical takeaways"]},
+      "Compliance":{intro:"Due dates and action points designed for recurring professional compliance.",summary:"A practical view of deadlines, filing obligations and actions that require attention.",topics:["Tax deadlines","GST compliance","TDS deadlines","ROC deadlines","Regulatory filings","Action checklists"]},
+      "Practical Guides":{intro:"Step-by-step resources for common professional and compliance tasks.",summary:"Action-oriented guidance intended to make complex compliance work easier to execute.",topics:["Step-by-step processes","Checklists","How-to guidance","Documentation","Common mistakes","Practical examples"]},
+      "FAQs":{intro:"Common professional questions answered in a concise reference format.",summary:"A quick route to explanations of recurring tax, compliance, audit and regulatory questions.",topics:["Tax questions","GST questions","Compliance questions","Audit questions","Corporate questions","Practical answers"]}
+    };
+    const q=new URLSearchParams(location.search).get('category')||'';
+    const d=categoryData[q]||categoryData["GST"];
+    const name=categoryData[q]?q:'GST';
+    document.title='KKA Knowledge Centre — '+name;
+    document.getElementById('category-title').textContent=document.title;
+    document.getElementById('category-description').content=d.intro;
+    document.getElementById('category-heading').textContent=name;
+    document.getElementById('category-intro').textContent=d.intro;
+    document.getElementById('category-summary').textContent=d.summary;
+    document.getElementById('topics').innerHTML=d.topics.map(t=>'<div class="topic">'+t+'</div>').join('');
+    document.getElementById('explore-link').href='index.html?q='+encodeURIComponent(name);
+  </script>
+  <script src="js/site-footer.js"></script>
+</body>
+</html>
