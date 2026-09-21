@@ -194,19 +194,104 @@ function openReset(){
   overlay=document.createElement("div");
   overlay.id="kka-password-reset-overlay";
   overlay.innerHTML=`<style>
-#kka-password-reset-overlay{position:fixed;inset:0;z-index:100001;display:grid;place-items:center;padding:20px;background:rgba(8,18,14,.48);backdrop-filter:blur(5px)}
-#kka-password-reset-overlay .card{width:min(470px,100%);box-sizing:border-box;background:var(--white,#fff);color:var(--ink,#14221d);border:1px solid var(--line,#dfe5df);border-radius:20px;padding:30px;box-shadow:0 28px 90px rgba(0,0,0,.25)}
-#kka-password-reset-overlay .brand{margin-bottom:22px;color:var(--forest,#1e493d)} #kka-password-reset-overlay .brand strong{font-size:24px;letter-spacing:.08em} #kka-password-reset-overlay .brand small{display:block;color:var(--muted,#68756f);margin-top:4px;letter-spacing:.18em;font-size:9px}
-#kka-password-reset-overlay h2{margin:6px 0 8px} #kka-password-reset-overlay p{line-height:1.5} #kka-password-reset-overlay .muted{color:var(--muted,#68756f)} #kka-password-reset-overlay .eyebrow{color:var(--muted,#68756f);letter-spacing:.13em;font-size:10px;font-weight:800}
-#kka-password-reset-overlay form{display:grid;gap:13px} #kka-password-reset-overlay label{display:grid;gap:7px;font-weight:700} #kka-password-reset-overlay input{width:100%;box-sizing:border-box}
-#kka-password-reset-overlay .destination{display:flex;justify-content:space-between;gap:12px;padding:14px;margin:18px 0;background:var(--soft,#eef2ee);border-radius:12px;font-size:13px}
-#kka-password-reset-overlay .destination span{color:var(--muted,#68756f)} #kka-password-reset-overlay .otp-cubes{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-#kka-password-reset-overlay .kka-reset-otp{height:56px;text-align:center;font-size:24px;font-weight:800;padding:0}
-#kka-password-reset-overlay .actions{display:flex;justify-content:space-between;gap:10px;margin-top:5px}
-#kka-password-reset-overlay .full-width{width:100%;margin-top:10px} #kka-password-reset-overlay button{cursor:pointer} #kka-password-reset-overlay button:disabled{opacity:.55;cursor:not-allowed}
-#kka-password-reset-overlay .message{min-height:20px;font-size:13px;color:var(--muted,#68756f);margin:0} #kka-password-reset-overlay .message.error{color:#a33a2d} #kka-password-reset-overlay .message.success{color:#245b3d}
-@media(max-width:420px){#kka-password-reset-overlay .card{padding:22px 18px}#kka-password-reset-overlay .otp-cubes{gap:5px}#kka-password-reset-overlay .kka-reset-otp{height:52px;font-size:21px}}
-</style>`;
+#kka-password-reset-overlay{
+  position:fixed;inset:0;z-index:100001;display:grid;place-items:center;
+  padding:24px;background:rgba(14,27,22,.42);backdrop-filter:blur(14px) saturate(120%);
+  -webkit-backdrop-filter:blur(14px) saturate(120%);animation:kkaResetFade .18s ease-out
+}
+#kka-password-reset-overlay .card{
+  width:min(480px,100%);box-sizing:border-box;background:rgba(255,255,255,.94);
+  color:var(--ink,#14221d);border:1px solid rgba(203,214,207,.82);border-radius:22px;
+  padding:34px;box-shadow:0 30px 90px rgba(20,34,29,.22),0 1px 0 rgba(255,255,255,.85) inset;
+  backdrop-filter:blur(20px) saturate(125%);-webkit-backdrop-filter:blur(20px) saturate(125%);
+  animation:kkaResetCard .22s cubic-bezier(.2,.8,.2,1)
+}
+#kka-password-reset-overlay .brand{margin-bottom:25px;color:var(--forest,#1e493d);display:flex;align-items:baseline;gap:9px}
+#kka-password-reset-overlay .brand strong{font-size:22px;letter-spacing:.1em;font-weight:800}
+#kka-password-reset-overlay .brand small{color:#779082;letter-spacing:.16em;font-size:9px;font-weight:700}
+#kka-password-reset-overlay .eyebrow{margin:0 0 7px;color:var(--muted,#68756f);letter-spacing:.14em;font-size:10px;font-weight:800}
+#kka-password-reset-overlay h2{margin:0 0 9px;font-size:27px;line-height:1.15;letter-spacing:-.02em;color:var(--ink,#14221d)}
+#kka-password-reset-overlay p{line-height:1.55}
+#kka-password-reset-overlay .muted{margin:0 0 22px;color:var(--muted,#68756f);font-size:13px}
+#kka-password-reset-overlay form{display:grid;gap:14px}
+#kka-password-reset-overlay label{display:grid;gap:7px;font-weight:700;font-size:13px}
+#kka-password-reset-overlay input{
+  width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid var(--line,#dfe5df);
+  border-radius:9px;background:rgba(255,255,255,.86);color:var(--ink,#14221d);font:inherit;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease
+}
+#kka-password-reset-overlay input:focus{outline:0;border-color:var(--forest,#1e493d);box-shadow:0 0 0 3px rgba(30,73,61,.11);background:#fff}
+#kka-password-reset-overlay .password-field{position:relative}
+#kka-password-reset-overlay .password-field input{padding-right:58px}
+#kka-password-reset-overlay .password-toggle{
+  position:absolute;right:7px;top:50%;transform:translateY(-50%);height:34px;width:42px;
+  border:0;border-radius:8px;background:transparent;color:var(--muted,#68756f);font-size:11px;
+  font-weight:700;cursor:pointer
+}
+#kka-password-reset-overlay .password-toggle:hover{background:var(--soft,#eef2ee);color:var(--forest,#1e493d)}
+#kka-password-reset-overlay .primary{
+  width:100%;margin-top:7px;border:0;border-radius:8px;background:var(--forest,#1e493d);
+  color:#fff;font-weight:700;padding:12px 14px;font:inherit;cursor:pointer;
+  box-shadow:0 7px 18px rgba(30,73,61,.16);transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease
+}
+#kka-password-reset-overlay .primary:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(30,73,61,.2)}
+#kka-password-reset-overlay .primary:active{transform:translateY(0)}
+#kka-password-reset-overlay .secondary{
+  border:1px solid var(--line,#dfe5df);border-radius:8px;background:rgba(255,255,255,.72);
+  color:var(--ink,#14221d);font:inherit;font-size:12px;font-weight:700;padding:10px 13px;
+  cursor:pointer;transition:background .15s ease,border-color .15s ease
+}
+#kka-password-reset-overlay .secondary:hover{background:var(--soft,#eef2ee);border-color:#c5d2ca}
+#kka-password-reset-overlay .full-width{width:100%;margin-top:2px}
+#kka-password-reset-overlay button:disabled{opacity:.52;cursor:not-allowed;transform:none!important}
+#kka-password-reset-overlay .message{min-height:20px;font-size:12px;color:var(--muted,#68756f);margin:0}
+#kka-password-reset-overlay .message.error{color:#a33a2d;font-weight:700;background:#fff4f2;border:1px solid #efc7c1;border-radius:8px;padding:9px 11px;box-sizing:border-box}
+#kka-password-reset-overlay .message.success{color:#245b3d;font-weight:700}
+#kka-password-reset-overlay .destination{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;
+  margin:0 0 17px;background:var(--soft,#eef2ee);border:1px solid var(--line,#dfe5df);
+  border-radius:10px;font-size:12px
+}
+#kka-password-reset-overlay .destination span{color:var(--muted,#68756f)}
+#kka-password-reset-overlay .destination strong{font-size:12px;overflow:hidden;text-overflow:ellipsis}
+#kka-password-reset-overlay .otp-cubes{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:2px 0 4px}
+#kka-password-reset-overlay .kka-reset-otp{
+  height:54px;text-align:center;font-size:21px;font-weight:800;padding:0;border-radius:10px
+}
+#kka-password-reset-overlay .actions{display:flex;justify-content:space-between;gap:10px;margin-top:3px}
+@keyframes kkaResetFade{from{opacity:0}to{opacity:1}}
+@keyframes kkaResetCard{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@media(max-width:520px){
+  #kka-password-reset-overlay{padding:14px}
+  #kka-password-reset-overlay .card{padding:25px 20px;border-radius:18px}
+  #kka-password-reset-overlay h2{font-size:23px}
+}
+@media(max-width:380px){
+  #kka-password-reset-overlay .card{padding:22px 16px}
+  #kka-password-reset-overlay .otp-cubes{gap:5px}
+  #kka-password-reset-overlay .kka-reset-otp{height:50px;font-size:19px}
+}
+html[data-theme="dark"] #kka-password-reset-overlay{background:rgba(0,0,0,.58)}
+html[data-theme="dark"] #kka-password-reset-overlay .card{
+  background:rgba(21,30,26,.94);border-color:rgba(74,95,86,.8);
+  color:var(--ink);box-shadow:0 30px 90px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.04) inset
+}
+html[data-theme="dark"] #kka-password-reset-overlay .brand{color:#82c4b1}
+html[data-theme="dark"] #kka-password-reset-overlay .brand small,
+html[data-theme="dark"] #kka-password-reset-overlay .muted,
+html[data-theme="dark"] #kka-password-reset-overlay .message{color:var(--muted)}
+html[data-theme="dark"] #kka-password-reset-overlay h2{color:var(--ink)}
+html[data-theme="dark"] #kka-password-reset-overlay input{background:#111915;color:var(--ink);border-color:var(--input-border)}
+html[data-theme="dark"] #kka-password-reset-overlay input:focus{background:#111915;border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,169,149,.13)}
+html[data-theme="dark"] #kka-password-reset-overlay .destination,
+html[data-theme="dark"] #kka-password-reset-overlay .secondary{background:var(--soft);border-color:var(--line);color:var(--ink)}
+html[data-theme="dark"] #kka-password-reset-overlay .secondary:hover{background:#22302a}
+html[data-theme="dark"] #kka-password-reset-overlay .password-toggle{color:var(--muted)}
+html[data-theme="dark"] #kka-password-reset-overlay .password-toggle:hover{background:#22302a;color:#8bc9b5}
+html[data-theme="dark"] #kka-password-reset-overlay .primary{background:#367763}
+html[data-theme="dark"] #kka-password-reset-overlay .primary:hover{background:#438b75}
+`;
+
   document.body.appendChild(overlay);
   renderEmailStep();
 }
