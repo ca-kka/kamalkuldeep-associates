@@ -213,8 +213,15 @@ function openReset(){
 
 const linkStyle=document.createElement("style");linkStyle.textContent="#forgot-password-link{display:block;width:100%;margin-top:10px;border:0;background:transparent;color:var(--forest,#1e493d);font:inherit;font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer}#forgot-password-link:hover{opacity:.8}";document.head.appendChild(linkStyle);
 
-const observer=new MutationObserver(()=>{
+function bindForgotPassword(){
   const link=document.querySelector("#forgot-password-link");
-  if(link&&link.dataset.kkaBound!=="1"){link.dataset.kkaBound="1";link.addEventListener("click",openReset)}
-});
+  if(link&&link.dataset.kkaBound!=="1"){
+    link.dataset.kkaBound="1";
+    link.addEventListener("click",openReset);
+  }
+}
+
+bindForgotPassword();
+
+const observer=new MutationObserver(bindForgotPassword);
 observer.observe(document.documentElement,{childList:true,subtree:true});
