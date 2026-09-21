@@ -92,6 +92,7 @@ export default {
     const dataPath = 'knowledge/data/articles.json';
     const requestOrigin = request.headers.get('Origin') || '';
     const corsOrigin = ['https://ca-kka.com', 'https://www.ca-kka.com'].includes(requestOrigin) ? requestOrigin : 'https://ca-kka.com';
+    const security = {'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Permissions-Policy':'camera=(), microphone=(), geolocation=()','X-Frame-Options':'DENY','Strict-Transport-Security':'max-age=31536000; includeSubDomains','Cache-Control':'no-store'};
     const cors = {
       'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Credentials': 'true',
@@ -104,7 +105,7 @@ export default {
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.REDIRECT_URI || !allowedEmail || !secret) {
       return json({ error: 'Authentication service is not configured.' }, 503, cors);
     }
-    if (url.pathname === '/config') return json({ clientId: env.GOOGLE_CLIENT_ID, redirectUri: env.REDIRECT_URI, adminPath }, 200, { ...cors, 'Cache-Control': 'no-store' });
+    if (url.pathname === '/config') return json({ clientId: env.GOOGLE_CLIENT_ID, redirectUri: env.REDIRECT_URI, adminPath }, 200, { ...cors, ...security });
 
     if (url.pathname === '/login') {
       const state = await sign(b64json({ n: crypto.randomUUID(), t: Date.now() }), secret);
@@ -145,8 +146,8 @@ export default {
 
     const session = await authenticatedSession(request, secret, allowedEmail);
     if (url.pathname === '/session') {
-      if (!session) return json({ authenticated: false }, 401, { ...cors, 'Cache-Control': 'no-store' });
-      return json({ authenticated: true, user: { email: session.email, name: session.name, picture: session.picture } }, 200, { ...cors, 'Cache-Control': 'no-store' });
+      if (!session) return json({ authenticated: false }, 401, { ...cors, ...security });
+      return json({ authenticated: true, user: { email: session.email, name: session.name, picture: session.picture } }, 200, { ...cors, ...security });
     }
 
     const gh = {
@@ -245,6 +246,6 @@ export default {
     }
 
     if (url.pathname === '/logout') return redirect(`${origin}${adminPath}`, { 'Set-Cookie': [cookie('kka_session', '', 0, 'ca-kka.com'), cookie('kka_session', '', 0)] });
-    return json({ service: 'KKA Knowledge Centre Google Authentication', status: 'ok' }, 200, cors);
+    return json({ service: 'KKA Knowledge Centre Google Authentication', status: 'ok' }, 200, { ...cors, ...security });
   }
 };
