@@ -274,6 +274,53 @@
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
+        .tax-audit-deadline-card {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+            border: 2px solid #f59e0b;
+            border-left: 6px solid #dc2626;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tax-audit-deadline-card::before {
+            content: 'URGENT DEADLINE';
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #dc2626;
+            color: #fff;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border-bottom-left-radius: 6px;
+        }
+
+        .tax-audit-deadline-card h4 {
+            color: #991b1b;
+            padding-right: 110px;
+        }
+
+        .tax-audit-deadline-card .date {
+            color: #b91c1c;
+            font-size: 1.8rem;
+        }
+
+        .tax-audit-deadline-card .description {
+            color: #4b5563;
+        }
+
+        .tax-audit-deadline-card .deadline-countdown {
+            display: inline-block;
+            margin-top: 0.75rem;
+            padding: 6px 10px;
+            background: #fef2f2;
+            color: #991b1b;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
         .due-date-card h4 {
             color: #1e3c72;
             margin-bottom: 0.5rem;
@@ -1043,6 +1090,16 @@
                         <p>GST dates are generated from recurring GST Portal filing rules and checked against official GST advisories for extensions. TDS payment dates are shown separately from quarterly TDS return filing dates to avoid confusion. Advance tax instalments are shown on their statutory 15th-of-month dates. Due dates can differ by taxpayer category, State/UT and filing frequency. Verify the applicable date on the official portal before filing.</p>
                     </div>
                     <div class="due-dates-grid">
+                        <div class="due-date-card tax-audit-deadline-card">
+                            <h4>Tax Audit Report
+                                <span class="category-badge badge-income-tax">Income Tax</span>
+                            </h4>
+                            <div class="date">30 September 2026</div>
+                            <div class="description">Due date for furnishing the Tax Audit Report for FY 2025-26 (AY 2026-27) for applicable taxpayers under the Income-tax Act.</div>
+                            <div class="deadline-countdown">⚠️ Deadline: 30 September 2026</div>
+                            <div class="urgent-notice" style="margin-top:0.75rem;padding:0.6rem;"><strong>⚠️ Upcoming</strong></div>
+                        </div>
+
                         <div class="due-date-card">
                             <h4>GSTR-7
                                 <span class="category-badge badge-gst">GST</span>
