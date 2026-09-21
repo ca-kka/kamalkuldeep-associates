@@ -49,9 +49,11 @@ jobs:
           slugs = set()
           ids = set()
           for article in articles:
-              for field in ('id','title','slug','category','author','summary','content','status'):
+              for field in ('id','title','slug','category','author','summary','status'):
                   if not article.get(field):
                       raise SystemExit(f"articles.json: missing required field '{field}' in {article.get('id','unknown')}")
+              if not article.get('contentHtml') and not article.get('content'):
+                  raise SystemExit(f"articles.json: missing article content in {article.get('id','unknown')}")
               if article['status'] not in allowed:
                   raise SystemExit(f"articles.json: invalid status {article['status']}")
               if article['id'] in ids or article['slug'] in slugs:
