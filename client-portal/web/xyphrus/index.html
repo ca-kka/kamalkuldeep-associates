@@ -41,6 +41,17 @@ const supabase=createClient("https://wvyjyncgxtstyquecfdg.supabase.co","sb_publi
 const rows=document.querySelector("#rows"),empty=document.querySelector("#empty"),search=document.querySelector("#search"),level=document.querySelector("#level"),limit=document.querySelector("#limit");
 let live=true,timer=null;
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+async function ensureStaff(){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session){ window.location.replace("../"); return false; }
+  const {data:profile,error}=await supabase.from("profiles").select("role,active").eq("id",session.user.id).maybeSingle();
+  if(error || !profile?.active || !["admin","staff"].includes(profile.role)){
+    document.querySelector("main").innerHTML='<div class="empty">Authorised staff access is required.</div>';
+    document.querySelector("header").style.display="none";
+    return false;
+  }
+  return true;
+}
 async function load(){
   const n=Number(limit.value)||100;
   let q=supabase.from("system_diagnostic_logs").select("*").order("created_at",{ascending:false}).limit(n);
@@ -61,7 +72,8 @@ async function load(){
 }
 function schedule(){clearInterval(timer);if(live)timer=setInterval(load,2000)}
 document.querySelector("#refresh").onclick=load;document.querySelector("#live").onclick=e=>{live=!live;e.currentTarget.textContent=`Live: ${live?"ON":"OFF"}`;schedule();load()};
-search.oninput=load;level.onchange=load;limit.onchange=load;load();schedule();
+search.oninput=load;level.onchange=load;limit.onchange=load;
+ensureStaff().then(ok=>{if(ok){load();schedule();}});
 </script>
 <script>
 (function(){
