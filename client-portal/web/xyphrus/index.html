@@ -18,9 +18,14 @@ main{padding:20px 24px;max-width:1600px;margin:auto}
 table{border-collapse:collapse;width:100%;min-width:1100px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #202d28;font-size:12px;vertical-align:top}th{position:sticky;top:0;background:#15201c;color:#9fb2a8;font-size:11px;text-transform:uppercase}tr{cursor:pointer}tr:hover{background:#14201b}.error{color:#ff9c8f}.warn{color:#e9c77c}.success{color:#9be0b4}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.details{white-space:pre-wrap;word-break:break-word;color:#b9c8c1;max-width:650px}
 .empty{padding:40px;text-align:center;color:#91a39a}
 #count{margin-left:auto}
+
+/* CAVEAT GATE: diagnostics stay fully intact underneath. Press Q to reveal. */
+#caveat-gate{position:fixed;inset:0;z-index:100;background:radial-gradient(circle at 50% 38%,#16231f 0,#0b1110 55%,#070b0a 100%);display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;transition:opacity .35s ease,visibility .35s ease}#caveat-gate.hidden{opacity:0;visibility:hidden;pointer-events:none}#caveat-card{width:min(560px,100%);padding:42px 34px;border:1px solid #26352f;border-radius:18px;background:rgba(15,24,21,.86);box-shadow:0 30px 100px rgba(0,0,0,.45)}#caveat-mark{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#71877c;margin-bottom:18px}#caveat-card h2{margin:0;font-size:clamp(30px,5vw,48px);letter-spacing:-.04em;font-weight:700}#caveat-card p{margin:14px auto 0;color:#91a39a;line-height:1.6;font-size:13px;max-width:420px}#caveat-hint{margin-top:28px;color:#65766e;font-size:10px;letter-spacing:.14em;text-transform:uppercase}body.caveat-locked>header,body.caveat-locked>main{visibility:hidden}.caveat-reveal #caveat-card{animation:caveatIn .45s ease both}@keyframes caveatIn{from{transform:translateY(8px);opacity:.65}to{transform:translateY(0);opacity:1}}
 </style>
 </head>
 <body>
+<div id="caveat-gate" role="status" aria-live="polite"><div id="caveat-card"><div id="caveat-mark">KKA · RESTRICTED AREA</div><h2>You have reached KKA.</h2><p>This area is reserved for authorised system diagnostics and operational review.</p><div id="caveat-hint">Press Q to continue</div></div></div>
+
 <header><div style="display:flex;align-items:center;gap:15px"><div><h1>System Diagnostics</h1><div class="muted">KKA portal diagnostic stream · no normal portal navigation</div></div><span id="count" class="muted"></span></div>
 <div class="toolbar">
 <input id="search" placeholder="Search operation, message, request ID…">
@@ -57,5 +62,18 @@ async function load(){
 function schedule(){clearInterval(timer);if(live)timer=setInterval(load,2000)}
 document.querySelector("#refresh").onclick=load;document.querySelector("#live").onclick=e=>{live=!live;e.currentTarget.textContent=`Live: ${live?"ON":"OFF"}`;schedule();load()};
 search.oninput=load;level.onchange=load;limit.onchange=load;load();schedule();
+</script>
+<script>
+(function(){
+  const gate=document.getElementById("caveat-gate");
+  document.body.classList.add("caveat-locked");
+  function reveal(){gate.classList.add("hidden");document.body.classList.remove("caveat-locked");document.body.classList.add("caveat-reveal");}
+  function conceal(){gate.classList.remove("hidden");document.body.classList.add("caveat-locked");}
+  window.addEventListener("keydown",function(e){
+    if(e.key.toLowerCase()!=="q")return;
+    const t=e.target;if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable))return;
+    e.preventDefault();gate.classList.contains("hidden")?conceal():reveal();
+  });
+})();
 </script>
 </body></html>
