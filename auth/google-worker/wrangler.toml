@@ -11,3 +11,6 @@ REDIRECT_URI = "https://auth.ca-kka.com/callback"
 # GOOGLE_CLIENT_SECRET
 # ADMIN_EMAIL
 # SESSION_SECRET
+
+[observability.traces]
+enabled = true
