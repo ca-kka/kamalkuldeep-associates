@@ -89,10 +89,12 @@ async function refresh(){
         const clientActive=activeMap.has(String(client.id))
           ? activeMap.get(String(client.id))===true
           : true;
-        const enabled=client.enabled===true&&clientActive;
+        const hasLogin=client.enabled===true;
+        const isFamilyProfile=clientActive&&client.enabled!==true;
+        const enabled=hasLogin&&clientActive;
 
         cell.innerHTML=
-          `<span class="pill ${enabled?"success":"neutral"}">${enabled?"Enabled":"Disabled"}</span>`;
+          `<span class="pill ${enabled?"success":"neutral"}">${enabled?"Enabled":isFamilyProfile?"Family":"Disabled"}</span>`;
       });
     }catch(error){
       // Network failures must never block the Clients page. Also prevent the
