@@ -1,6 +1,8 @@
-import { SUPABASE_URL } from "./config.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/client-login-otp`;
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 let interceptedLoginHandler = null;
 let interceptedLoginOptions = undefined;
 let activeOverlay = null;
@@ -104,6 +106,24 @@ function bindOtpCubes(wrap) {
   cubes[0]?.focus();
 }
 
+async function completeVerifiedLogin(result, message) {
+  const session = result?.session;
+  if (!session?.access_token || !session?.refresh_token) {
+    throw new Error("The verified login session was not returned.");
+  }
+
+  const { error } = await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
+  if (error) throw error;
+
+  message.className = "message success";
+  message.textContent = "Verification successful. Opening your KKA workspace…";
+  stopResendTimer();
+  closeOverlay();
+}
+
 function showOtpOverlay({ maskedEmail, challengeId, expiresIn = 300, resendAfter = 60 }, email, password, form) {
   closeOverlay();
   const wrap = document.createElement("div");
@@ -205,14 +225,10 @@ function showOtpOverlay({ maskedEmail, challengeId, expiresIn = 300, resendAfter
         cubes[0]?.focus();
         return;
       }
-      message.className = "message success";
-      message.textContent = "Verification successful. Opening your KKA workspace…";
-      stopResendTimer();
-      closeOverlay();
-      invokeOriginalLogin(form);
-    } catch {
+      await completeVerifiedLogin(result, message);
+    } catch (error) {
       message.className = "message error";
-      message.textContent = "The security service could not be reached. Please try again.";
+      message.textContent = error?.message || "The verified login session could not be established. Please sign in again.";
       verify.disabled = false;
     }
   });
