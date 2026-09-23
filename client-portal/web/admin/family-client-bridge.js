@@ -95,30 +95,57 @@ function showFamilyProfiles(members){
     sessionStorage.setItem("kka_family_upload_client_name",clientName(member));
     sessionStorage.setItem("kka_family_upload_account_id",member.account_id||"");
     m.remove();
-    const openFamilyUploader=()=> {
-      const openDocuments=window.KKADocumentUploaderRender;
-      if(typeof openDocuments!=="function")return false;
-      try{
-        openDocuments();
-        setTimeout(()=>bridgeUploader(),0);
-        return true;
-      }catch(error){
-        console.error("KKA family upload navigation failed",error);
-        return false;
-      }
-    };
-    if(!openFamilyUploader()){
+    const openDocuments=window.KKADocumentUploaderRender;
+    if(typeof openDocuments!=="function"){
       let attempts=0;
-      const retry=()=>{
-        if(openFamilyUploader())return;
-        if(++attempts>=20){
-          const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
-          if(nav)nav.click();else window.location.hash="#documents";
+      const waitForUploader=()=>{
+        const uploader=window.KKADocumentUploaderRender;
+        if(typeof uploader==="function"){
+          try{
+            uploader();
+            waitForUploaderDom();
+          }catch(error){
+            console.error("KKA family upload navigation failed",error);
+            fallbackToDocuments();
+          }
           return;
         }
-        setTimeout(retry,100);
+        if(++attempts>=20){
+          fallbackToDocuments();
+          return;
+        }
+        setTimeout(waitForUploader,100);
       };
-      setTimeout(retry,100);
+      waitForUploader();
+    }else{
+      try{
+        openDocuments();
+        waitForUploaderDom();
+      }catch(error){
+        console.error("KKA family upload navigation failed",error);
+        fallbackToDocuments();
+      }
+    }
+
+    function waitForUploaderDom(){
+      let attempts=0;
+      const wait=()=>{
+        if(document.querySelector("#manual-client")){
+          bridgeUploader();
+          return;
+        }
+        if(++attempts>=30){
+          console.warn("KKA family upload target could not find the manual client selector");
+          return;
+        }
+        setTimeout(wait,100);
+      };
+      wait();
+    }
+
+    function fallbackToDocuments(){
+      const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
+      if(nav)nav.click();else window.location.hash="#documents";
     }
   }));
   return m;
