@@ -95,12 +95,30 @@ function showFamilyProfiles(members){
     sessionStorage.setItem("kka_family_upload_client_name",clientName(member));
     sessionStorage.setItem("kka_family_upload_account_id",member.account_id||"");
     m.remove();
-    const openDocuments=window.KKADocumentUploaderRender;
-    if(typeof openDocuments==="function"){
-      try{openDocuments()}catch(error){console.error("KKA family upload navigation failed",error);alert("Documents could not be opened. Please refresh the portal and try again.")}
-    }else{
-      const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
-      if(nav)nav.click();else window.location.hash="#documents";
+    const openFamilyUploader=()=> {
+      const openDocuments=window.KKADocumentUploaderRender;
+      if(typeof openDocuments!=="function")return false;
+      try{
+        openDocuments();
+        setTimeout(()=>bridgeUploader(),0);
+        return true;
+      }catch(error){
+        console.error("KKA family upload navigation failed",error);
+        return false;
+      }
+    };
+    if(!openFamilyUploader()){
+      let attempts=0;
+      const retry=()=>{
+        if(openFamilyUploader())return;
+        if(++attempts>=20){
+          const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
+          if(nav)nav.click();else window.location.hash="#documents";
+          return;
+        }
+        setTimeout(retry,100);
+      };
+      setTimeout(retry,100);
     }
   }));
   return m;
