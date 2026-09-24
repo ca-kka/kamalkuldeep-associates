@@ -6,6 +6,7 @@ const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 let familyByClient=new Map();
 let membersByClient=new Map();
 let familyLoaded=false;
+let familyLoadPromise=null;
 
 const style=document.createElement("style");
 style.textContent=`
@@ -23,8 +24,14 @@ style.textContent=`
 document.head.appendChild(style);
 
 async function loadFamilyData(){
-  const {data,error}=await supabase.from("client_account_members").select("account_id,client_id,relationship,is_primary,active,clients(id,display_name,legal_name,pan,tan,cin,gstin,mobile,active)").eq("active",true);
-  if(error){console.warn("KKA family bridge could not load family profiles",error);return false}
+  const {data,error}=await supabase.from("client_account_members")
+    .select("account_id,client_id,relationship,is_primary,active,clients(id,display_name,legal_name,pan,tan,cin,gstin,mobile,active)")
+    .eq("active",true);
+  if(error){
+    familyLoaded=false;
+    console.warn("KKA family bridge could not load family profiles",error);
+    return false;
+  }
   const groups=new Map();
   membersByClient=new Map();
   for(const member of data||[]){
@@ -44,17 +51,53 @@ async function loadFamilyData(){
   return true;
 }
 
+async function refreshFamilyData(){
+  if(familyLoadPromise)return familyLoadPromise;
+  familyLoadPromise=(async()=>{
+    const {data:{user}}=await supabase.auth.getUser();
+    if(!user){
+      familyLoaded=false;
+      familyByClient=new Map();
+      membersByClient=new Map();
+      return false;
+    }
+    const {data:profile,error:profileError}=await supabase.from("profiles")
+      .select("role,active").eq("id",user.id).maybeSingle();
+    if(profileError||!profile?.active||!["admin","staff"].includes(profile.role)){
+      familyLoaded=false;
+      familyByClient=new Map();
+      membersByClient=new Map();
+      return false;
+    }
+    return loadFamilyData();
+  })().finally(()=>{familyLoadPromise=null});
+  return familyLoadPromise;
+}
+
 function clientName(member){const c=member?.clients||{};return c.display_name||c.legal_name||"Unnamed profile"}
 function relation(member){return member?.is_primary?"Primary holder":(member?.relationship||"Family member")}
 
+function hideFamilyChildRows(){
+  if(!familyLoaded)return;
+  [...document.querySelectorAll("#client-rows tr")].forEach(row=>{
+    const manage=row.querySelector("[data-manage]");
+    const clientId=manage?.dataset.manage;
+    if(!clientId)return;
+    const member=membersByClient.get(clientId);
+    if(member&&!member.is_primary)row.remove();
+  });
+}
+
 function decorateClientRows(){
   if(!familyLoaded)return;
+  hideFamilyChildRows();
   const rows=[...document.querySelectorAll("#client-rows tr")].filter(r=>r.querySelector("[data-manage]"));
   for(const row of rows){
     const manage=row.querySelector("[data-manage]");
     const clientId=manage?.dataset.manage;
+    const member=clientId?membersByClient.get(clientId):null;
     const members=clientId?familyByClient.get(clientId):null;
-    if(!members?.length)continue;
+    if(!member?.is_primary||!members?.length)continue;
     const cell=manage.closest("td");
     if(!cell||cell.querySelector(".family-profile-btn"))continue;
     const button=document.createElement("button");
@@ -87,8 +130,7 @@ function showFamilyProfiles(members){
   }).join("");
   const m=modal(`<div class="modal-head"><div><p class="eyebrow">FAMILY ACCOUNT</p><h2>Family / Profiles</h2><p class="muted">All profiles use the primary holder's single KKA login. No separate family-member login is created.</p></div><button class="modal-close" type="button">×</button></div><table class="family-profile-table"><thead><tr><th>Profile</th><th>PAN</th><th>Relationship</th><th>Status</th><th>Documents</th></tr></thead><tbody>${rows}</tbody></table><div class="modal-actions"><button type="button" class="secondary modal-close">Close</button></div>`);
   m.querySelectorAll("[data-family-upload]").forEach(button=>button.addEventListener("click",e=>{
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault();e.stopPropagation();
     const member=members.find(x=>x.client_id===button.dataset.familyUpload);
     if(!member)return;
     sessionStorage.setItem("kka_family_upload_client_id",member.client_id);
@@ -101,54 +143,30 @@ function showFamilyProfiles(members){
       const waitForUploader=()=>{
         const uploader=window.KKADocumentUploaderRender;
         if(typeof uploader==="function"){
-          try{
-            uploader();
-            waitForUploaderDom();
-          }catch(error){
-            console.error("KKA family upload navigation failed",error);
-            fallbackToDocuments();
-          }
+          try{uploader();waitForUploaderDom()}catch(error){console.error("KKA family upload navigation failed",error);fallbackToDocuments()}
           return;
         }
-        if(++attempts>=20){
-          fallbackToDocuments();
-          return;
-        }
+        if(++attempts>=20){fallbackToDocuments();return}
         setTimeout(waitForUploader,100);
       };
       waitForUploader();
     }else{
-      try{
-        openDocuments();
-        waitForUploaderDom();
-      }catch(error){
-        console.error("KKA family upload navigation failed",error);
-        fallbackToDocuments();
-      }
+      try{openDocuments();waitForUploaderDom()}catch(error){console.error("KKA family upload navigation failed",error);fallbackToDocuments()}
     }
-
     function waitForUploaderDom(){
       let attempts=0;
       const wait=()=>{
-        if(document.querySelector("#manual-client")){
-          bridgeUploader();
-          return;
-        }
-        if(++attempts>=30){
-          console.warn("KKA family upload target could not find the manual client selector");
-          return;
-        }
+        if(document.querySelector("#manual-client")){bridgeUploader();return}
+        if(++attempts>=30){console.warn("KKA family upload target could not find the manual client selector");return}
         setTimeout(wait,100);
       };
       wait();
     }
-
     function fallbackToDocuments(){
       const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
       if(nav)nav.click();else window.location.hash="#documents";
     }
   }));
-  return m;
 }
 
 function bridgeUploader(){
@@ -173,10 +191,29 @@ function bridgeUploader(){
   label.innerHTML=`<div><strong>Uploading for: ${esc(name||clientName(member))}</strong><div class="muted">Family profile · ${esc(relation(member))}</div></div><button type="button" class="secondary compact" id="clear-family-upload-target">Change</button>`;
   const panel=document.querySelector(".uploader-panel");
   if(panel)panel.prepend(label);
-  label.querySelector("#clear-family-upload-target")?.addEventListener("click",()=>{sessionStorage.removeItem("kka_family_upload_client_id");sessionStorage.removeItem("kka_family_upload_client_name");sessionStorage.removeItem("kka_family_upload_account_id");label.remove();select.value="";select.dispatchEvent(new Event("change",{bubbles:true}))});
+  label.querySelector("#clear-family-upload-target")?.addEventListener("click",()=>{
+    sessionStorage.removeItem("kka_family_upload_client_id");
+    sessionStorage.removeItem("kka_family_upload_client_name");
+    sessionStorage.removeItem("kka_family_upload_account_id");
+    label.remove();
+    select.value="";
+    select.dispatchEvent(new Event("change",{bubbles:true}));
+  });
 }
 
 const observer=new MutationObserver(()=>{decorateClientRows();bridgeUploader()});
 observer.observe(document.body,{childList:true,subtree:true});
 
-(async()=>{await loadFamilyData();bridgeUploader()})();
+document.addEventListener("click",event=>{
+  const refresh=event.target.closest?.("#refresh-clients");
+  if(refresh)setTimeout(()=>refreshFamilyData(),0);
+},true);
+
+supabase.auth.onAuthStateChange((event,session)=>{
+  setTimeout(()=>{
+    if(session)refreshFamilyData();
+    else{familyLoaded=false;familyByClient=new Map();membersByClient=new Map()}
+  },0);
+});
+
+setTimeout(()=>refreshFamilyData(),0);
