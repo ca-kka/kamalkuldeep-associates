@@ -8,7 +8,12 @@ let redirecting=false;
 
 async function enforceRoute(){
   if(redirecting)return;
-  const {data:{user}}=await supabase.auth.getUser();
+  let user=null;
+  for(let attempt=0;attempt<3&&!user;attempt++){
+    const {data:{session}}=await supabase.auth.getSession();
+    user=session?.user||null;
+    if(!user&&attempt<2)await new Promise(resolve=>setTimeout(resolve,250));
+  }
   if(!user){if(route!=="root"){redirecting=true;window.location.replace("../")}return}
   const {data:profile,error}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();
   if(error)return;
