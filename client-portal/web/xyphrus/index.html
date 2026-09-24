@@ -48,7 +48,7 @@ async function ensureStaff(){
     if(diagnosticOnly)sessionStorage.removeItem("kka-xyphrus-diagnostic");
   }catch{}
   if(diagnosticOnly){
-    return false;
+    try{sessionStorage.removeItem("kka-xyphrus-diagnostic");}catch{}
   }
   const {data:{session}}=await supabase.auth.getSession();
   if(!session){ window.location.replace("../"); return false; }
