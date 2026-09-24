@@ -48,8 +48,6 @@ async function ensureStaff(){
     if(diagnosticOnly)sessionStorage.removeItem("kka-xyphrus-diagnostic");
   }catch{}
   if(diagnosticOnly){
-    document.querySelector("main").innerHTML='<div class="empty">Diagnostic shell opened. Staff authentication is required to load diagnostic log data.</div>';
-    document.querySelector("header").style.display="none";
     return false;
   }
   const {data:{session}}=await supabase.auth.getSession();
