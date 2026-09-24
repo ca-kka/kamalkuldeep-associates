@@ -59,6 +59,7 @@ function renderLogin(){
 async function bootstrap(){
   renderLogin();
   const {data:{session}}=await supabase.auth.getSession();
+  if(loginSubmitInProgress)return;
   if(!session?.user)return;
   // Supabase persists authentication, but KKA deliberately binds a login to
   // the current browser session. sessionStorage disappears when the browser
