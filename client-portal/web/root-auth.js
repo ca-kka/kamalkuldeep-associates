@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const root=document.querySelector("#app");
+let loginSubmitInProgress=false;
 const template=id=>document.querySelector(id)?.content.cloneNode(true);
 
 function setMessage(text,type=""){
@@ -46,13 +47,13 @@ function renderLogin(){
     const password=String(document.querySelector("#password")?.value||"");
     const submit=form.querySelector('button[type="submit"]');
     if(!email||!password)return;
-    clearLoginError();if(submit)submit.disabled=true;setMessage("Signing in securely…");
+    clearLoginError();loginSubmitInProgress=true;if(submit)submit.disabled=true;setMessage("Signing in securely…");
     try{
       const {error}=await supabase.auth.signInWithPassword({email,password});
-      if(error){showLoginError("Incorrect email or password. Please try again.");try{window.KKALoginFeedback?.hide?.()}catch{}if(submit)submit.disabled=false;return}
+      if(error){loginSubmitInProgress=false;showLoginError("Incorrect email or password. Please try again.");try{window.KKALoginFeedback?.hide?.()}catch{}if(submit)submit.disabled=false;return}
       setMessage("Verification successful. Opening your KKA workspace…","success");
       await redirectForRole();
-    }catch(error){showLoginError(error?.message||"The KKA authentication service could not be reached. Please try again.");try{window.KKALoginFeedback?.hide?.()}catch{}if(submit)submit.disabled=false}
+    }catch(error){loginSubmitInProgress=false;showLoginError(error?.message||"The KKA authentication service could not be reached. Please try again.");try{window.KKALoginFeedback?.hide?.()}catch{}if(submit)submit.disabled=false}
   })
 }
 async function bootstrap(){
@@ -76,5 +77,5 @@ async function bootstrap(){
   await supabase.auth.signOut({scope:"local"});
   renderLogin();
 }
-supabase.auth.onAuthStateChange((event,session)=>{if(session?.user&&event==="SIGNED_IN")void redirectForRole()});
+supabase.auth.onAuthStateChange((event,session)=>{\n  if(!session?.user||event!=="SIGNED_IN"||loginSubmitInProgress)return;\n  setTimeout(()=>void redirectForRole(),0);\n});
 void bootstrap();
