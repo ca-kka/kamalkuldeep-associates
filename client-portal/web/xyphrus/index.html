@@ -42,6 +42,16 @@ const rows=document.querySelector("#rows"),empty=document.querySelector("#empty"
 let live=true,timer=null;
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 async function ensureStaff(){
+  let diagnosticOnly=false;
+  try{
+    diagnosticOnly=sessionStorage.getItem("kka-xyphrus-diagnostic")==="1";
+    if(diagnosticOnly)sessionStorage.removeItem("kka-xyphrus-diagnostic");
+  }catch{}
+  if(diagnosticOnly){
+    document.querySelector("main").innerHTML='<div class="empty">Diagnostic shell opened. Staff authentication is required to load diagnostic log data.</div>';
+    document.querySelector("header").style.display="none";
+    return false;
+  }
   const {data:{session}}=await supabase.auth.getSession();
   if(!session){ window.location.replace("../"); return false; }
   const {data:profile,error}=await supabase.from("profiles").select("role,active").eq("id",session.user.id).maybeSingle();
