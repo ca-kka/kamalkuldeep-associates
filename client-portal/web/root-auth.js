@@ -77,5 +77,8 @@ async function bootstrap(){
   await supabase.auth.signOut({scope:"local"});
   renderLogin();
 }
-supabase.auth.onAuthStateChange((event,session)=>{\n  if(!session?.user||event!=="SIGNED_IN"||loginSubmitInProgress)return;\n  setTimeout(()=>void redirectForRole(),0);\n});
+supabase.auth.onAuthStateChange((event,session)=>{
+  if(!session?.user||event!=="SIGNED_IN"||loginSubmitInProgress)return;
+  setTimeout(()=>void redirectForRole(),0);
+});
 void bootstrap();
