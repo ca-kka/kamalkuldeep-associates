@@ -6,36 +6,36 @@ const MARKER = "kka-tab-session:admin";
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const featureModules = [
-  "./diagnostic-logger.js?v=20261004-bootstrap1",
-  "./theme.js?v=20261004-bootstrap1",
-  "./operation-feedback.js?v=20261004-bootstrap1",
-  "./session-route-transition.js?v=20261004-bootstrap1",
-  "./session-security.js?v=20261004-bootstrap1",
-  "./session-settings.js?v=20261004-bootstrap1",
-  "./dashboard-live.js?v=20261004-bootstrap1",
-  "./portal-access-request.js?v=20261004-bootstrap1",
-  "./portal-access-admin.js?v=20261004-bootstrap1",
-  "./staff-access.js?v=20261004-bootstrap1",
-  "./storage-view.js?v=20261004-bootstrap1",
-  "./storage-monitor.js?v=20261004-bootstrap1",
-  "./document-uploader.js?v=20261004-bootstrap1",
-  "./filing-structure-uploader.js?v=20261004-bootstrap1",
-  "./documents-browser.js?v=20261004-bootstrap1",
-  "./onedrive-directory.js?v=20261004-bootstrap1",
-  "./pan-assessment.js?v=20261004-bootstrap1",
-  "./review-queue.js?v=20261004-bootstrap1",
-  "./ui-search-lite.js?v=20261004-bootstrap1",
-  "./manual-client-search.js?v=20261004-bootstrap1",
-  "./audit-trail.js?v=20261004-bootstrap1",
-  "./client-access-status.js?v=20261004-bootstrap1",
-  "./filing-structure-admin.js?v=20261004-bootstrap1",
-  "./nav-bridge.js?v=20261004-bootstrap1",
-  "./mobile-menu.js?v=20261004-bootstrap1",
-  "./admin-portal-feedback.js?v=20261004-bootstrap1",
-  "./app.js?v=20261004-bootstrap1",
-  "./admin-hash-router.js?v=20261004-bootstrap1",
-  "./admin/family-client-bridge.js?v=20261004-bootstrap1",
-  "./admin/client-creation.js?v=20261004-bootstrap1"
+  "./diagnostic-logger.js?v=20261004-bootstrap2",
+  "./theme.js?v=20261004-bootstrap2",
+  "./operation-feedback.js?v=20261004-bootstrap2",
+  "./session-route-transition.js?v=20261004-bootstrap2",
+  "./session-security.js?v=20261004-bootstrap2",
+  "./session-settings.js?v=20261004-bootstrap2",
+  "./dashboard-live.js?v=20261004-bootstrap2",
+  "./portal-access-request.js?v=20261004-bootstrap2",
+  "./portal-access-admin.js?v=20261004-bootstrap2",
+  "./staff-access.js?v=20261004-bootstrap2",
+  "./storage-view.js?v=20261004-bootstrap2",
+  "./storage-monitor.js?v=20261004-bootstrap2",
+  "./document-uploader.js?v=20261004-bootstrap2",
+  "./filing-structure-uploader.js?v=20261004-bootstrap2",
+  "./documents-browser.js?v=20261004-bootstrap2",
+  "./onedrive-directory.js?v=20261004-bootstrap2",
+  "./pan-assessment.js?v=20261004-bootstrap2",
+  "./review-queue.js?v=20261004-bootstrap2",
+  "./ui-search-lite.js?v=20261004-bootstrap2",
+  "./manual-client-search.js?v=20261004-bootstrap2",
+  "./audit-trail.js?v=20261004-bootstrap2",
+  "./client-access-status.js?v=20261004-bootstrap2",
+  "./filing-structure-admin.js?v=20261004-bootstrap2",
+  "./nav-bridge.js?v=20261004-bootstrap2",
+  "./mobile-menu.js?v=20261004-bootstrap2",
+  "./admin-portal-feedback.js?v=20261004-bootstrap2",
+  "./app.js?v=20261004-bootstrap2",
+  "./admin-hash-router.js?v=20261004-bootstrap2",
+  "./admin/family-client-bridge.js?v=20261004-bootstrap2",
+  "./admin/client-creation.js?v=20261004-bootstrap2"
 ];
 
 async function stableSession() {
@@ -51,7 +51,7 @@ async function getProfile(id) {
   for (let i = 0; i < 3; i += 1) {
     const { data, error } = await supabase
       .from("profiles")
-      .select("role,active,is_active")
+      .select("role,active")
       .eq("id", id)
       .maybeSingle();
     if (!error && data) return data;
@@ -65,7 +65,6 @@ async function loadFeatureModule(path) {
     await import(path);
     return true;
   } catch (error) {
-    // A non-critical feature must never take down the authenticated admin shell.
     console.error(`[KKA Admin] Optional module failed: ${path}`, error);
     try {
       window.KKALog?.error?.("admin_feature_boot", "Optional admin module failed", {
@@ -88,8 +87,7 @@ async function boot() {
     if (!session?.user) return root();
 
     const profile = await getProfile(session.user.id);
-    const active = profile?.active ?? profile?.is_active;
-    if (!active) {
+    if (!profile?.active) {
       await supabase.auth.signOut({ scope: "local" }).catch(() => {});
       return root();
     }
@@ -104,8 +102,6 @@ async function boot() {
       sessionStorage.setItem("kka-auth-handoff", "admin");
     } catch {}
 
-    // Preserve the established module order. Each feature is isolated so a single
-    // broken/temporarily unavailable module cannot break the entire admin portal.
     for (const path of featureModules) {
       await loadFeatureModule(path);
     }
