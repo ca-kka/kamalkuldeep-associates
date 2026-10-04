@@ -3,7 +3,7 @@ import { supabase } from './config.js';
 /**
  * Admin bootstrap.
  * Authentication/session are the critical path. Feature modules are isolated so
- * one optional module failing cannot prevent the admin shell from booting.
+ * one optional admin module failing cannot prevent the admin shell from booting.
  */
 const featureModules = [
   './admin-shell.js', './admin-dashboard.js', './admin-client-management.js',
@@ -14,8 +14,13 @@ const featureModules = [
 ];
 
 async function loadFeatureModule(path) {
-  try { await import(path); return true; }
-  catch (error) { console.error(`[Admin] Optional module failed to load: ${path}`, error); return false; }
+  try {
+    await import(path);
+    return true;
+  } catch (error) {
+    console.error(`[Admin] Optional module failed to load: ${path}`, error);
+    return false;
+  }
 }
 
 async function boot() {
@@ -24,7 +29,10 @@ async function boot() {
     if (!session) return window.location.replace('/admin/login.html');
 
     const { data: profile, error } = await supabase
-      .from('profiles').select('role, is_active').eq('id', session.user.id).maybeSingle();
+      .from('profiles')
+      .select('role, is_active')
+      .eq('id', session.user.id)
+      .maybeSingle();
     if (error) throw error;
 
     if (!profile?.is_active || !['admin', 'staff'].includes(profile.role)) {
@@ -32,8 +40,11 @@ async function boot() {
       return window.location.replace('/admin/login.html?error=unauthorized');
     }
 
-    // Auth/session passed. Feature failures are isolated from the shell.
-    await Promise.all(featureModules.map(loadFeatureModule));
+    // Keep the established module order, but isolate each module failure.
+    for (const path of featureModules) {
+      await loadFeatureModule(path);
+    }
+
     window.dispatchEvent(new CustomEvent('kka:admin-ready', {
       detail: { userId: session.user.id, role: profile.role }
     }));
