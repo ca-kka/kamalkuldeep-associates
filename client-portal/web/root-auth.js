@@ -1,6 +1,6 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
-import { beginClientLoginOtp, bindClientLoginForm } from "./client-login-otp-gate.js?v=20261004-issues29b";
+import { beginClientLoginOtp } from "./client-login-otp-gate.js?v=20261004-diag1";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const root=document.querySelector("#app");
@@ -43,7 +43,6 @@ function renderLogin(){
   const t=template("#login-template");if(!t||!root)return;
   root.replaceChildren(t);setupPasswordToggle();showSessionReason();
   const form=document.querySelector("#login-form");if(!form)return;
-  bindClientLoginForm(form);
   form.querySelector("#email")?.addEventListener("input",clearLoginError);
   form.querySelector("#password")?.addEventListener("input",clearLoginError);
   form.addEventListener("submit",async event=>{
