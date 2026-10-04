@@ -11,23 +11,20 @@ let currentDocs=[],openedFolder=null,busy=false,channel=null;
 async function isClient(){const {data:{user}}=await supabase.auth.getUser();if(!user)return false;const {data:p}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();return p?.active===true&&p.role==="client"}
 async function getSelectedClient(){const id=localStorage.getItem(await getStorageKey());if(!id)return null;const {data,error}=await supabase.from("clients").select("id,display_name,legal_name").eq("id",id).maybeSingle();return error||!data?null:data}
 async function secureAccess(documentId,action="view"){const {data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");const r=await fetch(SUPABASE_URL+"/functions/v1/client-document-access",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({documentId,action})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"The document could not be opened.");return data}
+async function secureDownload(documentId){const {data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");const r=await fetch(SUPABASE_URL+"/functions/v1/client-document-access",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({documentId,action:"download_stream"})});if(!r.ok){const data=await r.json().catch(()=>({}));throw new Error(data.error||"The document could not be downloaded.")}const blob=await r.blob();if(!blob.size)throw new Error("The document download was empty.");return blob}
 async function openDocument(id){
  const tab=window.open("about:blank","_blank");
  try{
   const doc=currentDocs.find(item=>item.id===id);
   if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");
-  const {data:{session}}=await supabase.auth.getSession();
-  if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");
-  const previewable=/^(application\/pdf|image\/jpeg|image\/png)$/i.test(doc.content_type||"");
-  const response=await fetch(SUPABASE_URL+"/functions/v1/client-document-access",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify({documentId:id,action:previewable?"view":"download"})});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok||!result.url)throw new Error(result.error||"The document could not be opened.");
+  const result=await secureAccess(id,"view");
+  if(!result.url)throw new Error("The portal document link could not be created.");
   if(tab){tab.opener=null;tab.location.replace(result.url)}
-  else{const link=document.createElement("a");link.href=result.url;link.target="_blank";link.rel="noopener noreferrer";link.click()}
+  else throw new Error("Your browser blocked the document tab. Allow pop-ups for the KKA portal and try again.");
  }catch(error){if(tab&&!tab.closed)tab.close();alert(error instanceof Error?error.message:"The document could not be opened.")}
 }
-async function downloadDocument(id){try{const d=await secureAccess(id,"download");const a=document.createElement("a");a.href=d.url;a.download=d.filename||"document";a.target="_blank";a.rel="noopener noreferrer";document.body.appendChild(a);a.click();a.remove()}catch(e){alert(e instanceof Error?e.message:"The document could not be downloaded.")}}
-async function shareDocument(id){try{const d=await secureAccess(id);if(navigator.share){await navigator.share({title:d.filename||"KKA document",url:d.url});return}await navigator.clipboard.writeText(d.url);alert("Secure document link copied. The link expires in 30 minutes.")}catch(e){if(e?.name!=="AbortError")alert(e instanceof Error?e.message:"The document could not be shared.")}}
+async function downloadDocument(id){try{const doc=currentDocs.find(item=>item.id===id);if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");const blob=await secureDownload(id),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=doc.original_filename||"document";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000)}catch(e){alert(e instanceof Error?e.message:"The document could not be downloaded.")}}
+async function shareDocument(id){try{const doc=currentDocs.find(item=>item.id===id);if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");const d=await secureAccess(id,"view");if(!d.url)throw new Error("The portal document link could not be created.");if(navigator.share){await navigator.share({title:doc.original_filename||"KKA document",url:d.url});return}await navigator.clipboard.writeText(d.url);alert("KKA portal link copied. The recipient must sign in and have permission to this document.")}catch(e){if(e?.name!=="AbortError")alert(e instanceof Error?e.message:"The document could not be shared.")}}
 function folderLabel(a){return AREA_LABELS[a]||"Other"}
 function periodLabel(area,p){if(!p)return"";if(area==="gst"||area==="other")return MONTHS[String(p).padStart(2,"0")]||p;if(area==="tds"){const q=String(p).toUpperCase();return /^Q[1-4]$/.test(q)?q:(/^Q[1-4]/.test(q)?q:`Q${q}`)}return p}
 function periodSort(area,a,b){if(area==="gst"){const ai=Object.keys(MONTHS).indexOf(String(a).padStart(2,"0"));const bi=Object.keys(MONTHS).indexOf(String(b).padStart(2,"0"));if(ai>=0&&bi>=0)return ai-bi}if(area==="tds"){const ai=parseInt(String(a).replace(/[^1-4]/g,""),10),bi=parseInt(String(b).replace(/[^1-4]/g,""),10);if(ai>=1&&bi>=1)return ai-bi}return String(a).localeCompare(String(b))}

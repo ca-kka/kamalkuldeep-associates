@@ -6,13 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Expose-Headers": "Content-Disposition, Content-Type, X-KKA-PDF-Header-Offset",
 };
 
 function fail(message:string,status:number){
   return new Response(message,{status,headers:{...corsHeaders,"Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-store"}});
 }
 function filename(name:string){
-  return String(name||"document.pdf").replace(/[\r\n"]/g,"_").slice(0,180);
+  return String(name||"document").replace(/[\u0000-\u001f\u007f\/\\"]/g,"_").replace(/[^\x20-\x7e]/g,"_").slice(0,180)||"document";
 }
 
 export default {
@@ -69,7 +70,7 @@ export default {
       }
 
       const bytes=await file.arrayBuffer();
-      if(bytes.byteLength<5) return fail("The stored document is empty.",500);
+      if(bytes.byteLength<3) return fail("The stored document is empty.",500);
 
       // PDF readers commonly locate the %PDF- header within the first 1024
       // bytes. Do not reject otherwise-valid PDFs merely because a producer
@@ -82,21 +83,22 @@ export default {
           break;
         }
       }
-      if(pdfHeaderOffset<0){
+      const isPdf=pdfHeaderOffset>=0;
+      const isJpeg=probe[0]===0xff&&probe[1]===0xd8&&probe[2]===0xff;
+      const isPng=probe.length>=8&&probe[0]===0x89&&probe[1]===0x50&&probe[2]===0x4e&&probe[3]===0x47&&probe[4]===0x0d&&probe[5]===0x0a&&probe[6]===0x1a&&probe[7]===0x0a;
+      if(!isPdf&&!isJpeg&&!isPng){
         const signature=Array.from(probe.slice(0,32)).map(v=>v.toString(16).padStart(2,"0")).join(" ");
-        console.error("document-view non-pdf object",{documentId,storagePath:doc.storage_path,signature,contentType:doc.content_type,byteLength:bytes.byteLength});
-        return fail("The stored document is not a valid PDF.",500);
+        console.warn("document-view preview unavailable for file type",{documentId,storagePath:doc.storage_path,signature,contentType:doc.content_type,byteLength:bytes.byteLength});
+        return fail("Preview is not available for this file type.",415);
       }
 
       const headers=new Headers(corsHeaders);
-      headers.set("X-KKA-PDF-Header-Offset",String(pdfHeaderOffset));
-      headers.set("Content-Type","application/pdf");
+      if(isPdf)headers.set("X-KKA-PDF-Header-Offset",String(pdfHeaderOffset));
+      headers.set("Content-Type",isPdf?"application/pdf":isJpeg?"image/jpeg":"image/png");
       headers.set("Content-Disposition",`inline; filename="${filename(doc.original_filename)}"`);
       headers.set("Content-Length",String(bytes.byteLength));
       headers.set("Cache-Control","private, no-store, max-age=0");
       headers.set("X-Content-Type-Options","nosniff");
-      headers.set("Accept-Ranges","bytes");
-
       return new Response(bytes,{status:200,headers});
     } catch(error) {
       console.error("document-view",error);
