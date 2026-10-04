@@ -23,6 +23,10 @@ async function enforceRoute(){
     if(route!=="root")window.location.replace("../");
     return;
   }
+
+  // Never redirect a first-login client away from the root password gate.
+  if(route==="root"&&profile.role==="client"&&user.app_metadata?.must_change_password===true)return;
+
   const role=profile.role;
   const destination=role==="client"?"../client/":["admin","staff"].includes(role)?"../admin/":null;
   if(!destination)return;
