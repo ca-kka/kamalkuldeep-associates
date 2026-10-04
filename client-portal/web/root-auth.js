@@ -31,9 +31,12 @@ async function redirectForRole(markSession=true){
   const {data:profile,error}=await supabase.from("profiles").select("role,active").eq("id",user.id).maybeSingle();
   if(error||!profile){setMessage("Your KKA profile could not be loaded. Please contact KKA.","error");return false}
   if(profile.active!==true){await supabase.auth.signOut();setMessage("This KKA portal account is currently inactive. Please contact KKA.","error");return false}
+  // First-login clients must stay on the root page so the mandatory
+  // password gate can finish before the normal client redirect runs.
+  if(profile.role==="client"&&user.app_metadata?.must_change_password===true)return false;
   if(profile.role==="client"){if(markSession)markClientTabForLogin();window.location.replace("client/");return true}
   if(profile.role==="admin"||profile.role==="staff"){if(markSession)markAdminTabForLogin();window.location.replace("admin/");return true}
-  await supabase.auth.signOut();setMessage("This account is not configured for KKA portal access.","error");return false
+  await supabase.auth.signOut();setMessage("This account is not configured for KKA portal access.");return false
 }
 function renderLogin(){
   const t=template("#login-template");if(!t||!root)return;
@@ -61,10 +64,11 @@ async function bootstrap(){
   const {data:{session}}=await supabase.auth.getSession();
   if(loginSubmitInProgress)return;
   if(!session?.user)return;
-  // Supabase persists authentication, but KKA deliberately binds a login to
-  // the current browser session. sessionStorage disappears when the browser
-  // session ends, so an authenticated user without our marker must sign in again.
   const {data:profile}=await supabase.from("profiles").select("role,active").eq("id",session.user.id).maybeSingle();
+  // A persisted first-login session must remain available to the password gate.
+  if(profile?.role==="client"&&profile?.active===true&&session.user.app_metadata?.must_change_password===true){
+    return;
+  }
   const marker=profile?.role==="client"
     ?sessionStorage.getItem("kka-tab-session:client")
     :profile?.role==="admin"||profile?.role==="staff"
