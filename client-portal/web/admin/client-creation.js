@@ -92,4 +92,5 @@ function showAdminClientCreation(){
   });
 }
 
-document.addEventListener("click",e=>{const b=e.target.closest("#new-client");if(!b)return;e.preventDefault();e.stopImmediatePropagation();showAdminClientCreation()},true);
+
+window.KKAShowAdminClientCreation=showAdminClientCreation;

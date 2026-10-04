@@ -6,26 +6,24 @@ const MARKER="kka-tab-session:client";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 const featureModules=[
-  "../diagnostic-logger.js?v=20261004-bootstrap2",
-  "../theme.js?v=20261004-bootstrap2",
-  "../operation-feedback.js?v=20261004-bootstrap2",
-  "../session-route-transition.js?v=20261004-bootstrap2",
-  "../session-security.js?v=20261004-bootstrap2",
-  "../session-settings.js?v=20261004-bootstrap2",
-  "../dashboard-live.js?v=20261004-bootstrap2",
-  "../family-management.js?v=20261004-bootstrap2",
-  "../family-switcher.js?v=20261004-bootstrap2",
-  "../family-profile-context.js?v=20261004-bootstrap2",
-  "../client-upload-view.js?v=20261004-bootstrap2",
-  "../upload-network-resilience.js?v=20261004-bootstrap2",
-  "../family-documents-view.js?v=20261004-bootstrap2",
-  "../client-dashboard-v2.js?v=20261004-bootstrap2",
-  "../client-profile-menu.js?v=20261004-bootstrap2",
-  "../client-profile-sync.js?v=20261004-bootstrap2",
-  "../client-navigation-guard.js?v=20261004-bootstrap2",
-  "../mobile-menu.js?v=20261004-bootstrap2",
-  "../client-portal-feedback.js?v=20261004-bootstrap2",
-  "../app.js?v=20261004-bootstrap2"
+  "../diagnostic-logger.js?v=20261004-issues29b",
+  "../theme.js?v=20261004-issues29b",
+  "../operation-feedback.js?v=20261004-issues29b",
+  "../session-route-transition.js?v=20261004-issues29b",
+  "../session-security.js?v=20261004-issues29b",
+  "../session-settings.js?v=20261004-issues29b",
+  "../dashboard-live.js?v=20261004-issues29b",
+  "../family-management.js?v=20261004-issues29b",
+  "../family-switcher.js?v=20261004-issues29b",
+  "../family-profile-context.js?v=20261004-issues29b",
+  "../client-upload-view.js?v=20261004-issues29b",
+  "../upload-network-resilience.js?v=20261004-issues29b",
+  "../family-documents-view.js?v=20261004-issues29b",
+  "../client-dashboard-v2.js?v=20261004-issues29b",
+  "../client-profile-menu.js?v=20261004-issues29b",
+  "../mobile-menu.js?v=20261004-issues29b",
+  "../client-portal-feedback.js?v=20261004-issues29b",
+  "../client-shell.js?v=20261004-issues29b"
 ];
 
 async function stableSession(){

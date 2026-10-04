@@ -42,7 +42,6 @@ async function render(){
   const ctx=await context();
   if(!ctx||!ctx.membership.can_upload)return;
   const main=document.querySelector(".portal-main");
-  if(!main||!document.querySelector('[data-view="documents"].active'))return;
   styles();
   const panel=document.createElement("section");panel.id=ROOT_ID;panel.className="panel";panel.innerHTML=`<div class="kka-client-upload-head"><div><p class="eyebrow">CLIENT UPLOAD</p><h2>Upload documents</h2><p class="muted">Files are uploaded only to the selected profile: <strong>${esc(ctx.client.display_name||ctx.client.legal_name)}</strong>.</p></div><span class="pill success">Upload enabled</span></div><div class="kka-client-upload-zone"><label>Choose files<input id="kka-client-upload-files" type="file" multiple></label><p class="kka-client-upload-message">Maximum 50 MB per file. KKA will classify the document and place it into the selected profile. Low-confidence classification may enter review.</p><div class="kka-client-upload-files" id="kka-client-upload-list"></div><div class="kka-client-upload-actions"><button class="primary" id="kka-client-upload-start" type="button">Upload selected files</button><span class="kka-client-upload-message" id="kka-client-upload-status"></span></div></div>`;
   main.appendChild(panel);
@@ -54,6 +53,3 @@ async function render(){
     try{for(const file of files){status.textContent=`Preparing ${file.name}…`;const sha256=await digest(file);const prepared=await callFunction("client-prepare-upload",{filename:file.name,sha256,byteSize:file.size,contentType:file.type||"application/octet-stream",clientId:ctx.client.id});if(prepared.state==="duplicate"){done++;continue}status.textContent=`Uploading ${file.name}…`;const {error:uploadError}=await supabase.storage.from("client-documents").uploadToSignedUrl(prepared.objectPath,prepared.token,file,{contentType:file.type||"application/octet-stream"});if(uploadError)throw uploadError;status.textContent=`Finalising ${file.name}…`;await callFunction("client-complete-upload",{uploadId:prepared.uploadId});done++}status.textContent=`${done} file(s) processed successfully.`;input.value="";list.innerHTML="";const refresh=document.querySelector("#family-doc-refresh");refresh?.click()}catch(error){status.textContent=error.message||"Upload failed."}finally{button.disabled=false;input.disabled=false}
   });
 }
-
-document.addEventListener("click",e=>{if(!e.target.closest('a[data-view="documents"]'))return;setTimeout(()=>render().catch(()=>{}),80)},true);
-window.addEventListener("kka-family-profile-change",()=>{if(document.querySelector('[data-view="documents"].active')){document.getElementById(ROOT_ID)?.remove();setTimeout(()=>render().catch(()=>{}),80)}});

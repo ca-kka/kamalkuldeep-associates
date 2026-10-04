@@ -66,18 +66,10 @@ function installActivityListeners(){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkIdle()});
   window.addEventListener("focus",checkIdle);
 }
-function installManualLogoutCapture(){
-  if(route==="root")return;
-  document.addEventListener("click",e=>{
-    const target=e.target.closest?.("#client-signout,[data-profile-action=signout],button.user[title=\"Sign out\"]");
-    if(!target)return;
-    e.preventDefault();e.stopImmediatePropagation();finishLogout("manual");
-  },true);
-}
 async function init(){
   injectStyles();
   if(route==="root")return;
-  installActivityListeners();installManualLogoutCapture();
+  installActivityListeners();
   let tabMarker=null,lastStored=null;
   try{tabMarker=sessionStorage.getItem(TAB_MARKER);lastStored=sessionStorage.getItem(LAST_ACTIVITY)}catch{}
   const {data:{session}}=await supabase.auth.getSession();
@@ -96,6 +88,7 @@ async function init(){
   if(Date.now()-lastActivity>=INACTIVITY_MS){await finishLogout("inactivity");return}
   schedule();
 }
+window.KKASessionSignOut=()=>finishLogout("manual");
 supabase.auth.onAuthStateChange((event,session)=>{
   if(route==="root")return;
   if(!session?.user){clearTimers();return}

@@ -13,7 +13,7 @@ function applyPanRules(){const select=document.querySelector("#manual-client"),a
 // MutationObserver called applyPanRules(), which rewrote this badge, which itself
 // triggered another mutation, creating an endless mutation/render loop on Documents.
 document.addEventListener("change",e=>{if(e.target?.id==="manual-client")setTimeout(applyPanRules,0)},true);
-document.addEventListener("click",e=>{const link=e.target.closest('a[data-view="documents"]');if(link)setTimeout(applyPanRules,0)},true);
+window.KKAPanAssessmentApply=applyPanRules;
 
 const style=document.createElement("style");style.textContent="#manual-assessee-type{grid-column:1/-1;margin-top:-6px}.manual-grid #manual-area option[value=\"mca\"][hidden]{display:none!important}";document.head.appendChild(style);
 loadClients();
