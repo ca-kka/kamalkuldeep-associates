@@ -54,6 +54,7 @@ Deno.serve(async req=>{
     const {data:entitled,error:entitlementError}=await caller.from("documents").select("id").eq("id",doc.id).maybeSingle();
     if(entitlementError)throw entitlementError;
     if(!entitled)return json({error:"Document access denied"},403);
+    if(action==="download")return json({error:"Refresh the portal to download documents securely."},409);
     if(action==="view")return json({success:true,url:portalViewerUrl(doc.id),filename:doc.original_filename,contentType:doc.content_type});
     if(action==="download_stream"){
       const {data:file,error:fileError}=await service.storage.from("client-documents").download(doc.storage_path,{}, {cache:"no-store"});
@@ -67,12 +68,10 @@ Deno.serve(async req=>{
         "X-Content-Type-Options":"nosniff",
       }});
     }
-    // Keep the short-lived signed-link response for older cached portal builds.
-    const {data:signed,error:signError}=await service.storage.from("client-documents").createSignedUrl(doc.storage_path,1800,{download:action==="download"?doc.original_filename:false});
-    if(signError||!signed?.signedUrl)throw signError??new Error("Could not create secure document link");
-    return json({success:true,url:signed.signedUrl,expiresIn:1800,filename:doc.original_filename,contentType:doc.content_type});
+    return json({error:"Unsupported document action"},400);
   }catch(e){
     const message=e instanceof Error?e.message:"Document access failed";
     return json({error:message},/session|access|membership|inactive/i.test(message)?403:400);
   }
 });
+
