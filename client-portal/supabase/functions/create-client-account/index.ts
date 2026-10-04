@@ -433,6 +433,28 @@ Deno.serve(async req => {
       throw membershipError;
     }
 
+    const { data: account, error: accountError } = await service
+      .from("client_accounts")
+      .insert({
+        account_name: displayName || legalName,
+        primary_client_id: client.id,
+        active: true,
+      })
+      .select("id")
+      .single();
+    if (accountError) throw accountError;
+
+    const { error: primaryMemberError } = await service
+      .from("client_account_members")
+      .insert({
+        account_id: account.id,
+        client_id: client.id,
+        relationship: "primary_holder",
+        is_primary: true,
+        active: true,
+      });
+    if (primaryMemberError) throw primaryMemberError;
+
     /*
      * IMPORTANT:
      *

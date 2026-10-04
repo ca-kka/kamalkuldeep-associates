@@ -31,6 +31,13 @@ export default {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
         {auth:{autoRefreshToken:false,persistSession:false}}
       );
+      const authorization=req.headers.get("Authorization");
+      if(!authorization)return fail("Authentication required.",401);
+      const caller=createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        {global:{headers:{Authorization:authorization}},auth:{autoRefreshToken:false,persistSession:false}}
+      );
 
       const {data:profile,error:profileError}=await service
         .from("profiles").select("role,active").eq("id",userId).maybeSingle();
@@ -49,15 +56,10 @@ export default {
       if(!doc) return fail("Document not found.",404);
       if(doc.status!=="accepted"||doc.deleted_at) return fail("Document is no longer available.",403);
 
-      const isStaff=profile.role==="admin"||profile.role==="staff";
-      if(!isStaff){
-        if(profile.role!=="client"||!doc.client_id) return fail("Document access denied.",403);
-        const {data:membership,error:membershipError}=await service
-          .from("client_memberships").select("client_id")
-          .eq("user_id",userId).eq("client_id",doc.client_id).maybeSingle();
-        if(membershipError) throw membershipError;
-        if(!membership?.client_id) return fail("Document access denied.",403);
-      }
+      const {data:entitled,error:entitlementError}=await caller
+        .from("documents").select("id").eq("id",doc.id).maybeSingle();
+      if(entitlementError) throw entitlementError;
+      if(!entitled) return fail("Document access denied.",403);
 
       const {data:file,error:fileError}=await service.storage
         .from("client-documents").download(doc.storage_path);

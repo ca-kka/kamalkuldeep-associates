@@ -4,7 +4,7 @@
 create schema if not exists private;
 
 create type public.portal_role as enum ('admin', 'staff', 'client');
-create type public.document_area as enum ('gst', 'tds', 'income_tax', 'accounts', 'other');
+create type public.document_area as enum ('gst', 'tds', 'income_tax', 'accounts', 'mca', 'other');
 create type public.document_state as enum ('processing', 'review', 'accepted', 'rejected', 'duplicate');
 
 create table public.profiles (
@@ -46,6 +46,29 @@ create table public.client_memberships (
   primary key (client_id, user_id)
 );
 
+-- Family profiles are separate client records that share a primary login.
+create table public.client_accounts (
+  id uuid primary key default gen_random_uuid(),
+  account_name text not null,
+  primary_client_id uuid not null references public.clients(id) on delete cascade,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index client_accounts_primary_client_unique on public.client_accounts(primary_client_id);
+
+create table public.client_account_members (
+  account_id uuid not null references public.client_accounts(id) on delete cascade,
+  client_id uuid not null references public.clients(id) on delete cascade,
+  relationship text not null default 'family_member',
+  is_primary boolean not null default false,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (account_id, client_id)
+);
+create unique index client_account_one_primary_member on public.client_account_members(account_id) where is_primary;
+
 create table public.document_uploads (
   id uuid primary key default gen_random_uuid(),
   requested_by uuid not null references auth.users(id),
@@ -85,13 +108,15 @@ create table public.documents (
   uploaded_by uuid not null references auth.users(id),
   reviewed_by uuid references auth.users(id),
   reviewed_at timestamptz,
+  deleted_at timestamptz,
+  rejection_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint documents_fy_format check (financial_year is null or financial_year ~ '^[0-9]{4}-[0-9]{2}$')
 );
 create index documents_client_created on public.documents(client_id, created_at desc);
 create index documents_review_queue on public.documents(status, created_at) where status = 'review';
-create unique index documents_client_hash_unique on public.documents(client_id, sha256);
+create unique index documents_client_hash_unique on public.documents(client_id, sha256) where deleted_at is null;
 
 create table public.document_versions (
   id uuid primary key default gen_random_uuid(),
@@ -130,21 +155,46 @@ create index audit_logs_client_created on public.audit_logs(client_id, created_a
 
 create or replace function private.current_portal_role()
 returns public.portal_role
-language sql stable security definer set search_path = public, private
-as $$ select role from public.profiles where id = auth.uid() and active $$;
+language sql stable security definer set search_path = ''
+as $$ select p.role from public.profiles p where p.id = auth.uid() and p.active $$;
 
 create or replace function private.is_staff()
 returns boolean
-language sql stable security definer set search_path = public, private
+language sql stable security definer set search_path = ''
 as $$ select coalesce((select private.current_portal_role() in ('admin','staff')), false) $$;
 
 create or replace function private.can_access_client(target_client uuid)
 returns boolean
-language sql stable security definer set search_path = public, private
+language sql stable security definer set search_path = ''
 as $$
   select private.is_staff() or exists (
-    select 1 from public.client_memberships m
-    where m.client_id = target_client and m.user_id = auth.uid()
+    select 1
+    from public.clients target
+    where target.id = target_client and target.active
+      and (
+        exists (
+          select 1 from public.client_memberships m
+          where m.client_id = target_client and m.user_id = auth.uid()
+        )
+        or exists (
+          select 1
+          from public.client_memberships primary_membership
+          join public.client_account_members primary_member
+            on primary_member.client_id = primary_membership.client_id
+           and primary_member.is_primary and primary_member.active
+          join public.client_accounts account
+            on account.id = primary_member.account_id
+           and account.primary_client_id = primary_membership.client_id
+           and account.active
+          join public.client_account_members family_member
+            on family_member.account_id = account.id
+           and family_member.client_id = target_client
+           and family_member.active
+          join public.clients primary_client
+            on primary_client.id = primary_membership.client_id and primary_client.active
+          where primary_membership.user_id = auth.uid()
+        )
+      )
   )
 $$;
 
@@ -154,6 +204,14 @@ revoke all on function private.is_staff() from public;
 revoke all on function private.can_access_client(uuid) from public;
 grant usage on schema private to authenticated;
 grant execute on function private.current_portal_role(), private.is_staff(), private.can_access_client(uuid) to authenticated;
+
+alter table public.client_accounts enable row level security;
+alter table public.client_account_members enable row level security;
+revoke all on public.client_accounts, public.client_account_members from public, anon;
+grant select, insert, update, delete on public.client_accounts, public.client_account_members to authenticated;
+grant all on public.client_accounts, public.client_account_members to service_role;
+create policy "family accounts staff only" on public.client_accounts for all to authenticated using (private.is_staff()) with check (private.is_staff());
+create policy "family members staff only" on public.client_account_members for all to authenticated using (private.is_staff()) with check (private.is_staff());
 
 alter table public.profiles enable row level security;
 alter table public.clients enable row level security;
@@ -192,6 +250,8 @@ returns trigger language plpgsql security invoker as $$ begin new.updated_at = n
 create trigger profiles_updated_at before update on public.profiles for each row execute function public.set_updated_at();
 create trigger clients_updated_at before update on public.clients for each row execute function public.set_updated_at();
 create trigger documents_updated_at before update on public.documents for each row execute function public.set_updated_at();
+create trigger client_accounts_updated_at before update on public.client_accounts for each row execute function public.set_updated_at();
+create trigger client_account_members_updated_at before update on public.client_account_members for each row execute function public.set_updated_at();
 
 create or replace function public.handle_new_auth_user()
 returns trigger language plpgsql security definer set search_path = public

@@ -207,7 +207,7 @@ observer.observe(document.body,{childList:true,subtree:true});
 document.addEventListener("click",event=>{
   const refresh=event.target.closest?.("#refresh-clients");
   if(refresh)setTimeout(()=>refreshFamilyData(),0);
-},true);
+});
 
 supabase.auth.onAuthStateChange((event,session)=>{
   setTimeout(()=>{

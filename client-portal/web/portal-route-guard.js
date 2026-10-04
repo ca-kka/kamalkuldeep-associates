@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const path=window.location.pathname.replace(/\/+$/,"")||"/";
-const route=path.endsWith("/client")?"client":path.endsWith("/admin")?"admin":"root";
+const route=/(?:^|\/)client(?:\/index\.html)?$/i.test(path)?"client":/(?:^|\/)admin(?:\/index\.html)?$/i.test(path)?"admin":"root";
 let redirecting=false;
 
 async function enforceRoute(){

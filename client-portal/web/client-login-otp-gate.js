@@ -3,8 +3,6 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
 
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/client-login-otp`;
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-let interceptedLoginHandler = null;
-let interceptedLoginOptions = undefined;
 let activeOverlay = null;
 let resendTimer = null;
 let resendRemaining = 0;
@@ -12,29 +10,6 @@ let resendRemaining = 0;
 const esc = v => String(v ?? "").replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 }[c]));
-
-const originalAddEventListener = EventTarget.prototype.addEventListener;
-EventTarget.prototype.addEventListener = function(type, listener, options) {
-  if (this instanceof HTMLFormElement && this.id === "login-form" && type === "submit" && typeof listener === "function") {
-    interceptedLoginHandler = listener;
-    interceptedLoginOptions = options;
-    return;
-  }
-  return originalAddEventListener.call(this, type, listener, options);
-};
-
-function invokeOriginalLogin(form) {
-  const handler = interceptedLoginHandler;
-  if (!handler) return;
-  interceptedLoginHandler = null;
-  interceptedLoginOptions = undefined;
-  void handler({
-    preventDefault() {},
-    currentTarget: form,
-    target: form,
-    submitter: form.querySelector('button[type="submit"]'),
-  });
-}
 
 function stopResendTimer() {
   if (resendTimer) clearInterval(resendTimer);
@@ -277,24 +252,22 @@ function showCredentialError(form, text = "Incorrect email or password. Please t
   passwordInput?.focus();
 }
 
-async function handleLoginSubmit(event, form) {
-  event.preventDefault();
-  if (!interceptedLoginHandler) return;
+export function bindClientLoginForm(form) {
+  bindDiagnosticTrigger(form);
+}
 
-  const email = String(form.querySelector("#email")?.value || "").trim().toLowerCase();
-  const password = String(form.querySelector("#password")?.value || "");
-
+export async function beginClientLoginOtp(email, password, form) {
   if (!email && password === DIAGNOSTIC_KEY) {
     try {
       sessionStorage.setItem("kka-xyphrus-diagnostic", "1");
     } catch {}
     window.location.replace("xyphrus/");
-    return;
+    return true;
   }
 
   const message = form.querySelector("#auth-message");
   const submit = form.querySelector('button[type="submit"]');
-  if (!email || !password) return;
+  if (!email || !password) return false;
 
   submit.disabled = true;
   if (message) message.textContent = "Checking your KKA sign-in…";
@@ -312,19 +285,20 @@ async function handleLoginSubmit(event, form) {
         ? "Incorrect email or password. Please try again."
         : (result.error || "Unable to sign in. Please try again."));
       submit.disabled = false;
-      return;
+      return true;
     }
 
     if (!result.requiresOtp) {
       if (message) message.textContent = "Signing in…";
-      invokeOriginalLogin(form);
-      return;
+      return false;
     }
 
     showOtpOverlay(result, email, password, form);
+    return true;
   } catch {
     showCredentialError(form, "The KKA authentication service could not be reached. Please try again.");
     submit.disabled = false;
+    return true;
   }
 }
 
@@ -346,16 +320,6 @@ function bindDiagnosticTrigger(form) {
   email.addEventListener("input", syncEmailRequirement);
   syncEmailRequirement();
 }
-
-const observer = new MutationObserver(() => {
-  const form = document.querySelector("#login-form");
-  if (!form) return;
-  bindDiagnosticTrigger(form);
-  if (form.dataset.kkaOtpBound === "1") return;
-  form.dataset.kkaOtpBound = "1";
-  originalAddEventListener.call(form, "submit", event => handleLoginSubmit(event, form));
-});
-observer.observe(document.documentElement, { childList: true, subtree: true });
 
 const style = document.createElement("style");
 style.textContent = `.kka-credential-error{display:block!important;margin-top:12px;padding:11px 13px;border:1px solid #c94a3d;border-radius:10px;background:rgba(201,74,61,.10);color:#9f2f25!important;font-weight:600;line-height:1.45}.login-input-error{border-color:#c94a3d!important;box-shadow:0 0 0 2px rgba(201,74,61,.10)}`;

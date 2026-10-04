@@ -29,7 +29,7 @@
     timer = setTimeout(stop, duration);
   }
 
-  document.addEventListener("click", event => {
+  app.addEventListener("click", event => {
     const target = event.target.closest?.("button, a[data-view]");
     if (!target || target.matches(".modal-close,[data-profile-action='signout']")) return;
     if (target.matches("a[data-view]")) {
@@ -38,7 +38,7 @@
       const text = (target.textContent || "").trim();
       if (text && !target.disabled) start(`${text.replace(/\s+/g, " ").slice(0, 28)}…`, 650);
     }
-  }, true);
+  });
 
   window.KKAClientPortalFeedback = { start, stop };
 })();
