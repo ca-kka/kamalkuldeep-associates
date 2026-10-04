@@ -13,8 +13,13 @@ const featureModules = [
 ];
 
 async function loadFeatureModule(path) {
-  try { await import(path); return true; }
-  catch (error) { console.error(`[Client] Optional module failed to load: ${path}`, error); return false; }
+  try {
+    await import(path);
+    return true;
+  } catch (error) {
+    console.error(`[Client] Optional module failed to load: ${path}`, error);
+    return false;
+  }
 }
 
 async function boot() {
@@ -36,9 +41,14 @@ async function boot() {
       return window.location.replace('/client/change-password.html');
     }
 
-    // Auth/session passed. Feature failures are isolated from the shell.
-    await Promise.all(featureModules.map(loadFeatureModule));
-    window.dispatchEvent(new CustomEvent('kka:client-ready', { detail: { userId: session.user.id } }));
+    // Keep the established module order, but isolate each module failure.
+    for (const path of featureModules) {
+      await loadFeatureModule(path);
+    }
+
+    window.dispatchEvent(new CustomEvent('kka:client-ready', {
+      detail: { userId: session.user.id }
+    }));
   } catch (error) {
     console.error('[Client] Critical bootstrap failure', error);
     window.location.replace('/client/login.html?error=portal');
