@@ -252,19 +252,7 @@ function showCredentialError(form, text = "Incorrect email or password. Please t
   passwordInput?.focus();
 }
 
-export function bindClientLoginForm(form) {
-  bindDiagnosticTrigger(form);
-}
-
 export async function beginClientLoginOtp(email, password, form) {
-  if (!email && password === DIAGNOSTIC_KEY) {
-    try {
-      sessionStorage.setItem("kka-xyphrus-diagnostic", "1");
-    } catch {}
-    window.location.replace("xyphrus/");
-    return true;
-  }
-
   const message = form.querySelector("#auth-message");
   const submit = form.querySelector('button[type="submit"]');
   if (!email || !password) return false;
@@ -300,25 +288,6 @@ export async function beginClientLoginOtp(email, password, form) {
     submit.disabled = false;
     return true;
   }
-}
-
-const DIAGNOSTIC_KEY = "ipopo321";
-
-function bindDiagnosticTrigger(form) {
-  if (!form || form.dataset.kkaDiagnosticBound === "1") return;
-  form.dataset.kkaDiagnosticBound = "1";
-  const email = form.querySelector("#email");
-  const password = form.querySelector("#password");
-  if (!email || !password) return;
-
-  const syncEmailRequirement = () => {
-    const diagnostic = email.value.trim() === "" && password.value === DIAGNOSTIC_KEY;
-    email.required = !diagnostic;
-  };
-
-  password.addEventListener("input", syncEmailRequirement);
-  email.addEventListener("input", syncEmailRequirement);
-  syncEmailRequirement();
 }
 
 const style = document.createElement("style");
