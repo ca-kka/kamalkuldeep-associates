@@ -199,7 +199,7 @@ style_block = '''
             white-space: nowrap;
         }
 '''
-if '.deadline-extension-notice' not in text:
+if '.badge-tax-audit {' not in text:
     text = text.replace('        .due-date-card .date {', style_block + '\n        .due-date-card .date {', 1)
 
 for pattern in [r'Last Updated\s*:\s*[^<\n]*', r'Last Updated\s*-\s*[^<\n]*']:
