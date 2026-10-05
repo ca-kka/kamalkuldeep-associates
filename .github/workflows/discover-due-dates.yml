@@ -2,14 +2,18 @@ name: Daily due-date discovery
 
 on:
   schedule:
-    # GitHub Actions cron is UTC. 18:30 UTC = 00:00 IST (next day).
-    - cron: '30 18 * * *'
+    # GitHub Actions cron is UTC. Run every 6 hours so official extensions
+    # are reflected without waiting for a full day.
+    - cron: '17 */6 * * *'
   workflow_dispatch:
   push:
     paths:
+      - 'scripts/discover_due_dates.py'
+      - 'scripts/test_due_dates.py'
       - 'scripts/roll_advance_tax.py'
       - 'scripts/test_advance_tax.py'
       - 'scripts/update_site.py'
+      - 'data/latest-updates.json'
       - '.github/workflows/discover-due-dates.yml'
 
 concurrency:
@@ -22,12 +26,20 @@ permissions:
 jobs:
   discover:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install official-source parsing dependencies
+        run: python -m pip install --disable-pip-version-check pypdf
 
       - name: Regression-test calendar rollovers
         run: |
