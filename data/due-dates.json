@@ -158,7 +158,8 @@
       "description": "Extended due date for furnishing the tax audit report for eligible audit cases. Original due date: 30 September 2026.",
       "urgent": true,
       "extended": true,
-      "source": "https://www.incometaxindia.gov.in/documents/d/guest/cbdt-extends-due-date-for-furnishing-return-of-income-for-ay-2026-27-pdf"
+      "source": "https://www.incometaxindia.gov.in/documents/d/guest/cbdt-extends-due-date-for-furnishing-return-of-income-for-ay-2026-27-pdf",
+      "original_date": "30 September 2026"
     },
     {
       "title": "ITR – AY 2026-27 (audit cases)",
@@ -167,7 +168,8 @@
       "description": "Extended due date for furnishing the Return of Income for eligible audit cases. Original due date: 31 October 2026.",
       "urgent": true,
       "extended": true,
-      "source": "https://www.incometaxindia.gov.in/documents/d/guest/cbdt-extends-due-date-for-furnishing-return-of-income-for-ay-2026-27-pdf"
+      "source": "https://www.incometaxindia.gov.in/documents/d/guest/cbdt-extends-due-date-for-furnishing-return-of-income-for-ay-2026-27-pdf",
+      "original_date": "31 October 2026"
     }
   ]
 }
