@@ -80,7 +80,11 @@ for item in data.get("items", []):
         '<div class="urgent-notice" style="margin-top:0.75rem;padding:0.6rem;">'
         f'<strong>{status}</strong></div>' if status else ""
     )
-    extended = '<span class="extension-badge">EXTENDED</span>' if item.get("extended") else ""
+    if item.get("extended"):
+        extension_label = "ITR EXTENDED" if str(item.get("title", "")).startswith("ITR") else "EXTENDED"
+        extended = f'<span class="extension-badge">{extension_label}</span>'
+    else:
+        extended = ""
     source_link = item.get("source")
     read_more = (
         f' <a href="{source_link}" target="_blank" rel="noopener noreferrer" class="due-date-read-more">Read more</a>'
@@ -121,7 +125,7 @@ section = f'''            <section id="due-dates" class="section">
 {chr(10).join(items)}
                     </div>
                     <div class="update-info">
-                        📌 Last updated: {updated}. Due dates may change by notification or extension.<br>
+                        📌 Last Updated: {updated}<br>
                         💼 For assistance with compliance, contact us at +91-98156-81778
                     </div>
                 </div>
@@ -202,10 +206,8 @@ style_block = '''
 if '.badge-tax-audit {' not in text:
     text = text.replace('        .due-date-card .date {', style_block + '\n        .due-date-card .date {', 1)
 
-for pattern in [r'Last Updated\s*:\s*[^<\n]*', r'Last Updated\s*-\s*[^<\n]*']:
-    text, count = re.subn(pattern, f'Last Updated: {updated}', text, count=1, flags=re.I)
-    if count:
-        break
+# Keep the footer's site-level date in sync with the due-date data as well.
+text = re.sub(r'Last Updated:\s*[^<\n]*', f'Last Updated: {updated}', text, flags=re.I)
 
 INDEX.write_text(text, encoding="utf-8")
 print(f"Website updated from data/due-dates.json; Last Updated = {updated}; Today = {today}")
