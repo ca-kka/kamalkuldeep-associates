@@ -60,7 +60,13 @@ def parse_due_date(value):
 
 items = []
 for item in data.get("items", []):
-    badge = {"GST": "badge-gst", "Income Tax": "badge-income-tax", "TDS": "badge-tds"}.get(item.get("category"), "badge-gst")
+    category = item.get("category", "")
+    badge = {
+        "GST": "badge-gst",
+        "Income Tax": "badge-income-tax",
+        "TDS": "badge-tds",
+        "Tax Audit": "badge-tax-audit",
+    }.get(category, "badge-gst")
     due_date = parse_due_date(item.get("date"))
     if due_date == today:
         status = "⚠️ Due Today"
@@ -74,14 +80,35 @@ for item in data.get("items", []):
         '<div class="urgent-notice" style="margin-top:0.75rem;padding:0.6rem;">'
         f'<strong>{status}</strong></div>' if status else ""
     )
+    extended = '<span class="extension-badge">EXTENDED</span>' if item.get("extended") else ""
+    source_link = item.get("source")
+    read_more = (
+        f' <a href="{source_link}" target="_blank" rel="noopener noreferrer" class="due-date-read-more">Read more</a>'
+        if item.get("extended") and source_link else ""
+    )
     items.append(f'''                        <div class="due-date-card">
                             <h4>{item.get("title", "")}
-                                <span class="category-badge {badge}">{item.get("category", "")}</span>
+                                <span class="category-badge {badge}">{category}</span>
+                                {extended}
                             </h4>
                             <div class="date">{item.get("date", "")}</div>
-                            <div class="description">{item.get("description", "")}</div>
+                            <div class="description">{item.get("description", "")}{read_more}</div>
                             {urgent}
                         </div>''')
+
+extension = data.get("extension_notice", {})
+extension_html = ""
+if extension:
+    source = extension.get("source", "")
+    extension_html = f'''                    <div class="deadline-extension-notice" role="note">
+                        <div class="deadline-extension-heading">
+                            <span class="extension-badge">EXTENDED</span>
+                            <strong>{extension.get("title", "Due date extended")}</strong>
+                        </div>
+                        <p>{extension.get("text", "")}</p>
+                        {f'<a href="{source}" target="_blank" rel="noopener noreferrer" class="extension-read-more">Read more on Income Tax Department notification →</a>' if source else ""}
+                    </div>
+'''
 
 section = f'''            <section id="due-dates" class="section">
                 <div class="due-dates-section">
@@ -90,7 +117,7 @@ section = f'''            <section id="due-dates" class="section">
                         <strong>⚠️ Compliance Notice:</strong>
                         <p>{data.get("notice", "Please verify applicable due dates on official portals.")}</p>
                     </div>
-                    <div class="due-dates-grid">
+{extension_html}                    <div class="due-dates-grid">
 {chr(10).join(items)}
                     </div>
                     <div class="update-info">
@@ -112,6 +139,68 @@ section = f'''            <section id="due-dates" class="section">
 text, n = re.subn(r'            <section id="due-dates" class="section">.*?            </section>\n\n            <section id="contact"', section + '\n\n            <section id="contact"', text, count=1, flags=re.S)
 if n != 1:
     raise SystemExit("Could not locate due-dates section")
+
+# Add/update styles for the extension notice and the dedicated Tax Audit badge.
+style_block = '''
+        .badge-tax-audit {
+            background-color: #b45309;
+            color: white;
+        }
+
+        .extension-badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        .deadline-extension-notice {
+            margin: 1rem 0 1.25rem;
+            padding: 1rem 1.15rem;
+            border: 1px solid #f59e0b;
+            border-left: 5px solid #dc2626;
+            border-radius: 8px;
+            background: #fff7ed;
+        }
+
+        .deadline-extension-heading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7c2d12;
+            font-size: 1rem;
+        }
+
+        .deadline-extension-heading .extension-badge {
+            margin-left: 0;
+        }
+
+        .deadline-extension-notice p {
+            margin: 0.6rem 0;
+            color: #7c2d12;
+            line-height: 1.55;
+        }
+
+        .extension-read-more,
+        .due-date-read-more {
+            color: #1e3c72;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        .due-date-read-more {
+            margin-left: 4px;
+            white-space: nowrap;
+        }
+'''
+if '.deadline-extension-notice' not in text:
+    text = text.replace('        .due-date-card .date {', style_block + '\n        .due-date-card .date {', 1)
 
 for pattern in [r'Last Updated\s*:\s*[^<\n]*', r'Last Updated\s*-\s*[^<\n]*']:
     text, count = re.subn(pattern, f'Last Updated: {updated}', text, count=1, flags=re.I)
