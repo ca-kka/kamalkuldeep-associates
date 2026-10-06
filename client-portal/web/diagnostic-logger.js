@@ -1,8 +1,12 @@
-const SUPABASE_URL="https://wvyjyncgxtstyquecfdg.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY="sb_publishable_bz_IaZtgADuIBvBca25h7g_G0xLb_T3";
+import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
+import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
+
 const ENDPOINT=`${SUPABASE_URL}/functions/v1/system-log`;
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}});
 const requestId=crypto.randomUUID();
 const started=performance.now();
+let cachedSession=null;
+let sessionCheckedAt=0;
 
 function clean(value,depth=0){
   if(depth>3)return "[truncated]";
@@ -18,17 +22,39 @@ function clean(value,depth=0){
   if(typeof value==="string")return value.length>1000?value.slice(0,1000)+"…":value;
   return value;
 }
-function send(level,operation,message,details={},extra={}){
+
+async function getCurrentSession(){
+  const now=Date.now();
+  if(now-sessionCheckedAt<1000)return cachedSession;
+  sessionCheckedAt=now;
   try{
-    const body={
-      level,source:"portal-client",operation,message,request_id:requestId,
-      page:location.pathname,path:location.href.split("?")[0],
-      user_agent:navigator.userAgent,
-      details:clean(details),...extra
-    };
-    fetch(ENDPOINT,{method:"POST",keepalive:true,headers:{"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY},body:JSON.stringify(body)}).catch(()=>{});
-  }catch{}
+    const {data:{session}}=await supabase.auth.getSession();
+    cachedSession=session||null;
+    return cachedSession;
+  }catch{
+    cachedSession=null;
+    return null;
+  }
 }
+
+function send(level,operation,message,details={},extra={}){
+  Promise.resolve().then(async()=>{
+    try{
+      const session=await getCurrentSession();
+      const body={
+        level,source:"portal-client",operation,message,request_id:requestId,
+        page:location.pathname,path:location.href.split("?")[0],
+        user_agent:navigator.userAgent,
+        details:clean(details),
+        ...extra
+      };
+      const headers={"Content-Type":"application/json","apikey":SUPABASE_PUBLISHABLE_KEY};
+      if(session?.access_token)headers.Authorization=`Bearer ${session.access_token}`;
+      await fetch(ENDPOINT,{method:"POST",keepalive:true,headers,body:JSON.stringify(body)}).catch(()=>{});
+    }catch{}
+  });
+}
+
 window.KKALog={
   info:(operation,message,details)=>send("info",operation,message,details),
   warn:(operation,message,details)=>send("warn",operation,message,details),
