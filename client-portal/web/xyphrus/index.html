@@ -15,7 +15,8 @@ input{min-width:220px}button{cursor:pointer}button:hover{border-color:#5d7b6c}bu
 main{padding:20px 24px;max-width:1600px;margin:auto}
 .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}.stat{padding:12px 15px;border:1px solid #26352f;border-radius:10px;background:#101a16;min-width:130px}.stat strong{display:block;font-size:20px}.stat span{font-size:11px;color:#91a39a}
 .table{border:1px solid #26352f;border-radius:12px;overflow:auto;background:#0f1815}
-table{border-collapse:collapse;width:100%;min-width:1100px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #202d28;font-size:12px;vertical-align:top}th{position:sticky;top:0;background:#15201c;color:#9fb2a8;font-size:11px;text-transform:uppercase}tr{cursor:pointer}tr:hover{background:#14201b}.error{color:#ff9c8f}.warn{color:#e9c77c}.success{color:#9be0b4}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.details{white-space:pre-wrap;word-break:break-word;color:#b9c8c1;max-width:650px}
+table{border-collapse:collapse;width:100%;min-width:1220px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #202d28;font-size:12px;vertical-align:top}th{position:sticky;top:0;background:#15201c;color:#9fb2a8;font-size:11px;text-transform:uppercase}tr{cursor:pointer}tr:hover{background:#14201b}.error{color:#ff9c8f}.warn{color:#e9c77c}.success{color:#9be0b4}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.details{white-space:pre-wrap;word-break:break-word;color:#b9c8c1;max-width:650px}
+.client{font-weight:600;color:#d6e8df;min-width:160px}.client.missing{font-weight:400;color:#71827a}
 .empty{padding:40px;text-align:center;color:#91a39a}#count{margin-left:auto}
 [hidden]{display:none!important}
 .auth-shell{min-height:100vh;display:grid;place-items:center;padding:24px}.auth-card{width:min(440px,100%);padding:32px;border:1px solid #26352f;border-radius:16px;background:#101a16;box-shadow:0 24px 80px rgba(0,0,0,.3)}.auth-card h1{margin:0 0 8px}.auth-card form{display:grid;gap:14px;margin-top:22px}.auth-card label{display:grid;gap:7px;font-size:13px;color:#b9c8c1}.auth-card input{width:100%;min-width:0}.auth-card button{width:100%;margin-top:4px}.auth-message{min-height:20px;color:#ff9c8f;font-size:13px;line-height:1.45}.auth-message.success{color:#9be0b4}.auth-note{color:#91a39a;font-size:12px;line-height:1.55;margin-bottom:0}.auth-card a{color:#9be0b4}
@@ -39,13 +40,13 @@ table{border-collapse:collapse;width:100%;min-width:1100px}th,td{text-align:left
 <div id="diagnostics-app" hidden>
 <header><div style="display:flex;align-items:center;gap:15px"><div><h1>System Diagnostics</h1><div class="muted">KKA portal diagnostic stream · staff access</div></div><span id="count" class="muted"></span><button id="sign-out" type="button">Sign out</button></div>
 <div class="toolbar">
-<input id="search" placeholder="Search operation, message, request ID…">
+<input id="search" placeholder="Search client, operation, message, request ID…">
 <select id="level"><option value="">All levels</option><option value="error">Errors</option><option value="warn">Warnings</option><option value="info">Info</option><option value="debug">Debug</option></select>
 <select id="limit"><option>100</option><option>250</option><option>500</option><option>1000</option></select>
 <button id="refresh">Refresh</button><button id="live">Live: ON</button>
 </div></header>
 <main><div class="stats"><div class="stat"><strong id="errors">0</strong><span>Errors</span></div><div class="stat"><strong id="warnings">0</strong><span>Warnings</span></div><div class="stat"><strong id="events">0</strong><span>Loaded events</span></div></div>
-<div class="table"><table><thead><tr><th>Time</th><th>Level</th><th>Operation</th><th>Status</th><th>HTTP</th><th>Message</th><th>Request ID</th><th>Page</th><th>Details</th></tr></thead><tbody id="rows"></tbody></table><div id="empty" class="empty" hidden>No diagnostic events found.</div></div></main>
+<div class="table"><table><thead><tr><th>Time</th><th>Client</th><th>Level</th><th>Operation</th><th>Status</th><th>HTTP</th><th>Message</th><th>Request ID</th><th>Page</th><th>Details</th></tr></thead><tbody id="rows"></tbody></table><div id="empty" class="empty" hidden>No diagnostic events found.</div></div></main>
 </div>
 <script type="module">
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
@@ -68,23 +69,71 @@ async function hasStaffAccess(){
   if(error)throw error;
   return profile?.active===true&&["admin","staff"].includes(profile.role);
 }
+async function resolveClientNames(logs){
+  const userIds=[...new Set((logs||[]).map(x=>x.user_id).filter(Boolean))];
+  if(!userIds.length)return new Map();
+
+  const {data:members,error:memberError}=await supabase
+    .from("client_memberships")
+    .select("user_id,client_id")
+    .in("user_id",userIds);
+  if(memberError)throw memberError;
+
+  const clientIds=[...new Set((members||[]).map(x=>x.client_id).filter(Boolean))];
+  if(!clientIds.length)return new Map();
+
+  const {data:clients,error:clientError}=await supabase
+    .from("clients")
+    .select("id,display_name,legal_name")
+    .in("id",clientIds);
+  if(clientError)throw clientError;
+
+  const names=new Map((clients||[]).map(c=>[c.id,c.display_name||c.legal_name||"Unnamed client"]));
+  const result=new Map();
+  for(const member of members||[]){
+    const name=names.get(member.client_id);
+    if(!name)continue;
+    const current=result.get(member.user_id)||[];
+    if(!current.includes(name))current.push(name);
+    result.set(member.user_id,current);
+  }
+  return result;
+}
 async function load(){
   const n=Number(limit.value)||100;
   let q=supabase.from("system_diagnostic_logs").select("*").order("created_at",{ascending:false}).limit(n);
   if(level.value)q=q.eq("level",level.value);
   const {data,error}=await q;
-  if(error){rows.innerHTML="<tr><td colspan=\"9\" class=\"error\">"+esc(error.message)+"</td></tr>";return}
+  if(error){rows.innerHTML="<tr><td colspan=\"10\" class=\"error\">"+esc(error.message)+"</td></tr>";return}
+
+  let clientNames=new Map();
+  try{clientNames=await resolveClientNames(data||[])}catch(error){
+    console.warn("Could not resolve diagnostic client names",error);
+  }
+
+  const getClientName=x=>{
+    const names=clientNames.get(x.user_id)||[];
+    return names.length?names.join(" / "):"—";
+  };
   const needle=search.value.trim().toLowerCase();
-  const filtered=(data||[]).filter(x=>!needle||[x.operation,x.message,x.request_id,x.page,x.path,JSON.stringify(x.details)].join(" ").toLowerCase().includes(needle));
+  const filtered=(data||[]).filter(x=>{
+    const clientName=getClientName(x);
+    return !needle||[clientName,x.operation,x.message,x.request_id,x.page,x.path,JSON.stringify(x.details)].join(" ").toLowerCase().includes(needle);
+  });
   const errorCount=filtered.filter(x=>x.level==="error").length,warnCount=filtered.filter(x=>x.level==="warn").length;
   document.querySelector("#errors").textContent=errorCount;document.querySelector("#warnings").textContent=warnCount;document.querySelector("#events").textContent=filtered.length;document.querySelector("#count").textContent="Updated "+new Date().toLocaleTimeString();
   empty.hidden=filtered.length!==0;
-  rows.innerHTML=filtered.map(x=>"<tr title=\"Click for full diagnostic details\" data-id=\""+esc(x.id)+"\">"+
-    "<td class=\"mono\">"+esc(new Date(x.created_at).toLocaleString())+"</td>"+
-    "<td class=\""+(x.level==="error"?"error":x.level==="warn"?"warn":"success")+"\">"+esc(x.level)+"</td>"+
-    "<td class=\"mono\">"+esc(x.operation||"—")+"</td><td>"+esc(x.status||"—")+"</td><td>"+esc(x.http_status||"—")+"</td>"+
-    "<td>"+esc(x.message)+"</td><td class=\"mono\">"+esc(x.request_id||"—")+"</td><td>"+esc(x.page||"—")+"</td>"+
-    "<td class=\"details\">"+esc(JSON.stringify(x.details||{}))+"</td></tr>").join("");
+  rows.innerHTML=filtered.map(x=>{
+    const clientName=getClientName(x);
+    const clientClass=clientName==="—"?"client missing":"client";
+    return "<tr title=\"Click for full diagnostic details\" data-id=\""+esc(x.id)+"\">"+
+      "<td class=\"mono\">"+esc(new Date(x.created_at).toLocaleString())+"</td>"+
+      "<td class=\""+clientClass+"\">"+esc(clientName)+"</td>"+
+      "<td class=\""+(x.level==="error"?"error":x.level==="warn"?"warn":"success")+"\">"+esc(x.level)+"</td>"+
+      "<td class=\"mono\">"+esc(x.operation||"—")+"</td><td>"+esc(x.status||"—")+"</td><td>"+esc(x.http_status||"—")+"</td>"+
+      "<td>"+esc(x.message)+"</td><td class=\"mono\">"+esc(x.request_id||"—")+"</td><td>"+esc(x.page||"—")+"</td>"+
+      "<td class=\"details\">"+esc(JSON.stringify(x.details||{}))+"</td></tr>";
+  }).join("");
 }
 function schedule(){clearInterval(timer);if(live)timer=setInterval(()=>void load(),2000)}
 function openDiagnostics(){showDiagnostics();void load();schedule()}
