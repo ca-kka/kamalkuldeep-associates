@@ -6,10 +6,14 @@ const path=location.pathname.replace(/\/+$/,"")||"/";
 const route=/\/admin(?:\/|$)/.test(path)||path.endsWith("/admin/index.html")?"admin":"client";
 const TAB_MARKER=`kka-tab-session:${route}`;
 const LAST_ACTIVITY=`kka-last-activity:${route}`;
+const TAB_ID_KEY=`kka-tab-id:${route}`;
+const TAB_CLOSE_KEY=`kka-tab-closed:${route}`;
+const TAB_HEARTBEAT_KEY=`kka-tab-heartbeat:${route}`;
+const HEARTBEAT_MS=2000;
 const INACTIVITY_MS=5*60*1000;
 const WARNING_MS=30*1000;
 const EVENTS=["pointerdown","keydown","touchstart","wheel"];
-let lastActivity=0,timer=null,warningTimer=null,countdownTimer=null,loggedOut=false,listenersInstalled=false;
+let lastActivity=0,timer=null,warningTimer=null,countdownTimer=null,heartbeatTimer=null,loggedOut=false,listenersInstalled=false,tabId=null;
 
 function clearTimers(){
   if(timer)clearTimeout(timer);
@@ -19,6 +23,42 @@ function clearTimers(){
 }
 function clearTabState(){try{sessionStorage.removeItem(TAB_MARKER);sessionStorage.removeItem(LAST_ACTIVITY)}catch{}}
 function markTab(){try{sessionStorage.setItem(TAB_MARKER,String(Date.now()))}catch{}}
+function ensureTabId(){
+  try{
+    tabId=sessionStorage.getItem(TAB_ID_KEY);
+    if(!tabId){
+      tabId=crypto.randomUUID?.()||`tab-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      sessionStorage.setItem(TAB_ID_KEY,tabId);
+    }
+  }catch{}
+  return tabId;
+}
+function clearLifecycleMarkers(){
+  try{
+    localStorage.removeItem(TAB_CLOSE_KEY);
+    if(tabId)localStorage.removeItem(`${TAB_HEARTBEAT_KEY}:${tabId}`);
+  }catch{}
+}
+function heartbeat(){
+  if(!tabId||loggedOut||document.hidden)return;
+  try{localStorage.setItem(`${TAB_HEARTBEAT_KEY}:${tabId}`,String(Date.now()))}catch{}
+}
+function startHeartbeat(){
+  if(heartbeatTimer||!tabId)return;
+  heartbeat();
+  heartbeatTimer=setInterval(heartbeat,HEARTBEAT_MS);
+}
+function stopHeartbeat(){
+  if(heartbeatTimer)clearInterval(heartbeatTimer);
+  heartbeatTimer=null;
+}
+function markTabLeaving(){
+  if(loggedOut||!tabId)return;
+  try{localStorage.setItem(TAB_CLOSE_KEY,JSON.stringify({tabId,at:Date.now()}))}catch{}
+}
+function navigationType(){
+  try{return performance.getEntriesByType("navigation")?.[0]?.type||"navigate"}catch{return"navigate"}
+}
 function setActivity(ts=Date.now()){lastActivity=ts;try{sessionStorage.setItem(LAST_ACTIVITY,String(ts))}catch{}}
 function remainingMs(){return Math.max(0,INACTIVITY_MS-(Date.now()-lastActivity))}
 function touch(){if(loggedOut)return;setActivity();removeWarning();schedule()}
@@ -97,18 +137,38 @@ function installActivityListeners(){
   if(listenersInstalled)return;
   listenersInstalled=true;
   EVENTS.forEach(e=>document.addEventListener(e,touch,{passive:true,capture:true}));
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkIdle()});
-  window.addEventListener("focus",checkIdle);
-  window.addEventListener("pageshow",checkIdle);
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){markTabLeaving();stopHeartbeat();}
+    else{clearLifecycleMarkers();startHeartbeat();checkIdle();}
+  });
+  window.addEventListener("pagehide",event=>{if(!event.persisted)markTabLeaving();});
+  window.addEventListener("focus",()=>{clearLifecycleMarkers();startHeartbeat();checkIdle()});
+  window.addEventListener("pageshow",event=>{
+    if(event.persisted)clearLifecycleMarkers();
+    startHeartbeat();
+    checkIdle();
+  });
 }
 async function init(){
   injectStyles();
   if(route==="root")return;
+  ensureTabId();
   installActivityListeners();
   let tabMarker=null,lastStored=null;
   try{tabMarker=sessionStorage.getItem(TAB_MARKER);lastStored=sessionStorage.getItem(LAST_ACTIVITY)}catch{}
   const {data:{session}}=await supabase.auth.getSession();
-  if(!session?.user){clearTimers();return}
+  if(!session?.user){clearTimers();stopHeartbeat();return}
+  const closeRaw=(()=>{try{return localStorage.getItem(TAB_CLOSE_KEY)}catch{return null}})();
+  if(closeRaw && navigationType()==="navigate"){
+    try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
+    await supabase.auth.signOut({scope:"local"}).catch(()=>{});
+    clearLifecycleMarkers();
+    clearTabState();
+    location.replace("../");
+    return;
+  }
+  clearLifecycleMarkers();
+  startHeartbeat();
   if(!tabMarker){
     try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
     await supabase.auth.signOut({scope:"local"}).catch(()=>{});
@@ -122,14 +182,15 @@ async function init(){
   injectTimer();
   schedule();
 }
+window.addEventListener("pagehide",event=>{if(!event.persisted)markTabLeaving();});
 window.KKASessionSignOut=()=>finishLogout("manual");
 window.KKASessionManualLogout=()=>finishLogout("manual");
 supabase.auth.onAuthStateChange((event,session)=>{
   if(route==="root")return;
-  if(!session?.user){clearTimers();return}
+  if(!session?.user){clearTimers();stopHeartbeat();return}
   if(event==="SIGNED_IN"){
     if(!sessionStorage.getItem(TAB_MARKER))markTab();
-    if(!loggedOut){lastActivity=Date.now();setActivity(lastActivity);injectTimer();schedule()}
+    if(!loggedOut){clearLifecycleMarkers();startHeartbeat();lastActivity=Date.now();setActivity(lastActivity);injectTimer();schedule()}
     return;
   }
   if(!loggedOut&&!lastActivity){
