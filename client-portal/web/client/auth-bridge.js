@@ -6,7 +6,7 @@ const MARKER="kka-tab-session:client";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 const featureModules=[
-  "../diagnostic-logger.js?v=20261004-issues29b",
+  "../diagnostic-logger.js?v=20261006-client-id1",
   "../theme.js?v=20261004-issues29b",
   "../operation-feedback.js?v=20261004-issues29b",
   "../session-route-transition.js?v=20261004-issues29b",
