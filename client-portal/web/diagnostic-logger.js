@@ -2,7 +2,7 @@ import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
 
 const ENDPOINT=`${SUPABASE_URL}/functions/v1/system-log`;
-const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}});
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:false,persistSession:true,detectSessionInUrl:false}});
 const requestId=crypto.randomUUID();
 const started=performance.now();
 let cachedSession=null;
