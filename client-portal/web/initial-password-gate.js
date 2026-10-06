@@ -29,19 +29,33 @@ function showGate(){
       console.info("[KKA initial-password] request started",{requestId,userId:session.user?.id||null,mustChange:session.user?.app_metadata?.must_change_password===true});
       const r=await fetch(`${SUPABASE_URL}/functions/v1/complete-initial-password`,{method:"POST",headers:{"Content-Type":"application/json","X-KKA-Request-ID":requestId,Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({password})});
       result=await r.json().catch(()=>({}));
-      console.info("[KKA initial-password] response",{requestId,status:r.status,ok:r.ok,error:result.error||null});
+      console.info("[KKA initial-password] response",{requestId,status:r.status,ok:r.ok,error:result.error||null,alreadyCompleted:result.alreadyCompleted===true});
       if(!r.ok){m.className="message error";m.textContent=(result.error||"Password could not be updated.")+` (Reference: ${requestId.slice(0,8)})`;return}
-      const {data:{user:verifiedUser},error:verifyError}=await supabase.auth.getUser();
-      const verified=verifyError==null&&verifiedUser?.app_metadata?.must_change_password!==true;
-      console.info("[KKA initial-password] post-update verification",{requestId,verified,verifyError:verifyError?.message||null,mustChange:verifiedUser?.app_metadata?.must_change_password??null});
-      if(!verified){m.className="message error";m.textContent="The server reported success, but your account was not confirmed as updated. Please try again. Reference: "+requestId.slice(0,8);return}
-      await supabase.auth.signOut();
+
+      // The server has already authenticated the request, changed the password,
+      // and verified app_metadata.must_change_password=false. Do not require the
+      // browser's old JWT to show the new claim: Supabase JWT claims can remain
+      // stale until a session refresh, and a password change may invalidate the
+      // current session altogether. Either case previously caused an endless gate.
+      const {data:{session:refreshedSession},error:refreshError}=await supabase.auth.refreshSession();
+      console.info("[KKA initial-password] session refresh after update",{
+        requestId,
+        refreshed:!!refreshedSession,
+        mustChange:refreshedSession?.user?.app_metadata?.must_change_password??null,
+        refreshError:refreshError?.message||null,
+      });
+
+      // Sign out regardless of refresh outcome. The account is now in a clean
+      // post-first-login state and the next login will obtain a fresh JWT.
+      const {error:signOutError}=await supabase.auth.signOut();
+      console.info("[KKA initial-password] signed out after completion",{requestId,error:signOutError?.message||null});
     }catch(error){
       console.error("[KKA initial-password] request failed",error);
       m.className="message error";
       m.textContent="We could not complete the password change. Please try again. Reference: "+(crypto.randomUUID().slice(0,8));
+      return;
     }finally{
-      const currentSubmit=wrap.querySelector("button[type=submit]");
+      const currentSubmit=wrap.querySelector("button[type=submit");
       if(currentSubmit)currentSubmit.disabled=false;
     }
     const emailNote=result.emailSent===true
