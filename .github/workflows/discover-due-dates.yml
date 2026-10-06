@@ -2,9 +2,9 @@ name: Daily due-date discovery
 
 on:
   schedule:
-    # GitHub Actions cron is UTC. Run every 6 hours so official extensions
-    # are reflected without waiting for a full day.
-    - cron: '17 */6 * * *'
+    # GitHub Actions cron is UTC. Run every 6 hours.
+    # Offset from the Latest Updates workflow to avoid runner contention.
+    - cron: '47 */6 * * *'
   workflow_dispatch:
   push:
     paths:
@@ -13,9 +13,10 @@ on:
       - 'scripts/roll_advance_tax.py'
       - 'scripts/test_advance_tax.py'
       - 'scripts/update_site.py'
-      - 'data/latest-updates.json'
       - '.github/workflows/discover-due-dates.yml'
 
+# Only one discovery run should be active at a time. If another trigger
+# arrives while one is running, keep the active run and let the new run wait.
 concurrency:
   group: due-date-discovery
   cancel-in-progress: false
@@ -26,7 +27,8 @@ permissions:
 jobs:
   discover:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Government sites and PDF parsing can occasionally be slow.
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
