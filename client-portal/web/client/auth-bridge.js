@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "../config.js";
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const MARKER="kka-tab-session:client";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const SESSION_SECURITY_VERSION="20261007-sessionfix1";
+const SESSION_SECURITY_VERSION="20261007-sessionfix2";
 
 const featureModules=[
   "../diagnostic-logger.js?v=20261006-client-id1",
