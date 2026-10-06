@@ -67,8 +67,50 @@ Deno.serve(async (req) => {
         console.error("[complete-initial-password] audit write failed", { requestId, error: auditError instanceof Error ? auditError.message : String(auditError) });
       }
     };
-    console.info("[complete-initial-password] started", { requestId, userId: user.id, mustChange: user.app_metadata?.must_change_password === true });
-    if (user.app_metadata?.must_change_password !== true) {
+
+    // The portal historically used two flags for the first-login state:
+    // Supabase Auth app_metadata and public.profiles.must_change_password.
+    // Both must be cleared when the client completes the first-login password change.
+    const { data: profileState, error: profileStateError } = await service
+      .from("profiles")
+      .select("must_change_password")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileStateError) {
+      await audit("initial_password_change_failed", { stage: "profile_state_read", error: profileStateError.message });
+      return json({ error: "Account state could not be checked. Please try again.", requestId }, 500);
+    }
+
+    const authMustChange = user.app_metadata?.must_change_password === true;
+    const profileMustChange = profileState?.must_change_password === true;
+
+    console.info("[complete-initial-password] started", {
+      requestId,
+      userId: user.id,
+      authMustChange,
+      profileMustChange,
+    });
+
+    // If Auth was already updated by an earlier attempt but the profile flag was
+    // left behind, repair the profile instead of asking the client to change the
+    // password again. This is the state that caused the repeated first-login gate.
+    if (!authMustChange && profileMustChange) {
+      const { error: profileRepairError } = await service
+        .from("profiles")
+        .update({ must_change_password: false })
+        .eq("id", user.id);
+      if (profileRepairError) {
+        await audit("initial_password_change_failed", { stage: "profile_state_repair", error: profileRepairError.message });
+        return json({ error: "Your password is already changed, but the account state could not be finalized. Please try again.", requestId }, 500);
+      }
+
+      await audit("initial_password_state_repaired", { password_already_changed: true });
+      console.info("[complete-initial-password] repaired stale profile flag", { requestId, userId: user.id });
+      return json({ ok: true, alreadyCompleted: true, repaired: true, requestId });
+    }
+
+    // If both flags are already complete, never overwrite the client's password.
+    if (!authMustChange && !profileMustChange) {
       await audit("initial_password_already_completed");
       return json({ ok: true, alreadyCompleted: true, requestId });
     }
@@ -83,17 +125,39 @@ Deno.serve(async (req) => {
       return json({ error: error.message || "Password could not be updated.", requestId }, 400);
     }
 
+    // Clear the database-side first-login flag as part of the same successful flow.
+    const { error: profileUpdateError } = await service
+      .from("profiles")
+      .update({ must_change_password: false })
+      .eq("id", user.id);
+    if (profileUpdateError) {
+      await audit("initial_password_change_failed", { stage: "profile_update", error: profileUpdateError.message });
+      console.error("[complete-initial-password] profile update failed", { requestId, userId: user.id, error: profileUpdateError.message });
+      return json({ error: "Password was changed, but the account state could not be finalized. Please try again.", requestId }, 500);
+    }
+
     const { data: updatedUser, error: verifyError } = await service.auth.admin.getUserById(user.id);
     if (verifyError || !updatedUser.user || updatedUser.user.app_metadata?.must_change_password !== false) {
       const verificationError = verifyError?.message || "Account state verification failed after password update.";
-      await audit("initial_password_change_failed", { stage: "post_update_verification", error: verificationError });
-      console.error("[complete-initial-password] verification failed", { requestId, userId: user.id, error: verificationError });
+      await audit("initial_password_change_failed", { stage: "post_update_auth_verification", error: verificationError });
+      console.error("[complete-initial-password] auth verification failed", { requestId, userId: user.id, error: verificationError });
       return json({ error: "Password update could not be verified. Please try again.", requestId }, 500);
     }
 
-    const { data: profile } = await service.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    const { data: updatedProfile, error: profileVerifyError } = await service
+      .from("profiles")
+      .select("must_change_password, full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileVerifyError || updatedProfile?.must_change_password !== false) {
+      const verificationError = profileVerifyError?.message || "Profile first-login state was not cleared.";
+      await audit("initial_password_change_failed", { stage: "post_update_profile_verification", error: verificationError });
+      console.error("[complete-initial-password] profile verification failed", { requestId, userId: user.id, error: verificationError });
+      return json({ error: "Account state could not be verified. Please try again.", requestId }, 500);
+    }
+
     const email = user.email ?? "";
-    const fullName = profile?.full_name ?? user.user_metadata?.full_name ?? "Client";
+    const fullName = updatedProfile?.full_name ?? user.user_metadata?.full_name ?? "Client";
 
     const emailResult = email
       ? await sendPasswordChangedEmail(email, fullName).catch((e) => ({ sent: false, error: e instanceof Error ? e.message : "Unknown email error" }))
