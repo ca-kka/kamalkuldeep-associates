@@ -83,7 +83,12 @@ async function openDocument(){
   if(!(pdf&&type==="application/pdf")&&!jpeg&&!png){offerDownload("This file cannot be previewed in the portal.");return}
   const url=URL.createObjectURL(new Blob([bytes],{type}));
   document.title=filenameFrom(response);
-  document.body.innerHTML=pdf?"<iframe title=\"KKA Document\" src=\""+url+"\"></iframe>":"<img alt=\"KKA document\" src=\""+url+"\">";
+  if(pdf){
+    location.replace(url);
+    setTimeout(()=>URL.revokeObjectURL(url),120000);
+    return;
+  }
+  document.body.innerHTML="<img alt=\"KKA document\" src=\""+url+"\">";
 }
 openDocument().catch(error=>message(error instanceof Error?error.message:"The document could not be opened."));
 </script>
