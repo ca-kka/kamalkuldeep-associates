@@ -92,12 +92,35 @@ async function uploadAll(){
   const client=await getSelectedClient();
   if(!client){setMessage("The selected profile could not be loaded.","error");return}
   if(!(await hasUploadAccess())){setMessage("Upload access is no longer enabled for this account.","error");return}
-  busy=true;drawFiles();setMessage("Uploading securely… Please keep this page open until complete.","active");
-  let uploaded=0,duplicates=0,failed=0;
-  for(let i=0;i<selectedFiles.length;i++){
-    try{const result=await uploadOne(selectedFiles[i],i,client.id);if(result.state==="duplicate")duplicates++;else uploaded++}catch(e){failed++;const status=document.querySelector(`#client-file-status-${i}`);if(status)status.textContent=e instanceof Error?e.message:"Upload failed"}}
+  busy=true;drawFiles();
+  const total=selectedFiles.length;
+  let cursor=0,uploaded=0,duplicates=0,failed=0;
+  setMessage(`Uploading ${total} documents securely… 0/${total} completed.`,"active");
+  const worker=async()=>{
+    while(true){
+      const i=cursor++;
+      if(i>=total)return;
+      try{
+        const result=await uploadOne(selectedFiles[i],i,client.id);
+        if(result.state==="duplicate")duplicates++;else uploaded++;
+      }catch(e){
+        failed++;
+        const status=document.querySelector(`#client-file-status-${i}`);
+        if(status){status.textContent=e instanceof Error?e.message:"Upload failed";status.dataset.failed="1"}
+      }
+      const done=uploaded+duplicates+failed;
+      setMessage(`Uploading ${total} documents securely… ${done}/${total} completed.`,"active");
+    }
+  };
+  const workers=Math.min(3,total);
+  await Promise.all(Array.from({length:workers},()=>worker()));
   busy=false;drawFiles();
-  if(failed===0){setMessage(`${uploaded} uploaded for KKA review${duplicates?`; ${duplicates} duplicate${duplicates===1?"":"s"} skipped`:""}. Accepted documents will appear in Documents.`,"success");selectedFiles=[];drawFiles()}else setMessage(`${uploaded} uploaded for KKA review, ${duplicates} duplicate${duplicates===1?"":"s"} skipped, ${failed} failed. Failed files remain listed so they can be retried.`,uploaded?"active":"error");
+  if(failed===0){
+    setMessage(`${uploaded} uploaded for KKA review${duplicates?`; ${duplicates} duplicate${duplicates===1?"":"s"} skipped`:""}. Accepted documents will appear in Documents.`,"success");
+    selectedFiles=[];drawFiles();
+  }else{
+    setMessage(`${uploaded} uploaded, ${duplicates} duplicate${duplicates===1?"":"s"} skipped, ${failed} failed. Failed files remain listed so they can be retried.`,"active");
+  }
 }
 
 async function render(){
