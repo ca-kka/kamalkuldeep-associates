@@ -86,7 +86,10 @@ export default {
       const isPdf=pdfHeaderOffset>=0;
       const isJpeg=probe[0]===0xff&&probe[1]===0xd8&&probe[2]===0xff;
       const isPng=probe.length>=8&&probe[0]===0x89&&probe[1]===0x50&&probe[2]===0x4e&&probe[3]===0x47&&probe[4]===0x0d&&probe[5]===0x0a&&probe[6]===0x1a&&probe[7]===0x0a;
-      if(!isPdf&&!isJpeg&&!isPng){
+      const isGif=probe.length>=6&&String.fromCharCode(...probe.slice(0,6))==="GIF89a"||String.fromCharCode(...probe.slice(0,6))==="GIF87a";
+      const isWebp=probe.length>=12&&String.fromCharCode(...probe.slice(0,4))==="RIFF"&&String.fromCharCode(...probe.slice(8,12))==="WEBP";
+      const isBmp=probe.length>=2&&probe[0]===0x42&&probe[1]===0x4d;
+      if(!isPdf&&!isJpeg&&!isPng&&!isGif&&!isWebp&&!isBmp){
         const signature=Array.from(probe.slice(0,32)).map(v=>v.toString(16).padStart(2,"0")).join(" ");
         console.warn("document-view preview unavailable for file type",{documentId,storagePath:doc.storage_path,signature,contentType:doc.content_type,byteLength:bytes.byteLength});
         return fail("Preview is not available for this file type.",415);
@@ -94,7 +97,7 @@ export default {
 
       const headers=new Headers(corsHeaders);
       if(isPdf)headers.set("X-KKA-PDF-Header-Offset",String(pdfHeaderOffset));
-      headers.set("Content-Type",isPdf?"application/pdf":isJpeg?"image/jpeg":"image/png");
+      headers.set("Content-Type",isPdf?"application/pdf":isJpeg?"image/jpeg":isPng?"image/png":isGif?"image/gif":isWebp?"image/webp":"image/bmp");
       headers.set("Content-Disposition",`inline; filename="${filename(doc.original_filename)}"`);
       headers.set("Content-Length",String(bytes.byteLength));
       headers.set("Cache-Control","private, no-store, max-age=0");
