@@ -13,15 +13,33 @@ async function getSelectedClient(){const id=localStorage.getItem(await getStorag
 async function secureAccess(documentId,action="view"){const {data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");const r=await fetch(SUPABASE_URL+"/functions/v1/client-document-access",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({documentId,action})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"The document could not be opened.");return data}
 async function secureDownload(documentId){const {data:{session}}=await supabase.auth.getSession();if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");const r=await fetch(SUPABASE_URL+"/functions/v1/client-document-access",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({documentId,action:"download_stream"})});if(!r.ok){const data=await r.json().catch(()=>({}));throw new Error(data.error||"The document could not be downloaded.")}const blob=await r.blob();if(!blob.size)throw new Error("The document download was empty.");return blob}
 async function openDocument(id){
- const tab=window.open("about:blank","_blank");
+ const doc=currentDocs.find(item=>item.id===id);
+ if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");
+ const tab=window.open("about:blank","_blank","noopener,noreferrer");
  try{
-  const doc=currentDocs.find(item=>item.id===id);
-  if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");
-  const result=await secureAccess(id,"view");
-  if(!result.url)throw new Error("The portal document link could not be created.");
-  if(tab){tab.opener=null;tab.location.replace(result.url)}
-  else throw new Error("Your browser blocked the document tab. Allow pop-ups for the KKA portal and try again.");
- }catch(error){if(tab&&!tab.closed)tab.close();alert(error instanceof Error?error.message:"The document could not be opened.")}
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");
+  const endpoint=SUPABASE_URL+"/functions/v1/document-view?documentId="+encodeURIComponent(id);
+  const r=await fetch(endpoint,{headers:{Authorization:"Bearer "+session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
+  if(r.status===401||r.status===403){
+    const refreshed=await supabase.auth.refreshSession();
+    if(refreshed.data.session?.access_token){
+      const retry=await fetch(endpoint,{headers:{Authorization:"Bearer "+refreshed.data.session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
+      if(retry.ok){const bytes=await retry.arrayBuffer();const type=(retry.headers.get("Content-Type")||doc.content_type||"application/octet-stream").split(";")[0];const url=URL.createObjectURL(new Blob([bytes],{type}));if(tab&&!tab.closed){tab.opener=null;tab.location.replace(url);setTimeout(()=>URL.revokeObjectURL(url),120000);return}}
+    }
+  }
+  if(r.status===415){if(tab&&!tab.closed)tab.close();return downloadDocument(id);}
+  if(!r.ok){const text=await r.text().catch(()=>"");throw new Error(text||"The document could not be opened.");}
+  const bytes=await r.arrayBuffer();if(bytes.byteLength<1)throw new Error("The document response was empty.");
+  const type=(r.headers.get("Content-Type")||doc.content_type||"application/octet-stream").split(";")[0];
+  const url=URL.createObjectURL(new Blob([bytes],{type}));
+  if(!tab||tab.closed){URL.revokeObjectURL(url);throw new Error("Your browser blocked the document tab. Allow pop-ups for the KKA portal and try again.");}
+  tab.opener=null;
+  // Navigating the new tab directly to the PDF blob lets Android/iOS use the
+  // native PDF handler instead of relying on an iframe PDF implementation.
+  tab.location.replace(url);
+  setTimeout(()=>URL.revokeObjectURL(url),120000);
+ }catch(error){if(tab&&!tab.closed)tab.close();throw error}
 }
 async function downloadDocument(id){try{const doc=currentDocs.find(item=>item.id===id);if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");const blob=await secureDownload(id),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=doc.original_filename||"document";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000)}catch(e){alert(e instanceof Error?e.message:"The document could not be downloaded.")}}
 async function shareDocument(id){try{const doc=currentDocs.find(item=>item.id===id);if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");const d=await secureAccess(id,"view");if(!d.url)throw new Error("The portal document link could not be created.");if(navigator.share){await navigator.share({title:doc.original_filename||"KKA document",url:d.url});return}await navigator.clipboard.writeText(d.url);alert("KKA portal link copied. The recipient must sign in and have permission to this document.")}catch(e){if(e?.name!=="AbortError")alert(e instanceof Error?e.message:"The document could not be shared.")}}
