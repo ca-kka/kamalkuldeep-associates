@@ -55,5 +55,81 @@ function showClientEditForm(c){const modal=modalBase(`<section class="modal" rol
 async function loadClientDetails(clientId,modal){const r=await manageClient(clientId,"get_details");if(!r)return;const f=modal.querySelector("#client-edit-form");for(const [n,v] of Object.entries({email:r.email||"",fullName:r.fullName||"",mobile:r.client?.mobile||""})){const input=f.querySelector(`[name="${n}"]`);if(input)input.value=v}}
 function showEmailForm(c){const modal=modalBase(`<section class="modal compact-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><p class="eyebrow">CLIENT LOGIN</p><h2>Change email</h2><p class="muted">Change the login email for this client.</p></div><button class="modal-close" type="button">×</button></div><form id="email-form" class="form-grid"><label class="full">New email<input name="email" type="email" required></label><div class="form-message full" id="email-message"></div><div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="primary">Update email</button></div></form></section>`);loadClientDetails(c.id,modal);modal.querySelector("#email-form").addEventListener("submit",async e=>{e.preventDefault();const email=String(new FormData(e.currentTarget).get("email")||"");const r=await manageClient(c.id,"update_profile",{legalName:c.legal_name,displayName:c.display_name,fullName:c.display_name,email,mobile:c.mobile||"",pan:c.pan,tan:c.tan,cin:c.cin,gstin:c.gstin,aliases:c.filename_aliases||[]});if(r){notify("success","Client login email updated successfully.");modal.remove();await loadClients()}})}
 function showPasswordForm(c){const modal=modalBase(`<section class="modal compact-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><p class="eyebrow">CLIENT SECURITY</p><h2>Set temporary password</h2></div><button class="modal-close" type="button">×</button></div><form id="password-form" class="form-grid"><label class="full">Temporary password<input name="password" type="password" minlength="10" maxlength="72" required></label><label class="full">Confirm password<input name="confirm" type="password" minlength="10" maxlength="72" required></label><div class="form-message full" id="password-message"></div><div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="primary">Set password</button></div></form></section>`);modal.querySelector("#password-form").addEventListener("submit",async e=>{e.preventDefault();const d=new FormData(e.currentTarget),password=String(d.get("password")||""),confirmPassword=String(d.get("confirm")||"");if(password!==confirmPassword){modal.querySelector("#password-message").textContent="Passwords do not match.";return}const r=await manageClient(c.id,"set_password",{password});if(r){notify("success","Temporary password set successfully.");modal.remove()}})}
-function showDeleteForm(c){const modal=modalBase(`<section class="modal danger-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><p class="eyebrow danger-text">PERMANENT ACTION</p><h2>Delete client permanently</h2></div><button class="modal-close" type="button">×</button></div><div class="danger-warning"><strong>This cannot be undone.</strong><p>The client record, portal login, linked document data and storage objects will be permanently removed. An audit record is retained.</p></div><form id="delete-form" class="form-grid"><label class="full">Type the exact legal name to confirm<input name="confirmName" required></label><label class="check full"><input name="backup" type="checkbox"> Offline backup has been verified</label><label class="check full"><input name="final" type="checkbox"> Permanent deletion is explicitly approved</label><div class="form-message full" id="delete-message"></div><div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="danger" type="submit">Permanently delete</button></div></form></section>`);modal.querySelector("#delete-form").addEventListener("submit",async e=>{e.preventDefault();const d=new FormData(e.currentTarget),r=await manageClient(c.id,"delete",{confirmName:String(d.get("confirmName")||""),backupConfirmed:d.get("backup")==="on",finalConfirmed:d.get("final")==="on"});if(r){notify("success","Client permanently deleted.");modal.remove();await loadClients()}})}
+function showDeleteForm(c){
+  const modal=modalBase(`<section class="modal danger-modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div><p class="eyebrow danger-text">PERMANENT ACTION</p><h2>Delete client permanently</h2></div><button class="modal-close" type="button">×</button></div>
+    <div class="danger-warning"><strong>This cannot be undone.</strong><p>The client record, portal login, linked document data and storage objects will be permanently removed. An audit record is retained.</p></div>
+    <div class="delete-scope" aria-label="Deletion scope">
+      <div class="delete-scope-title">What will happen</div>
+      <div class="delete-scope-grid">
+        <div><span class="delete-scope-icon">✓</span><div><strong>Client profile</strong><small>Client record and identifiers</small></div></div>
+        <div><span class="delete-scope-icon">✓</span><div><strong>Portal access</strong><small>Login and client membership</small></div></div>
+        <div><span class="delete-scope-icon">✓</span><div><strong>Documents</strong><small>Documents, versions and uploads</small></div></div>
+        <div><span class="delete-scope-icon">✓</span><div><strong>Storage</strong><small>Linked storage objects</small></div></div>
+        <div><span class="delete-scope-icon">✓</span><div><strong>OneDrive workspace</strong><small>Client workspace, when connected</small></div></div>
+        <div><span class="delete-scope-icon keep">•</span><div><strong>Audit trail</strong><small>Deletion record is retained</small></div></div>
+      </div>
+    </div>
+    <div class="delete-progress" id="delete-progress" hidden>
+      <div class="delete-progress-head"><div><strong id="delete-progress-title">Preparing deletion…</strong><span id="delete-progress-detail">Checking linked records before anything is removed.</span></div><strong id="delete-progress-percent">0%</strong></div>
+      <div class="delete-progress-bar"><span id="delete-progress-fill"></span></div>
+      <div class="delete-progress-list">
+        <div data-step="preflight"><i>1</i><span><strong>Safety checks</strong><small>Checking dependencies</small></span></div>
+        <div data-step="onedrive"><i>2</i><span><strong>OneDrive workspace</strong><small>Cleaning connected workspace</small></span></div>
+        <div data-step="documents"><i>3</i><span><strong>Documents &amp; storage</strong><small>Removing document records and objects</small></span></div>
+        <div data-step="access"><i>4</i><span><strong>Portal access</strong><small>Removing login and access links</small></span></div>
+        <div data-step="client"><i>5</i><span><strong>Client record</strong><small>Removing the client profile</small></span></div>
+        <div data-step="audit"><i>6</i><span><strong>Audit record</strong><small>Retaining the deletion history</small></span></div>
+      </div>
+      <div class="delete-progress-note" id="delete-progress-note">Do not close this window while deletion is in progress.</div>
+    </div>
+    <form id="delete-form" class="form-grid">
+      <label class="full">Type the exact legal name to confirm<input name="confirmName" required autocomplete="off"></label>
+      <label class="check full"><input name="backup" type="checkbox"> Offline backup has been verified</label>
+      <label class="check full"><input name="final" type="checkbox"> Permanent deletion is explicitly approved</label>
+      <div class="form-message full" id="delete-message"></div>
+      <div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="danger" type="submit">Permanently delete</button></div>
+    </form>
+  </section>`);
+  const styleId="kka-delete-progress-style";
+  if(!document.getElementById(styleId)){
+    const style=document.createElement("style");style.id=styleId;style.textContent=`
+      .delete-scope{margin:18px 0;padding:16px 18px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025)}
+      .delete-scope-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:12px;opacity:.75}
+      .delete-scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+      .delete-scope-grid>div{display:flex;gap:9px;align-items:flex-start}.delete-scope-grid strong{display:block;font-size:13px}.delete-scope-grid small{display:block;opacity:.62;margin-top:2px;font-size:11px;line-height:1.35}
+      .delete-scope-icon{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;background:rgba(80,190,130,.14);color:#70d9a0;font-size:12px;flex:none}.delete-scope-icon.keep{background:rgba(255,190,80,.12);color:#e8b65e}
+      .delete-progress{margin:18px 0;padding:17px;border:1px solid rgba(255,255,255,.09);border-radius:15px;background:rgba(0,0,0,.16)}
+      .delete-progress-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.delete-progress-head strong{display:block}.delete-progress-head span{display:block;font-size:12px;opacity:.62;margin-top:3px;line-height:1.4}.delete-progress-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:13px 0 15px}.delete-progress-bar span{display:block;height:100%;width:0%;transition:width .35s ease;background:currentColor}
+      .delete-progress-list{display:grid;gap:8px}.delete-progress-list>div{display:flex;align-items:center;gap:10px;opacity:.45}.delete-progress-list i{font-style:normal;width:23px;height:23px;border:1px solid rgba(255,255,255,.14);border-radius:50%;display:grid;place-items:center;font-size:11px}.delete-progress-list span{min-width:0}.delete-progress-list strong{display:block;font-size:12px}.delete-progress-list small{display:block;font-size:10px;opacity:.62;margin-top:1px}.delete-progress-list>div.running,.delete-progress-list>div.done{opacity:1}.delete-progress-list>div.running i{box-shadow:0 0 0 3px rgba(255,255,255,.07)}.delete-progress-list>div.done i{background:rgba(80,190,130,.14);border-color:rgba(80,190,130,.35);color:#70d9a0}.delete-progress-list>div.done i{font-size:0}.delete-progress-list>div.done i:after{content:"✓";font-size:11px}
+      .delete-progress-note{margin-top:13px;padding-top:11px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;opacity:.6}
+      @media(max-width:620px){.delete-scope-grid{grid-template-columns:1fr}}
+    `;document.head.appendChild(style);
+  }
+  const progress=modal.querySelector("#delete-progress"),form=modal.querySelector("#delete-form"),submit=form.querySelector("button[type=submit]"),message=modal.querySelector("#delete-message"),fill=modal.querySelector("#delete-progress-fill"),percent=modal.querySelector("#delete-progress-percent"),title=modal.querySelector("#delete-progress-title"),detail=modal.querySelector("#delete-progress-detail"),note=modal.querySelector("#delete-progress-note");
+  const steps=[...modal.querySelectorAll("[data-step]")];
+  const setProgress=(n,t,d)=>{const p=Math.max(0,Math.min(100,Math.round(n/6*100)));fill.style.width=p+"%";percent.textContent=p+"%";title.textContent=t;detail.textContent=d;steps.forEach((s,i)=>{s.classList.toggle("done",i<n);s.classList.toggle("running",i===n&&n<6)})};
+  form.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const d=new FormData(form);
+    if(String(d.get("confirmName")||"").trim().toLowerCase()!==String(c.legal_name||"").trim().toLowerCase()){message.textContent="The legal name does not match.";return}
+    if(d.get("backup")!=="on"||d.get("final")!=="on"){message.textContent="Both deletion confirmations are required.";return}
+    submit.disabled=true;form.querySelectorAll("input").forEach(x=>x.disabled=true);modal.querySelectorAll(".modal-close").forEach(x=>x.disabled=true);progress.hidden=false;message.textContent="";setProgress(0,"Preparing deletion…","Checking linked records before anything is removed.");
+    const timers=[setTimeout(()=>setProgress(1,"Safety checks complete","Dependencies checked. Cleaning the connected workspace next."),900),setTimeout(()=>setProgress(2,"Workspace cleanup","Removing the connected OneDrive client workspace, if present."),2600),setTimeout(()=>setProgress(3,"Documents & storage","Removing document records, versions, uploads and storage objects."),6500),setTimeout(()=>setProgress(4,"Portal access","Removing client membership and linked portal access."),9500),setTimeout(()=>setProgress(5,"Client record","Removing the client profile and linked account."),12500)];
+    try{
+      const r=await manageClient(c.id,"delete",{confirmName:String(d.get("confirmName")||""),backupConfirmed:true,finalConfirmed:true});
+      timers.forEach(clearTimeout);
+      if(!r)throw new Error("The client could not be deleted. Please review the error shown above.");
+      setProgress(6,"Deletion completed","All requested client data was removed successfully.");
+      note.textContent="The client has been permanently deleted. The deletion audit record was retained.";
+      setTimeout(()=>{modal.remove();notify("success","Client permanently deleted.");loadClients()},700);
+    }catch(error){
+      timers.forEach(clearTimeout);progress.hidden=false;setProgress(0,"Deletion stopped","No further deletion steps will be attempted.");
+      note.textContent=error?.message||"The deletion could not be completed.";
+      message.textContent=error?.message||"The deletion could not be completed.";
+      form.querySelectorAll("input").forEach(x=>x.disabled=false);modal.querySelectorAll(".modal-close").forEach(x=>x.disabled=false);submit.disabled=false;
+    }
+  });
+}
+
 renderPortal();
