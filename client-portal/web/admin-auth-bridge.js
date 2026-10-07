@@ -32,7 +32,7 @@ const featureModules = [
   "./admin-portal-feedback.js?v=20261004-issues29b",
   "./admin/family-client-bridge.js?v=20261004-issues29b",
   "./admin/client-creation.js?v=20261004-issues29b",
-  "./app.js?v=20261004-issues29b"
+  "./app.js?v=20261008-client-delete"
 ];
 
 async function stableSession() {
