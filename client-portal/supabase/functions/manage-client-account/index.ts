@@ -60,15 +60,32 @@ Deno.serve(async req=>{
       if(b.finalConfirmed!==true)return json({error:"Final deletion confirmation is required"},400);
       const {data:docs,error:de}=await service.from("documents").select("id,storage_path").eq("client_id",clientId);if(de)throw de;
       const docIds=(docs??[]).map((x:any)=>x.id);
-      const [uploadsRes,versionsRes]=await Promise.all([service.from("document_uploads").select("id,object_path").eq("proposed_client_id",clientId),docIds.length?service.from("document_versions").select("id,storage_path,document_id").in("document_id",docIds):Promise.resolve({data:[],error:null} as any)]);
-      if(uploadsRes.error)throw uploadsRes.error;if(versionsRes.error)throw versionsRes.error;
-      const paths=[...(docs??[]).map((x:any)=>x.storage_path),...(uploadsRes.data??[]).map((x:any)=>x.object_path),...(versionsRes.data??[]).map((x:any)=>x.storage_path)].filter(Boolean);
-      const uniquePaths=[...new Set(paths)] as string[];
-      if(uniquePaths.length){const {error:se}=await service.storage.from("client-documents").remove(uniquePaths);if(se)throw se;}
-      await service.from("audit_logs").insert({actor_id:user.id,client_id:clientId,action:"client_permanently_deleted",entity_type:"client",entity_id:clientId,metadata:{legal_name:client.legal_name,documents_deleted:docs?.length??0,uploads_deleted:uploadsRes.data?.length??0,storage_objects_deleted:uniquePaths.length}});
-      const {error:c}=await service.from("clients").delete().eq("id",clientId);if(c)throw c;
-      if(userId){const {error:a}=await service.auth.admin.deleteUser(userId);if(a)throw a;}
-      return json({ok:true,deleted:true,documentsDeleted:docs?.length??0,uploadsDeleted:uploadsRes.data?.length??0,storageObjectsDeleted:uniquePaths.length});
+      const [uploadsQ,versionsQ,registryQ,patternsQ,membersQ,otpQ,requestsQ,auditQ]=await Promise.all([
+        service.from("document_uploads").select("id,object_path").eq("proposed_client_id",clientId),
+        docIds.length?service.from("document_versions").select("id,storage_path,document_id").in("document_id",docIds):Promise.resolve({data:[],error:null} as any),
+        service.from("onedrive_file_registry").select("id").eq("client_id",clientId),
+        service.from("filename_patterns").select("id").eq("client_id",clientId),
+        service.from("client_account_members").select("account_id").eq("client_id",clientId),
+        service.from("client_login_otp_challenges").select("id").eq("client_id",clientId),
+        service.from("portal_access_requests").select("id").eq("approved_client_id",clientId),
+        service.from("audit_logs").select("id").eq("client_id",clientId)
+      ]);
+      for(const [label,q] of [["Upload lookup",uploadsQ],["Version lookup",versionsQ],["OneDrive registry lookup",registryQ],["Filename pattern lookup",patternsQ],["Membership lookup",membersQ],["OTP lookup",otpQ],["Access request lookup",requestsQ],["Audit lookup",auditQ]] as any[]){if(q.error)throw new Error(label+" failed: "+q.error.message);}
+      const accountIds=[...new Set((membersQ.data??[]).map((x:any)=>x.account_id).filter(Boolean))];
+      if(accountIds.length){const {data:other,error:e}=await service.from("client_account_members").select("account_id,client_id").in("account_id",accountIds).neq("client_id",clientId);if(e)throw new Error("Client account check failed: "+e.message);if(other?.length)return json({error:"This client is still part of a family account with other members. Remove or transfer those members before deleting the client."},409);}
+      const paths=[...(docs??[]).map((x:any)=>x.storage_path),...(uploadsQ.data??[]).map((x:any)=>x.object_path),...(versionsQ.data??[]).map((x:any)=>x.storage_path)].filter(Boolean) as string[];
+      const uniquePaths=[...new Set(paths)];
+      if(uniquePaths.length){const {error:se}=await service.storage.from("client-documents").remove(uniquePaths);if(se)throw new Error("Storage cleanup failed: "+se.message);}
+      const deleteRows=async(table:string,column:string,value:string)=>{const {error:e}=await service.from(table).delete().eq(column,value);if(e)throw new Error("Deleting "+table+" failed: "+e.message);};
+      for(const docId of docIds)await deleteRows("document_versions","document_id",docId);
+      for(const [table,column] of [["documents","client_id"],["document_uploads","proposed_client_id"],["onedrive_file_registry","client_id"],["filename_patterns","client_id"],["client_memberships","client_id"],["client_login_otp_challenges","client_id"],["client_account_members","client_id"]] as any[])await deleteRows(table,column,clientId);
+      if((requestsQ.data??[]).length){const {error:e}=await service.from("portal_access_requests").update({approved_client_id:null}).eq("approved_client_id",clientId);if(e)throw new Error("Clearing access request links failed: "+e.message);}
+      if((auditQ.data??[]).length){const {error:e}=await service.from("audit_logs").update({client_id:null}).eq("client_id",clientId);if(e)throw new Error("Detaching audit history failed: "+e.message);}
+      const {error:c}=await service.from("clients").delete().eq("id",clientId);if(c)throw new Error("Client record deletion failed: "+c.message);
+      if(userId){const {error:e}=await service.from("audit_logs").update({actor_id:null}).eq("actor_id",userId);if(e)throw new Error("Detaching auth audit history failed: "+e.message);const {error:a}=await service.auth.admin.deleteUser(userId);const m=String(a?.message??a??"");if(a&&!/not found|resource cannot be found|user.*not found/i.test(m))throw new Error("Auth user deletion failed: "+m);}
+      const {error:ae}=await service.from("audit_logs").insert({actor_id:user.id,client_id:null,action:"client_permanently_deleted",entity_type:"client",entity_id:clientId,metadata:{legal_name:client.legal_name,documents_deleted:docs?.length??0,uploads_deleted:uploadsQ.data?.length??0,storage_objects_deleted:uniquePaths.length}});
+      if(ae)throw new Error("Deletion audit failed: "+ae.message);
+      return json({ok:true,deleted:true,documentsDeleted:docs?.length??0,uploadsDeleted:uploadsQ.data?.length??0,storageObjectsDeleted:uniquePaths.length});
     }
     return json({error:"Unsupported client management action"},400);
   }catch(error){return json({error:error instanceof Error?error.message:"Client management action failed"},400);}
