@@ -73,16 +73,18 @@ return json({ok:true,mustChangePassword:true});}
   if(action==="delete"){
    if(clean(b.confirmName).toLowerCase()!==clean(client.legal_name).toLowerCase())return json({error:"The client legal name confirmation does not match"},400);if(b.backupConfirmed!==true||b.finalConfirmed!==true)return json({error:"Both deletion confirmations are required"},400);
    // Preflight all known client FKs before deleting anything external.
-   const [docsQ,uploadsQ,registryQ,patternsQ,accountsQ,requestsQ,auditQ]=await Promise.all([
+   const [docsQ,uploadsQ,registryQ,patternsQ,accountsQ,primaryAccountsQ,otpQ,requestsQ,auditQ]=await Promise.all([
     service.from("documents").select("id,storage_path").eq("client_id",clientId),
     service.from("document_uploads").select("object_path").eq("proposed_client_id",clientId),
     service.from("onedrive_file_registry").select("id").eq("client_id",clientId),
     service.from("filename_patterns").select("id").eq("client_id",clientId),
     service.from("client_account_members").select("account_id").eq("client_id",clientId),
+    service.from("client_accounts").select("id").eq("primary_client_id",clientId),
+    service.from("client_login_otp_challenges").select("id").eq("client_id",clientId),
     service.from("portal_access_requests").select("id").eq("approved_client_id",clientId),
     service.from("audit_logs").select("id").eq("client_id",clientId)
    ]);
-   for(const [label,q] of [["Document lookup",docsQ],["Upload lookup",uploadsQ],["OneDrive registry lookup",registryQ],["Filename pattern lookup",patternsQ],["Client account lookup",accountsQ],["Access request lookup",requestsQ],["Audit lookup",auditQ]] as any[]){if(q.error&&!/relation .* does not exist|column .* does not exist/i.test(String(q.error.message??q.error)))throw new Error(`${label} failed: ${q.error.message??q.error}`);}
+   for(const [label,q] of [["Document lookup",docsQ],["Upload lookup",uploadsQ],["OneDrive registry lookup",registryQ],["Filename pattern lookup",patternsQ],["Client account lookup",accountsQ],["Primary account lookup",primaryAccountsQ],["OTP lookup",otpQ],["Access request lookup",requestsQ],["Audit lookup",auditQ]] as any[]){if(q.error&&!/relation .* does not exist|column .* does not exist/i.test(String(q.error.message??q.error)))throw new Error(`${label} failed: ${q.error.message??q.error}`);}
    const accountIds=[...new Set((accountsQ.data??[]).map((x:any)=>x.account_id).filter(Boolean))];
    if(accountIds.length){const {data:other,error:e}=await service.from("client_account_members").select("account_id,client_id").in("account_id",accountIds).neq("client_id",clientId);if(e&&!/relation .* does not exist|column .* does not exist/i.test(String(e.message??e)))throw new Error(`Client account check failed: ${e.message}`);if(other?.length)return json({error:"This client is still part of a family account with other members. Remove or transfer those members before deleting the client."},409);}
    await cleanupOneDrive(req,clientId);
@@ -93,6 +95,7 @@ return json({ok:true,mustChangePassword:true});}
    for(const docId of docIds)await deleteRows("document_versions","document_id",docId);
    for(const [table,column] of [["documents","client_id"],["document_uploads","proposed_client_id"],["onedrive_file_registry","client_id"],["filename_patterns","client_id"],["client_memberships","client_id"]] as any[])await deleteRows(table,column,clientId);
    if(accountIds.length)await deleteRows("client_account_members","client_id",clientId);
+   for(const account of (primaryAccountsQ.data??[]))await deleteRows("client_accounts","id",account.id);
    if((requestsQ.data??[]).length){const {error:e}=await service.from("portal_access_requests").update({approved_client_id:null}).eq("approved_client_id",clientId);if(e&&!/column .* does not exist/i.test(String(e.message??e)))throw new Error(`Clearing access request links failed: ${e.message}`);}
    if((auditQ.data??[]).length){const {error:e}=await service.from("audit_logs").update({client_id:null}).eq("client_id",clientId);if(e)throw new Error(`Detaching audit history failed: ${e.message}`);}
    const {error:c}=await service.from("clients").delete().eq("id",clientId);if(c)throw new Error(`Client record deletion failed: ${c.message}`);
