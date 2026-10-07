@@ -6,6 +6,7 @@ const MONTHS: Record<string, number> = {
   september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
 };
 const AREAS = new Set(["gst", "tds", "income_tax", "accounts", "mca", "other"]);
+const ALLOWED_CONTENT_TYPES=new Set(["application/pdf","image/jpeg","image/png","image/gif","image/webp","image/tiff","image/bmp","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-excel","application/vnd.ms-powerpoint","application/vnd.openxmlformats-officedocument.presentationml.presentation","text/csv","text/plain","application/rtf","application/zip"]);
 const ALLOWED_CONTENT_TYPES = new Set([
   "application/pdf",
   "image/jpeg",
@@ -108,6 +109,7 @@ Deno.serve(async req => {
     const sha256 = String(body.sha256 ?? "").toLowerCase();
     const byteSize = Number(body.byteSize);
     const contentType = String(body.contentType ?? "application/octet-stream").split(";")[0].trim().toLowerCase();
+    if (!ALLOWED_CONTENT_TYPES.has(contentType)) return json({ error: "Unsupported file format. Use PDF, images, Word, Excel, PowerPoint, CSV, TXT, RTF or ZIP." }, 415);
     if (!filename || !/^[a-f0-9]{64}$/.test(sha256) || !Number.isSafeInteger(byteSize) || byteSize < 1 || byteSize > 52428800) {
       return json({ error: "Invalid file metadata." }, 400);
     }
