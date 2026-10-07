@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const months: Record<string, number> = { jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12 };
-const allowedContentTypes = new Set(["application/pdf", "image/jpeg", "image/png", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"]);
+const allowedContentTypes = new Set(["application/pdf","image/jpeg","image/png","image/gif","image/webp","image/tiff","image/bmp","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-excel","application/vnd.ms-powerpoint","application/vnd.openxmlformats-officedocument.presentationml.presentation","text/csv","text/plain","application/rtf","application/zip"]);
 const compact = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 const normal = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
 const cleanFilename = (filename: string) => filename.replace(/[\\/:*?"<>|\x00-\x1F]/g, "_").slice(0, 220);
@@ -64,7 +64,7 @@ Deno.serve(async req => {
     const contentType = String(body.contentType ?? "application/octet-stream").split(";")[0].trim().toLowerCase();
     const clientId = String(body.clientId ?? "");
     if (!filename || !clientId || !/^[a-f0-9]{64}$/.test(sha256) || !Number.isSafeInteger(byteSize) || byteSize < 1 || byteSize > 52428800) return json({ error: "Invalid file metadata" }, 400);
-    if (!allowedContentTypes.has(contentType)) return json({ error: "Unsupported file format. Use PDF, Excel, CSV, JPG or PNG." }, 415);
+    if (!allowedContentTypes.has(contentType)) return json({ error: "Unsupported file format. Use PDF, images, Word, Excel, PowerPoint, CSV, TXT, RTF or ZIP." }, 415);
     const { data: client, error: clientError } = await caller.from("clients").select("id,legal_name,display_name,pan,tan,cin,gstin,active").eq("id", clientId).eq("active", true).maybeSingle();
     if (clientError) throw clientError;
     if (!client) return json({ error: "Selected profile is not accessible or is inactive" }, 403);
