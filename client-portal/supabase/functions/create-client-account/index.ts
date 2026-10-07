@@ -400,13 +400,13 @@ Deno.serve(async req => {
       error: profileError,
     } = await service
       .from("profiles")
-      .update({
+      .upsert({
         full_name:
           fullName,
         role: "client",
         active: true,
       })
-      .eq("id", userId);
+      }, { onConflict: "id" });
 
     if (profileError) {
       throw profileError;
