@@ -38,7 +38,25 @@ Deno.serve(async req=>{
     fullName=p?.full_name??null;
     email2FAEnabled=p?.email_2fa_enabled!==false;
    }
-   return json({ok:true,email,fullName,client:{id:client.id,legal_name:client.legal_name,display_name:client.display_name,pan:client.pan,tan:client.tan,cin:client.cin,gstin:client.gstin,mobile:client.mobile,filename_aliases:client.filename_aliases,active:client.active,can_upload:membership?.can_upload??false,email_2fa_enabled:email2FAEnabled}});
+   const [docsQ,uploadsQ,registryQ,patternsQ,membersQ,accountsQ]=await Promise.all([
+    service.from("documents").select("id",{count:"exact",head:true}).eq("client_id",clientId),
+    service.from("document_uploads").select("id",{count:"exact",head:true}).eq("proposed_client_id",clientId),
+    service.from("onedrive_file_registry").select("id",{count:"exact",head:true}).eq("client_id",clientId),
+    service.from("filename_patterns").select("id",{count:"exact",head:true}).eq("client_id",clientId),
+    service.from("client_account_members").select("id",{count:"exact",head:true}).eq("client_id",clientId),
+    service.from("client_accounts").select("id",{count:"exact",head:true}).eq("primary_client_id",clientId)
+   ]);
+   const deletionPreview={
+    documents:docsQ.count??0,
+    uploads:uploadsQ.count??0,
+    onedriveEntries:registryQ.count??0,
+    filenamePatterns:patternsQ.count??0,
+    familyMemberships:membersQ.count??0,
+    primaryAccounts:accountsQ.count??0,
+    portalLogin:!!userId,
+    auditHistory:true
+   };
+   return json({ok:true,email,fullName,client:{id:client.id,legal_name:client.legal_name,display_name:client.display_name,pan:client.pan,tan:client.tan,cin:client.cin,gstin:client.gstin,mobile:client.mobile,filename_aliases:client.filename_aliases,active:client.active,can_upload:membership?.can_upload??false,email_2fa_enabled:email2FAEnabled},deletionPreview});
   }
   if(action==="set_email_2fa"){
    if(!userId)return json({error:"This client has no linked login"},409);
