@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "standard": "KKA-ERR",
+  "severity": {
+    "LOW": "Informational or cosmetic; no data/security impact",
+    "MEDIUM": "User operation failed but retry/recovery is normally safe",
+    "HIGH": "Core operation failed or data state may need reconciliation",
+    "CRITICAL": "Security, authorization, data integrity, or cross-client access risk"
+  },
+  "codes": {
+    "KKA-AUTH-0001": {"module":"AUTH","severity":"HIGH","title":"Authentication failed","userMessage":"We could not sign you in. Please verify your details and try again.","adminAction":"Check authentication logs and account status.","retryable":true},
+    "KKA-AUTH-0002": {"module":"AUTH","severity":"HIGH","title":"Authentication service unavailable","userMessage":"Sign-in is temporarily unavailable. Please try again shortly.","adminAction":"Check Supabase Auth/service status.","retryable":true},
+    "KKA-SESSION-0001": {"module":"SESSION","severity":"MEDIUM","title":"Session expired","userMessage":"Your session has expired. Please sign in again.","adminAction":"Verify session refresh and expiry configuration.","retryable":true},
+    "KKA-SESSION-0002": {"module":"SESSION","severity":"HIGH","title":"Session state inconsistent","userMessage":"Your session could not be verified. Please sign in again.","adminAction":"Check auth state, browser storage, and session-security logs.","retryable":true},
+    "KKA-SEC-0001": {"module":"SECURITY","severity":"CRITICAL","title":"Authorization denied","userMessage":"You are not authorized to perform this action.","adminAction":"Verify role, membership, RLS and server-side authorization. Treat repeated cross-client attempts as a security incident.","retryable":false},
+    "KKA-SEC-0002": {"module":"SECURITY","severity":"CRITICAL","title":"Cross-client access attempt blocked","userMessage":"The requested resource is not available.","adminAction":"Immediately inspect user, client ID, document ID and authorization logs.","retryable":false},
+    "KKA-DOC-0001": {"module":"DOCUMENTS","severity":"MEDIUM","title":"Document not found","userMessage":"The document could not be found.","adminAction":"Verify document ID, status, deletion state and storage object.","retryable":false},
+    "KKA-DOC-0002": {"module":"DOCUMENTS","severity":"HIGH","title":"Document access failed","userMessage":"We could not open this document.","adminAction":"Verify client ownership, document status, access function and storage object.","retryable":true},
+    "KKA-UPL-0001": {"module":"UPLOAD","severity":"MEDIUM","title":"Unsupported file","userMessage":"This file type is not supported.","adminAction":"Verify extension, MIME mapping and upload allow-list.","retryable":false},
+    "KKA-UPL-0002": {"module":"UPLOAD","severity":"MEDIUM","title":"Upload transfer failed","userMessage":"The file could not be uploaded. Please try again.","adminAction":"Check network, signed upload URL, storage bucket and file size.","retryable":true},
+    "KKA-UPL-0003": {"module":"UPLOAD","severity":"HIGH","title":"Upload completion failed","userMessage":"The file was transferred but could not be finalized. Reference the error code when contacting KKA.","adminAction":"Check upload ID, completion function logs, document row and storage object. Reconcile before retrying repeatedly.","retryable":true},
+    "KKA-UPL-0004": {"module":"UPLOAD","severity":"MEDIUM","title":"Duplicate document","userMessage":"This document is already stored.","adminAction":"Verify SHA-256 duplicate detection and existing document record.","retryable":false},
+    "KKA-STORAGE-0001": {"module":"STORAGE","severity":"HIGH","title":"Storage object unavailable","userMessage":"The document storage service could not provide this file.","adminAction":"Verify storage object/path, bucket policy and storage service status.","retryable":true},
+    "KKA-DB-0001": {"module":"DATABASE","severity":"HIGH","title":"Database operation failed","userMessage":"We could not complete this operation. Please try again.","adminAction":"Inspect database error, transaction state, constraints and RLS. Check whether the operation partially committed.","retryable":true},
+    "KKA-OD-0001": {"module":"ONEDRIVE","severity":"HIGH","title":"OneDrive operation failed","userMessage":"The document could not be synchronized with KKA storage.","adminAction":"Check Microsoft Graph credentials, destination path, OneDrive availability and function logs.","retryable":true},
+    "KKA-OD-0002": {"module":"ONEDRIVE","severity":"HIGH","title":"OneDrive location mismatch","userMessage":"The document location could not be resolved.","adminAction":"Compare filing-node hierarchy with stored document metadata. Do not rewrite historical documents without verification.","retryable":false},
+    "KKA-ADMIN-0001": {"module":"ADMIN","severity":"MEDIUM","title":"Administrative operation failed","userMessage":"The administrative operation could not be completed.","adminAction":"Inspect operation audit entry and server response before retrying.","retryable":true},
+    "KKA-SYS-0001": {"module":"SYSTEM","severity":"HIGH","title":"Unexpected application error","userMessage":"Something went wrong. Reference the error code when contacting KKA support.","adminAction":"Use the correlation/request ID to trace browser, Edge Function, database and storage logs.","retryable":true},
+    "KKA-SYS-0002": {"module":"SYSTEM","severity":"HIGH","title":"Network request failed","userMessage":"The network request could not be completed. Check your connection and try again.","adminAction":"Check connectivity and API/function availability.","retryable":true}
+  }
+}
