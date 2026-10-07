@@ -1,5 +1,5 @@
 {
-  "updated": "5 October 2026",
+  "updated": "8 October 2026",
   "generator_version": "2026-10-05-cbdt-extension",
   "notice": "GST dates are generated from recurring GST Portal filing rules and checked against official GST advisories for extensions. TDS payment dates are shown separately from quarterly TDS return filing dates to avoid confusion. Advance tax instalments are shown on their statutory 15th-of-month dates. Due dates can differ by taxpayer category, State/UT and filing frequency. Verify the applicable date on the official portal before filing.",
   "extension_notice": {
@@ -83,8 +83,8 @@
     {
       "title": "TDS Payment",
       "category": "TDS",
-      "date": "7 October 2026",
-      "description": "Deposit TDS deducted during September 2026 by 7 October 2026. This is the monthly TDS payment deadline, not the quarterly TDS return filing deadline.",
+      "date": "7 November 2026",
+      "description": "Deposit TDS deducted during October 2026 by 7 November 2026. This is the monthly TDS payment deadline, not the quarterly TDS return filing deadline.",
       "urgent": true,
       "source": "https://www.incometax.gov.in/",
       "generated_from_tds_rule": true
