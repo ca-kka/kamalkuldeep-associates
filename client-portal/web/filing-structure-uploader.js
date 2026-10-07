@@ -16,7 +16,49 @@ function ensurePeriodInput(mode){const current=document.querySelector("#manual-p
 function replaceUI(){const area=document.querySelector("#manual-area"),fy=document.querySelector("#manual-fy"),period=document.querySelector("#manual-period");if(!area||!fy||!period)return false;const label=area.closest("label");if(label){label.style.display="none";label.insertAdjacentHTML("afterend",`<label id="manual-filing-subject-label">Filing subject<select id="manual-filing-subject">${subjectOptions()}</select></label><label id="manual-filing-folder-label">Sub-folder<select id="manual-filing-folder" disabled><option value="">Select subject first</option></select></label>`)}const subject=document.querySelector("#manual-filing-subject"),folder=document.querySelector("#manual-filing-folder");if(!subject||!folder)return false;const updateFromSelection=()=>update();subject.addEventListener("change",()=>{folder.innerHTML=folderOptions(subject.value);folder.disabled=!subject.value||children(subject.value).length===0;updateFromSelection()});folder.addEventListener("change",updateFromSelection);fy.innerHTML=`<option value="">Select financial year</option>${fys.map(f=>`<option value="${f}">FY ${f}</option>`).join("")}`;period.innerHTML=periodOptions("none");period.disabled=true;update();return true}
 function syncLegacy(n){const area=document.querySelector("#manual-area");if(!area)return;const map={gst:"gst",tds:"tds","income-tax":"income_tax",accounts:"accounts",mca:"mca",other:"other"};const subject=n?.node_type==="subject"?n:n?.parent_id?nodeById(n.parent_id):null;area.value=map[subject?.slug]||"other";area.dispatchEvent(new Event("change",{bubbles:true}));area.disabled=true}
 function selectedStructure(){const subject=nodeById(document.querySelector("#manual-filing-subject")?.value);const folder=nodeById(document.querySelector("#manual-filing-folder")?.value);return{subject,folder,node:folder||subject}}
-function update(){const fy=document.querySelector("#manual-fy"),period=document.querySelector("#manual-period"),client=document.querySelector("#manual-client"),upload=document.querySelector("#manual-upload"),summary=document.querySelector("#manual-summary"),subjectEl=document.querySelector("#manual-filing-subject"),folderEl=document.querySelector("#manual-filing-folder");if(!fy||!period||!summary||!subjectEl||!folderEl)return;const {subject,folder,node}=selectedStructure();const effective=node;const needsFY=!!effective?.requires_financial_year;const mode=effective?.period_mode||"none";syncLegacy(effective);const hasChildren=!!subject&&children(subject.id).length>0;folderEl.disabled=!subject||!hasChildren;if(subject&&hasChildren&&!folder){}fy.disabled=!effective||!needsFY;ensurePeriodInput(mode);const p=document.querySelector("#manual-period");p.disabled=!effective||mode==="none";if(mode==="none")p.value="";const files=window.__kkaManualFiles||[];const valid=!!client?.value&&!!subject&&(!hasChildren||!!folder)&&(!!effective)&&(!needsFY||!!fy?.value)&&(mode==="none"||!!p?.value)&&files.length>0;summary.textContent=effective?`${client?.selectedOptions?.[0]?.textContent||"Client"} · ${subject?.name||effective.name}${folder?` · ${folder.name}`:""}${fy?.value?` · FY ${fy.value}`:""}${p?.value?` · ${p.value}`:""}`:"Select a client, filing subject and sub-folder where applicable."`;upload.disabled=!valid}
+function update(){
+  const fy=document.querySelector("#manual-fy");
+  const period=document.querySelector("#manual-period");
+  const client=document.querySelector("#manual-client");
+  const upload=document.querySelector("#manual-upload");
+  const summary=document.querySelector("#manual-summary");
+  const subjectEl=document.querySelector("#manual-filing-subject");
+  const folderEl=document.querySelector("#manual-filing-folder");
+  if(!fy||!period||!summary||!subjectEl||!folderEl)return;
+
+  const selected=selectedStructure();
+  const subject=selected.subject;
+  const folder=selected.folder;
+  const effective=selected.node;
+  const needsFY=!!effective?.requires_financial_year;
+  const mode=effective?.period_mode||"none";
+
+  syncLegacy(effective);
+  const hasChildren=!!subject&&children(subject.id).length>0;
+  folderEl.disabled=!subject||!hasChildren;
+
+  fy.disabled=!effective||!needsFY;
+  ensurePeriodInput(mode);
+
+  const p=document.querySelector("#manual-period");
+  p.disabled=!effective||mode==="none";
+  if(mode==="none")p.value="";
+
+  const files=window.__kkaManualFiles||[];
+  const valid=!!client?.value&&!!subject&&(!hasChildren||!!folder)&&!!effective&&(!needsFY||!!fy?.value)&&(mode==="none"||!!p?.value)&&files.length>0;
+
+  if(effective){
+    const clientName=client?.selectedOptions?.[0]?.textContent||"Client";
+    const subjectName=subject?.name||effective.name;
+    const folderText=folder?" · "+folder.name:"";
+    const fyText=fy?.value?" · FY "+fy.value:"";
+    const periodText=p?.value?" · "+p.value:"";
+    summary.textContent=clientName+" · "+subjectName+folderText+fyText+periodText;
+  }else{
+    summary.textContent="Select a client, filing subject and sub-folder where applicable.";
+  }
+  upload.disabled=!valid;
+}
 function contentTypeForFile(file){const types={pdf:"application/pdf",jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",xls:"application/vnd.ms-excel",csv:"text/csv"};return types[String(file.name.split(".").pop()||"").toLowerCase()]||null}
 function formatBytes(n){if(n<1024)return `${n} B`;if(n<1048576)return `${(n/1024).toFixed(1)} KB`;return `${(n/1048576).toFixed(1)} MB`}
 function filesUI(){const input=document.querySelector("#manual-file-input"),list=document.querySelector("#manual-file-list");if(!input||!list)return;input.addEventListener("change",()=>{window.__kkaManualFiles=[...(input.files||[])];list.innerHTML=window.__kkaManualFiles.map(f=>`<div class="manual-file"><strong>${esc(f.name)}</strong><span class="muted">${formatBytes(f.size)}</span></div>`).join("");update()})}
