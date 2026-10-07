@@ -35,8 +35,21 @@ Deno.serve(async req=>{
     const {data:a}=await service.auth.admin.getUserById(userId);
     email=a.user?.email??null;
     const {data:p}=await service.from("profiles").select("full_name,email_2fa_enabled").eq("id",userId).maybeSingle();
-    fullName=p?.full_name??null;
-    email2FAEnabled=p?.email_2fa_enabled!==false;
+    if(!p){
+      const repairedName=String(a.user?.user_metadata?.full_name??client.display_name??client.legal_name??"Client").trim()||"Client";
+      const {error:repairError}=await service.from("profiles").upsert({
+        id:userId,
+        full_name:repairedName,
+        role:"client",
+        active:true
+      },{onConflict:"id"});
+      if(repairError)throw new Error("Missing client profile could not be repaired: "+repairError.message);
+      fullName=repairedName;
+      email2FAEnabled=true;
+    }else{
+      fullName=p.full_name??null;
+      email2FAEnabled=p.email_2fa_enabled!==false;
+    }
    }
    const [docsQ,uploadsQ,registryQ,patternsQ,membersQ,accountsQ]=await Promise.all([
     service.from("documents").select("id",{count:"exact",head:true}).eq("client_id",clientId),
