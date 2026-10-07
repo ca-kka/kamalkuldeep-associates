@@ -108,14 +108,14 @@ function showDeleteForm(c){
   }
   const progress=modal.querySelector("#delete-progress"),form=modal.querySelector("#delete-form"),submit=form.querySelector("button[type=submit]"),message=modal.querySelector("#delete-message"),fill=modal.querySelector("#delete-progress-fill"),percent=modal.querySelector("#delete-progress-percent"),title=modal.querySelector("#delete-progress-title"),detail=modal.querySelector("#delete-progress-detail"),note=modal.querySelector("#delete-progress-note");
   const steps=[...modal.querySelectorAll("[data-step]")];
-  const setProgress=(n,t,d)=>{const p=Math.max(0,Math.min(100,Math.round(n/6*100)));fill.style.width=p+"%";percent.textContent=p+"%";title.textContent=t;detail.textContent=d;steps.forEach((s,i)=>{s.classList.toggle("done",i<n);s.classList.toggle("running",i===n&&n<6)})};
+  const setProgress=(n,t,d)=>{const p=Math.max(0,Math.min(100,Math.round(n/6*100)));fill.style.width=p+"%";percent.textContent=p+"%";title.textContent=t;detail.textContent=d;steps.forEach((s,i)=>{s.classList.toggle("done",n===6);s.classList.toggle("running",n<6&&i===n)})};
   form.addEventListener("submit",async e=>{
     e.preventDefault();
     const d=new FormData(form);
     if(String(d.get("confirmName")||"").trim().toLowerCase()!==String(c.legal_name||"").trim().toLowerCase()){message.textContent="The legal name does not match.";return}
     if(d.get("backup")!=="on"||d.get("final")!=="on"){message.textContent="Both deletion confirmations are required.";return}
     submit.disabled=true;form.querySelectorAll("input").forEach(x=>x.disabled=true);modal.querySelectorAll(".modal-close").forEach(x=>x.disabled=true);progress.hidden=false;message.textContent="";setProgress(0,"Preparing deletion…","Checking linked records before anything is removed.");
-    const timers=[setTimeout(()=>setProgress(1,"Safety checks complete","Dependencies checked. Cleaning the connected workspace next."),900),setTimeout(()=>setProgress(2,"Workspace cleanup","Removing the connected OneDrive client workspace, if present."),2600),setTimeout(()=>setProgress(3,"Documents & storage","Removing document records, versions, uploads and storage objects."),6500),setTimeout(()=>setProgress(4,"Portal access","Removing client membership and linked portal access."),9500),setTimeout(()=>setProgress(5,"Client record","Removing the client profile and linked account."),12500)];
+    const timers=[setTimeout(()=>setProgress(1,"Safety checks","Dependencies have been checked. Processing the connected workspace."),900),setTimeout(()=>setProgress(2,"Workspace cleanup","Processing the connected OneDrive client workspace, if present."),2600),setTimeout(()=>setProgress(3,"Documents & storage","Processing document records, versions, uploads and storage objects."),6500),setTimeout(()=>setProgress(4,"Portal access","Processing client membership and linked portal access."),9500),setTimeout(()=>setProgress(5,"Client record","Processing the client profile and linked account."),12500)];
     try{
       const r=await manageClient(c.id,"delete",{confirmName:String(d.get("confirmName")||""),backupConfirmed:true,finalConfirmed:true});
       timers.forEach(clearTimeout);
