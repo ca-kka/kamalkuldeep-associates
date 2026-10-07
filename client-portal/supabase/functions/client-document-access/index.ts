@@ -18,7 +18,7 @@ function contentDisposition(value:unknown){
 function portalViewerUrl(documentId:string){
   const url=new URL("/document-viewer.html",Deno.env.get("PORTAL_ALLOWED_ORIGIN")??"https://portal.ca-kka.com");
   url.searchParams.set("documentId",documentId);
-  url.searchParams.set("v","20261004-portal-doc-host1");
+  url.searchParams.set("v","20261008-doc-mobile2");
   return url.toString();
 }
 
