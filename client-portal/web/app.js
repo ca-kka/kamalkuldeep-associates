@@ -56,78 +56,101 @@ async function loadClientDetails(clientId,modal){const r=await manageClient(clie
 function showEmailForm(c){const modal=modalBase(`<section class="modal compact-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><p class="eyebrow">CLIENT LOGIN</p><h2>Change email</h2><p class="muted">Change the login email for this client.</p></div><button class="modal-close" type="button">×</button></div><form id="email-form" class="form-grid"><label class="full">New email<input name="email" type="email" required></label><div class="form-message full" id="email-message"></div><div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="primary">Update email</button></div></form></section>`);loadClientDetails(c.id,modal);modal.querySelector("#email-form").addEventListener("submit",async e=>{e.preventDefault();const email=String(new FormData(e.currentTarget).get("email")||"");const r=await manageClient(c.id,"update_profile",{legalName:c.legal_name,displayName:c.display_name,fullName:c.display_name,email,mobile:c.mobile||"",pan:c.pan,tan:c.tan,cin:c.cin,gstin:c.gstin,aliases:c.filename_aliases||[]});if(r){notify("success","Client login email updated successfully.");modal.remove();await loadClients()}})}
 function showPasswordForm(c){const modal=modalBase(`<section class="modal compact-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><p class="eyebrow">CLIENT SECURITY</p><h2>Set temporary password</h2></div><button class="modal-close" type="button">×</button></div><form id="password-form" class="form-grid"><label class="full">Temporary password<input name="password" type="password" minlength="10" maxlength="72" required></label><label class="full">Confirm password<input name="confirm" type="password" minlength="10" maxlength="72" required></label><div class="form-message full" id="password-message"></div><div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="primary">Set password</button></div></form></section>`);modal.querySelector("#password-form").addEventListener("submit",async e=>{e.preventDefault();const d=new FormData(e.currentTarget),password=String(d.get("password")||""),confirmPassword=String(d.get("confirm")||"");if(password!==confirmPassword){modal.querySelector("#password-message").textContent="Passwords do not match.";return}const r=await manageClient(c.id,"set_password",{password});if(r){notify("success","Temporary password set successfully.");modal.remove()}})}
 function showDeleteForm(c){
-  const modal=modalBase(`<section class="modal danger-modal" role="dialog" aria-modal="true">
-    <div class="modal-head"><div><p class="eyebrow danger-text">PERMANENT ACTION</p><h2>Delete client permanently</h2></div><button class="modal-close" type="button">×</button></div>
-    <div class="danger-warning"><strong>This cannot be undone.</strong><p>The client record, portal login, linked document data and storage objects will be permanently removed. An audit record is retained.</p></div>
-    <div class="delete-scope" aria-label="Deletion scope">
-      <div class="delete-scope-title">What will happen</div>
-      <div class="delete-scope-grid">
-        <div><span class="delete-scope-icon">✓</span><div><strong>Client profile</strong><small>Client record and identifiers</small></div></div>
-        <div><span class="delete-scope-icon">✓</span><div><strong>Portal access</strong><small>Login and client membership</small></div></div>
-        <div><span class="delete-scope-icon">✓</span><div><strong>Documents</strong><small>Documents, versions and uploads</small></div></div>
-        <div><span class="delete-scope-icon">✓</span><div><strong>Storage</strong><small>Linked storage objects</small></div></div>
-        <div><span class="delete-scope-icon">✓</span><div><strong>OneDrive workspace</strong><small>Client workspace, when connected</small></div></div>
-        <div><span class="delete-scope-icon keep">•</span><div><strong>Audit trail</strong><small>Deletion record is retained</small></div></div>
+  const modal=modalBase(`<section class="modal danger-modal kka-delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-client-title">
+    <div class="modal-head"><div><p class="eyebrow danger-text">PERMANENT ACTION</p><h2 id="delete-client-title">Delete client permanently</h2><p class="muted">Review exactly what will be removed before you confirm.</p></div><button class="modal-close" type="button" aria-label="Close">×</button></div>
+    <div class="delete-warning"><strong>This action cannot be undone.</strong><span>The client record and all linked portal data will be permanently removed. The deletion audit entry is retained.</span></div>
+    <div class="delete-review" id="delete-review">
+      <div class="delete-review-head"><div><strong>Deletion plan</strong><span>Current data linked to this client</span></div><span class="delete-review-status" id="delete-preview-status">Checking…</span></div>
+      <div class="delete-plan">
+        <div class="delete-plan-row"><span class="delete-plan-mark">×</span><div><strong>Client profile</strong><small>Legal name, identifiers and profile information</small></div><b>WILL DELETE</b></div>
+        <div class="delete-plan-row"><span class="delete-plan-mark">×</span><div><strong>Portal access</strong><small>Login, membership and authentication access</small></div><b>WILL DELETE</b></div>
+        <div class="delete-plan-row"><span class="delete-plan-mark">×</span><div><strong>Documents &amp; uploads</strong><small id="delete-doc-count">Checking linked documents…</small></div><b>WILL DELETE</b></div>
+        <div class="delete-plan-row"><span class="delete-plan-mark">×</span><div><strong>Storage objects</strong><small>Files linked to the client's documents and uploads</small></div><b>WILL DELETE</b></div>
+        <div class="delete-plan-row"><span class="delete-plan-mark">×</span><div><strong>Family / account links</strong><small id="delete-family-count">Checking family-account links…</small></div><b>WILL DELETE</b></div>
+        <div class="delete-plan-row retained"><span class="delete-plan-mark">✓</span><div><strong>Audit trail</strong><small>The historical audit record is detached and retained</small></div><b>RETAINED</b></div>
       </div>
     </div>
-    <div class="delete-progress" id="delete-progress" hidden>
-      <div class="delete-progress-head"><div><strong id="delete-progress-title">Preparing deletion…</strong><span id="delete-progress-detail">Checking linked records before anything is removed.</span></div><strong id="delete-progress-percent">0%</strong></div>
-      <div class="delete-progress-bar"><span id="delete-progress-fill"></span></div>
-      <div class="delete-progress-list">
-        <div data-step="preflight"><i>1</i><span><strong>Safety checks</strong><small>Checking dependencies</small></span></div>
-        <div data-step="onedrive"><i>2</i><span><strong>OneDrive workspace</strong><small>Cleaning connected workspace</small></span></div>
-        <div data-step="documents"><i>3</i><span><strong>Documents &amp; storage</strong><small>Removing document records and objects</small></span></div>
-        <div data-step="access"><i>4</i><span><strong>Portal access</strong><small>Removing login and access links</small></span></div>
-        <div data-step="client"><i>5</i><span><strong>Client record</strong><small>Removing the client profile</small></span></div>
-        <div data-step="audit"><i>6</i><span><strong>Audit record</strong><small>Retaining the deletion history</small></span></div>
+    <div class="delete-live" id="delete-live" hidden>
+      <div class="delete-live-head"><div><p class="eyebrow">DELETION IN PROGRESS</p><h3 id="delete-live-title">Sending secure deletion request…</h3><span id="delete-live-detail">The server is processing the request. Do not close this window.</span></div><strong id="delete-live-percent">10%</strong></div>
+      <div class="delete-live-track"><span id="delete-live-fill"></span></div>
+      <div class="delete-live-steps">
+        <div data-live-step="request"><i>1</i><span><strong>Deletion request</strong><small>Safety checks and authorization</small></span></div>
+        <div data-live-step="data"><i>2</i><span><strong>Client data</strong><small>Documents, uploads and linked records</small></span></div>
+        <div data-live-step="access"><i>3</i><span><strong>Access &amp; account</strong><small>Portal and family-account links</small></span></div>
+        <div data-live-step="profile"><i>4</i><span><strong>Client profile</strong><small>Client record and login</small></span></div>
+        <div data-live-step="audit"><i>5</i><span><strong>Audit retention</strong><small>Deletion history is preserved</small></span></div>
       </div>
-      <div class="delete-progress-note" id="delete-progress-note">Do not close this window while deletion is in progress.</div>
+      <div class="delete-live-note" id="delete-live-note">This progress indicator reflects the server request state. Individual database operations are not reported as completed until the server confirms the whole operation.</div>
     </div>
     <form id="delete-form" class="form-grid">
-      <label class="full">Type the exact legal name to confirm<input name="confirmName" required autocomplete="off"></label>
-      <label class="check full"><input name="backup" type="checkbox"> Offline backup has been verified</label>
-      <label class="check full"><input name="final" type="checkbox"> Permanent deletion is explicitly approved</label>
+      <label class="full">Type the exact legal name to confirm<input name="confirmName" required autocomplete="off" placeholder="__LEGAL_NAME__"></label>
+      <label class="check full"><input name="backup" type="checkbox"> I have verified the offline backup</label>
+      <label class="check full"><input name="final" type="checkbox"> I explicitly approve permanent deletion</label>
       <div class="form-message full" id="delete-message"></div>
-      <div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="danger" type="submit">Permanently delete</button></div>
+      <div class="modal-actions full"><button type="button" class="secondary modal-close">Cancel</button><button class="danger" type="submit" disabled>Reviewing…</button></div>
     </form>
-  </section>`);
+  </section>`.replace("__LEGAL_NAME__",esc(c.legal_name||"")));
   const styleId="kka-delete-progress-style";
   if(!document.getElementById(styleId)){
     const style=document.createElement("style");style.id=styleId;style.textContent=`
-      .delete-scope{margin:18px 0;padding:16px 18px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025)}
-      .delete-scope-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:12px;opacity:.75}
-      .delete-scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
-      .delete-scope-grid>div{display:flex;gap:9px;align-items:flex-start}.delete-scope-grid strong{display:block;font-size:13px}.delete-scope-grid small{display:block;opacity:.62;margin-top:2px;font-size:11px;line-height:1.35}
-      .delete-scope-icon{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;background:rgba(80,190,130,.14);color:#70d9a0;font-size:12px;flex:none}.delete-scope-icon.keep{background:rgba(255,190,80,.12);color:#e8b65e}
-      .delete-progress{margin:18px 0;padding:17px;border:1px solid rgba(255,255,255,.09);border-radius:15px;background:rgba(0,0,0,.16)}
-      .delete-progress-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.delete-progress-head strong{display:block}.delete-progress-head span{display:block;font-size:12px;opacity:.62;margin-top:3px;line-height:1.4}.delete-progress-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:13px 0 15px}.delete-progress-bar span{display:block;height:100%;width:0%;transition:width .35s ease;background:currentColor}
-      .delete-progress-list{display:grid;gap:8px}.delete-progress-list>div{display:flex;align-items:center;gap:10px;opacity:.45}.delete-progress-list i{font-style:normal;width:23px;height:23px;border:1px solid rgba(255,255,255,.14);border-radius:50%;display:grid;place-items:center;font-size:11px}.delete-progress-list span{min-width:0}.delete-progress-list strong{display:block;font-size:12px}.delete-progress-list small{display:block;font-size:10px;opacity:.62;margin-top:1px}.delete-progress-list>div.running,.delete-progress-list>div.done{opacity:1}.delete-progress-list>div.running i{box-shadow:0 0 0 3px rgba(255,255,255,.07)}.delete-progress-list>div.done i{background:rgba(80,190,130,.14);border-color:rgba(80,190,130,.35);color:#70d9a0}.delete-progress-list>div.done i{font-size:0}.delete-progress-list>div.done i:after{content:"✓";font-size:11px}
-      .delete-progress-note{margin-top:13px;padding-top:11px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;opacity:.6}
-      @media(max-width:620px){.delete-scope-grid{grid-template-columns:1fr}}
+      .kka-delete-modal{width:min(720px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow:auto}
+      .delete-warning{display:flex;flex-direction:column;gap:5px;margin:14px 0;padding:14px 16px;border:1px solid rgba(210,80,70,.28);border-radius:12px;background:rgba(150,45,35,.10)}
+      .delete-warning strong{font-size:14px}.delete-warning span{font-size:12px;line-height:1.45;opacity:.72}
+      .delete-review{border:1px solid rgba(255,255,255,.09);border-radius:14px;overflow:hidden;margin:16px 0}
+      .delete-review-head{display:flex;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+      .delete-review-head strong{display:block;font-size:14px}.delete-review-head span:not(.delete-review-status){display:block;font-size:11px;opacity:.58;margin-top:3px}
+      .delete-review-status{font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;white-space:nowrap}
+      .delete-plan{display:grid}.delete-plan-row{display:grid;grid-template-columns:25px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.055)}
+      .delete-plan-row:last-child{border-bottom:0}.delete-plan-mark{display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(220,80,70,.13);color:#e99a92;font-weight:700;font-size:12px}
+      .delete-plan-row.retained .delete-plan-mark{background:rgba(80,190,130,.13);color:#72d5a0}
+      .delete-plan-row strong{display:block;font-size:12px}.delete-plan-row small{display:block;font-size:10px;line-height:1.35;opacity:.58;margin-top:2px}
+      .delete-plan-row>b{font-size:9px;letter-spacing:.06em;font-weight:700;opacity:.62;white-space:nowrap}.delete-plan-row.retained>b{color:#72d5a0}
+      .delete-live{margin:16px 0;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(0,0,0,.14)}
+      .delete-live-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.delete-live-head p{margin:0 0 3px}.delete-live-head h3{margin:0;font-size:15px}.delete-live-head span{display:block;font-size:11px;opacity:.58;margin-top:4px;line-height:1.4}.delete-live-head>strong{font-size:16px}
+      .delete-live-track{height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:14px 0}.delete-live-track span{display:block;height:100%;width:10%;transition:width .4s ease;background:currentColor}
+      .delete-live-steps{display:grid;gap:8px}.delete-live-steps>div{display:flex;gap:10px;align-items:center;opacity:.42}.delete-live-steps>div.active,.delete-live-steps>div.complete{opacity:1}
+      .delete-live-steps i{font-style:normal;width:23px;height:23px;border:1px solid rgba(255,255,255,.14);border-radius:50%;display:grid;place-items:center;font-size:10px;flex:none}
+      .delete-live-steps>div.complete i{font-size:0;background:rgba(80,190,130,.13);border-color:rgba(80,190,130,.3)}.delete-live-steps>div.complete i:after{content:"✓";font-size:11px;color:#72d5a0}
+      .delete-live-steps strong{display:block;font-size:11px}.delete-live-steps small{display:block;font-size:10px;opacity:.58;margin-top:1px}
+      .delete-live-note{border-top:1px solid rgba(255,255,255,.07);margin-top:12px;padding-top:10px;font-size:10px;line-height:1.45;opacity:.55}
+      @media(max-width:620px){.delete-plan-row{grid-template-columns:24px minmax(0,1fr)}.delete-plan-row>b{display:none}.delete-live-head>strong{font-size:14px}}
     `;document.head.appendChild(style);
   }
-  const progress=modal.querySelector("#delete-progress"),form=modal.querySelector("#delete-form"),submit=form.querySelector("button[type=submit]"),message=modal.querySelector("#delete-message"),fill=modal.querySelector("#delete-progress-fill"),percent=modal.querySelector("#delete-progress-percent"),title=modal.querySelector("#delete-progress-title"),detail=modal.querySelector("#delete-progress-detail"),note=modal.querySelector("#delete-progress-note");
-  const steps=[...modal.querySelectorAll("[data-step]")];
-  const setProgress=(n,t,d)=>{const p=Math.max(0,Math.min(100,Math.round(n/6*100)));fill.style.width=p+"%";percent.textContent=p+"%";title.textContent=t;detail.textContent=d;steps.forEach((s,i)=>{s.classList.toggle("done",n===6);s.classList.toggle("running",n<6&&i===n)})};
+  const review=modal.querySelector("#delete-review"),live=modal.querySelector("#delete-live"),form=modal.querySelector("#delete-form");
+  const submit=form.querySelector("button[type=submit]"),message=modal.querySelector("#delete-message");
+  const previewStatus=modal.querySelector("#delete-preview-status"),docCount=modal.querySelector("#delete-doc-count"),familyCount=modal.querySelector("#delete-family-count");
+  const liveTitle=modal.querySelector("#delete-live-title"),liveDetail=modal.querySelector("#delete-live-detail"),livePercent=modal.querySelector("#delete-live-percent"),liveFill=modal.querySelector("#delete-live-fill"),liveNote=modal.querySelector("#delete-live-note");
+  const liveSteps=[...modal.querySelectorAll("[data-live-step]")];
+  const setLive=(percent,title,detail,activeIndex,completeAll=false)=>{livePercent.textContent=percent+"%";liveFill.style.width=percent+"%";liveTitle.textContent=title;liveDetail.textContent=detail;liveSteps.forEach((step,i)=>{step.classList.toggle("complete",completeAll);step.classList.toggle("active",!completeAll&&i===activeIndex)})};
+  const loadPreview=async()=>{
+    try{
+      const r=await manageClient(c.id,"get_details");if(!r)throw new Error("Could not load the deletion preview.");
+      const p=r.deletionPreview||{};
+      docCount.textContent=`${p.documents??0} document record${p.documents===1?"":"s"} · ${p.uploads??0} pending upload${p.uploads===1?"":"s"}`;
+      familyCount.textContent=`${p.familyMemberships??0} account membership${p.familyMemberships===1?"":"s"} · ${p.primaryAccounts??0} primary account link${p.primaryAccounts===1?"":"s"}`;
+      previewStatus.textContent="Preview ready";submit.disabled=false;submit.textContent="Permanently delete";
+    }catch(error){previewStatus.textContent="Preview unavailable";message.textContent=error?.message||"Could not load the deletion preview.";submit.disabled=true;submit.textContent="Preview required"}
+  };
+  void loadPreview();
   form.addEventListener("submit",async e=>{
-    e.preventDefault();
-    const d=new FormData(form);
-    if(String(d.get("confirmName")||"").trim().toLowerCase()!==String(c.legal_name||"").trim().toLowerCase()){message.textContent="The legal name does not match.";return}
-    if(d.get("backup")!=="on"||d.get("final")!=="on"){message.textContent="Both deletion confirmations are required.";return}
-    submit.disabled=true;form.querySelectorAll("input").forEach(x=>x.disabled=true);modal.querySelectorAll(".modal-close").forEach(x=>x.disabled=true);progress.hidden=false;message.textContent="";setProgress(0,"Preparing deletion…","Checking linked records before anything is removed.");
-    const timers=[setTimeout(()=>setProgress(1,"Safety checks","Dependencies have been checked. Processing the connected workspace."),900),setTimeout(()=>setProgress(2,"Workspace cleanup","Processing the connected OneDrive client workspace, if present."),2600),setTimeout(()=>setProgress(3,"Documents & storage","Processing document records, versions, uploads and storage objects."),6500),setTimeout(()=>setProgress(4,"Portal access","Processing client membership and linked portal access."),9500),setTimeout(()=>setProgress(5,"Client record","Processing the client profile and linked account."),12500)];
+    e.preventDefault();const d=new FormData(form);
+    if(String(d.get("confirmName")||"").trim().toLowerCase()!==String(c.legal_name||"").trim().toLowerCase()){message.textContent="The legal name does not match exactly.";return}
+    if(d.get("backup")!=="on"||d.get("final")!=="on"){message.textContent="Both confirmations are required.";return}
+    submit.disabled=true;form.querySelectorAll("input").forEach(x=>x.disabled=true);modal.querySelectorAll(".modal-close").forEach(x=>x.disabled=true);review.hidden=true;live.hidden=false;message.textContent="";
+    setLive(12,"Deletion request accepted","Running server-side safety checks before any permanent change.",0);
+    const advance=setTimeout(()=>setLive(28,"Processing client data","The server is processing documents, uploads, storage and linked records.",1),900);
+    const advance2=setTimeout(()=>setLive(48,"Processing account access","The server is processing portal access and family-account links.",2),2200);
+    const advance3=setTimeout(()=>setLive(68,"Removing client profile","The server is completing the client and login removal.",3),4200);
     try{
       const r=await manageClient(c.id,"delete",{confirmName:String(d.get("confirmName")||""),backupConfirmed:true,finalConfirmed:true});
-      timers.forEach(clearTimeout);
-      if(!r)throw new Error("The client could not be deleted. Please review the error shown above.");
-      setProgress(6,"Deletion completed","All requested client data was removed successfully.");
-      note.textContent="The client has been permanently deleted. The deletion audit record was retained.";
-      setTimeout(()=>{modal.remove();notify("success","Client permanently deleted.");loadClients()},700);
+      clearTimeout(advance);clearTimeout(advance2);clearTimeout(advance3);if(!r)throw new Error("The server did not confirm the deletion.");
+      setLive(100,"Deletion completed","The server confirmed permanent deletion. The audit record was retained.",4,true);
+      liveNote.textContent="Completed successfully. The client, linked portal data and storage objects were removed; the deletion audit record was retained.";
+      setTimeout(()=>{modal.remove();notify("success","Client permanently deleted.");loadClients()},900);
     }catch(error){
-      timers.forEach(clearTimeout);progress.hidden=false;setProgress(0,"Deletion stopped","No further deletion steps will be attempted.");
-      note.textContent=error?.message||"The deletion could not be completed.";
-      message.textContent=error?.message||"The deletion could not be completed.";
-      form.querySelectorAll("input").forEach(x=>x.disabled=false);modal.querySelectorAll(".modal-close").forEach(x=>x.disabled=false);submit.disabled=false;
+      clearTimeout(advance);clearTimeout(advance2);clearTimeout(advance3);setLive(12,"Deletion stopped","No completion confirmation was received. Review the error below.",0,false);
+      liveNote.textContent="Nothing further will be attempted automatically. The server returned an error.";message.textContent=error?.message||"The deletion could not be completed.";
+      form.querySelectorAll("input").forEach(x=>x.disabled=false);modal.querySelectorAll(".modal-close").forEach(x=>x.disabled=false);submit.disabled=false;submit.textContent="Try deletion again";
     }
   });
 }
