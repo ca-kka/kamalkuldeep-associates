@@ -5,6 +5,14 @@ const ENDPOINT=`${SUPABASE_URL}/functions/v1/system-log`;
 const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:false,persistSession:true,detectSessionInUrl:false}});
 const requestId=crypto.randomUUID();
 const started=performance.now();
+
+const ERROR_CODE_BY_OPERATION={javascript_error:"KKA-SYS-0001",unhandled_rejection:"KKA-SYS-0001",network_error:"KKA-SYS-0002",api_error:"KKA-SYS-0001"};
+const severityFor=(code,level="error")=>{
+  if(code==="KKA-SEC-0001"||code==="KKA-SEC-0002")return "critical";
+  if(code==="KKA-SYS-0001"||code==="KKA-SYS-0002")return level==="error"?"high":"medium";
+  return level==="error"?"medium":"low";
+};
+
 let cachedSession=null;
 let sessionCheckedAt=0;
 
@@ -45,6 +53,8 @@ function send(level,operation,message,details={},extra={}){
         level,source:"portal-client",operation,message,request_id:requestId,
         page:location.pathname,path:location.href.split("?")[0],
         user_agent:navigator.userAgent,
+        error_code:extra.error_code||ERROR_CODE_BY_OPERATION[operation]||null,
+        severity:extra.severity||severityFor(extra.error_code||ERROR_CODE_BY_OPERATION[operation],level),
         details:clean(details),
         ...extra
       };
@@ -92,7 +102,7 @@ window.fetch=async(...args)=>{
   try{
     response=await originalFetch(...args);
   }catch(error){
-    send("error","network_error",error?.message||"Network request failed",{url:String(args[0]||"")});
+    send("error","network_error",error?.message||"Network request failed",{url:String(args[0]||"")},{error_code:"KKA-SYS-0002"});
     throw error;
   }
   const url=typeof args[0]==="string"?args[0]:args[0]?.url||"";
@@ -104,7 +114,7 @@ window.fetch=async(...args)=>{
       message=data?.error||data?.message||message;
     }catch{}
     send("error","api_error",message,{url:url.split("?")[0],method:args[1]?.method||"GET",http_status:response.status},{
-      http_status:response.status,duration_ms:Math.round(performance.now()-startedAt)
+      error_code:response.status===401||response.status===403?"KKA-SEC-0001":response.status>=500?"KKA-SYS-0001":"KKA-SYS-0001",http_status:response.status,duration_ms:Math.round(performance.now()-startedAt)
     });
   }
   return response;
