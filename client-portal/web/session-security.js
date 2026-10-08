@@ -159,7 +159,11 @@ async function init(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){clearTimers();stopHeartbeat();return}
   const closeRaw=(()=>{try{return localStorage.getItem(TAB_CLOSE_KEY)}catch{return null}})();
-  if(closeRaw && navigationType()==="navigate"){
+  let closeAt=0;
+  try{closeAt=Number(JSON.parse(closeRaw||"null")?.at)||0}catch{closeAt=Number.POSITIVE_INFINITY}
+  const markerTime=Number(tabMarker||0);
+  const signedInAfterClose=markerTime>0&&markerTime>closeAt;
+  if(closeRaw && navigationType()==="navigate"&&!signedInAfterClose){
     try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
     await supabase.auth.signOut({scope:"local"}).catch(()=>{});
     clearLifecycleMarkers();
