@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "../config.js";
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const MARKER="kka-tab-session:client";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const SESSION_SECURITY_VERSION="20261008-sessionfix3";
+const SESSION_SECURITY_VERSION="20261008-tab-session-guard1";
 
 const featureModules=[
   "../diagnostic-logger.js?v=20261008-errors2",
@@ -61,6 +61,16 @@ async function root(){
   window.location.replace("../");
 }
 
+function hasLoginTabMarker(){
+  try{return Boolean(sessionStorage.getItem(MARKER))}catch{return false}
+}
+
+async function rejectUnownedSession(){
+  try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
+  await supabase.auth.signOut({scope:"local"}).catch(()=>{});
+  return root();
+}
+
 async function boot(){
   try{
     const session=await stableSession();
@@ -72,10 +82,7 @@ async function boot(){
       return;
     }
     if(session.user.app_metadata?.must_change_password===true)return root();
-    try{
-      sessionStorage.setItem(MARKER,String(Date.now()));
-      sessionStorage.setItem("kka-auth-handoff","client");
-    }catch{}
+    if(!hasLoginTabMarker())return rejectUnownedSession();
     for(const path of featureModules)await loadFeatureModule(path);
     window.dispatchEvent(new CustomEvent("kka:client-ready",{detail:{userId:session.user.id,role:p.role}}));
   }catch(error){

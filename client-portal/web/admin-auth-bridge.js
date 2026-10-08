@@ -10,7 +10,7 @@ const featureModules = [
   "./theme.js?v=20261004-issues29b",
   "./operation-feedback.js?v=20261004-issues29b",
   "./session-route-transition.js?v=20261004-issues29b",
-  "./session-security.js?v=20261004-issues29b",
+  "./session-security.js?v=20261008-tab-session-guard1",
   "./session-settings.js?v=20261004-issues29b",
   "./dashboard-live.js?v=20261004-issues29b",
   "./portal-access-admin.js?v=20261004-issues29b",
@@ -78,6 +78,16 @@ async function root() {
   window.location.replace("../");
 }
 
+function hasLoginTabMarker() {
+  try { return Boolean(sessionStorage.getItem(MARKER)); } catch { return false; }
+}
+
+async function rejectUnownedSession() {
+  try { sessionStorage.setItem("kka-logout-reason", "browser-closed"); } catch {}
+  await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  return root();
+}
+
 async function boot() {
   try {
     const session = await stableSession();
@@ -94,10 +104,7 @@ async function boot() {
       return;
     }
 
-    try {
-      sessionStorage.setItem(MARKER, String(Date.now()));
-      sessionStorage.setItem("kka-auth-handoff", "admin");
-    } catch {}
+    if (!hasLoginTabMarker()) return rejectUnownedSession();
 
     for (const path of featureModules) {
       await loadFeatureModule(path);

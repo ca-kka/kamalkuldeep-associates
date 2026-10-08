@@ -23,7 +23,6 @@ function clearTimers(){
   timer=warningTimer=countdownTimer=displayTimer=null;
 }
 function clearTabState(){try{sessionStorage.removeItem(TAB_MARKER);sessionStorage.removeItem(LAST_ACTIVITY)}catch{}}
-function markTab(){try{sessionStorage.setItem(TAB_MARKER,String(Date.now()))}catch{}}
 function ensureTabId(){
   try{
     tabId=sessionStorage.getItem(TAB_ID_KEY);
@@ -160,7 +159,14 @@ async function init(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){clearTimers();stopHeartbeat();return}
   const closeRaw=(()=>{try{return localStorage.getItem(TAB_CLOSE_KEY)}catch{return null}})();
-  if(closeRaw && navigationType()==="navigate"){
+  let closeAt=Number.POSITIVE_INFINITY;
+  try{
+    const timestamp=Number(JSON.parse(closeRaw||"null")?.at);
+    if(Number.isFinite(timestamp)&&timestamp>0)closeAt=timestamp;
+  }catch{}
+  const markerTime=Number(tabMarker||0);
+  const signedInAfterClose=markerTime>0&&markerTime>closeAt;
+  if(closeRaw && navigationType()==="navigate"&&!signedInAfterClose){
     try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
     await supabase.auth.signOut({scope:"local"}).catch(()=>{});
     clearLifecycleMarkers();
@@ -191,7 +197,9 @@ supabase.auth.onAuthStateChange((event,session)=>{
   if(route==="root")return;
   if(!session?.user){clearTimers();stopHeartbeat();return}
   if(event==="SIGNED_IN"){
-    if(!sessionStorage.getItem(TAB_MARKER))markTab();
+    let hasLoginMarker=false;
+    try{hasLoginMarker=Boolean(sessionStorage.getItem(TAB_MARKER))}catch{}
+    if(!hasLoginMarker){void finishLogout("browser-closed");return}
     if(!loggedOut){clearLifecycleMarkers();startHeartbeat();lastActivity=Date.now();setActivity(lastActivity);injectTimer();schedule()}
     return;
   }
