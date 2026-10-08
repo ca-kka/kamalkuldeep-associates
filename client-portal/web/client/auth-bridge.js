@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "../config.js";
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const MARKER="kka-tab-session:client";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const SESSION_SECURITY_VERSION="20261007-sessionfix2";
+const SESSION_SECURITY_VERSION="20261008-sessionfix3";
 
 const featureModules=[
   "../diagnostic-logger.js?v=20261008-errors2",
@@ -19,7 +19,7 @@ const featureModules=[
   "../family-profile-context.js?v=20261004-issues29b",
   "../client-upload-view.js?v=20261008-batch1",
   "../upload-network-resilience.js?v=20261004-issues29b",
-  "../family-documents-view.js?v=20261008-doc-mobile2",
+  "../family-documents-view.js?v=20261008-doc-mobile3",
   "../client-dashboard-v2.js?v=20261004-issues29b",
   "../client-profile-menu.js?v=20261004-issues29b",
   "../mobile-menu.js?v=20261004-issues29b",
