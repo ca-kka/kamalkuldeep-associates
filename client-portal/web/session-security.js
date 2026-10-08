@@ -23,7 +23,6 @@ function clearTimers(){
   timer=warningTimer=countdownTimer=displayTimer=null;
 }
 function clearTabState(){try{sessionStorage.removeItem(TAB_MARKER);sessionStorage.removeItem(LAST_ACTIVITY)}catch{}}
-function markTab(){try{sessionStorage.setItem(TAB_MARKER,String(Date.now()))}catch{}}
 function ensureTabId(){
   try{
     tabId=sessionStorage.getItem(TAB_ID_KEY);
@@ -191,7 +190,9 @@ supabase.auth.onAuthStateChange((event,session)=>{
   if(route==="root")return;
   if(!session?.user){clearTimers();stopHeartbeat();return}
   if(event==="SIGNED_IN"){
-    if(!sessionStorage.getItem(TAB_MARKER))markTab();
+    let hasLoginMarker=false;
+    try{hasLoginMarker=Boolean(sessionStorage.getItem(TAB_MARKER))}catch{}
+    if(!hasLoginMarker){void finishLogout("browser-closed");return}
     if(!loggedOut){clearLifecycleMarkers();startHeartbeat();lastActivity=Date.now();setActivity(lastActivity);injectTimer();schedule()}
     return;
   }
