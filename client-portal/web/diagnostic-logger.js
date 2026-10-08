@@ -114,13 +114,21 @@ window.fetch=async(...args)=>{
   const url=typeof args[0]==="string"?args[0]:args[0]?.url||"";
   if(!url.includes("/functions/v1/system-log") && !response.ok){
     let message=`HTTP ${response.status}`;
+    let extraErrorCode=null;
+    let extraReferenceId=null;
     try{
       const clone=response.clone();
       const data=await clone.json();
       message=data?.error||data?.message||message;
+      if(data?.error_code){
+        extraErrorCode=data.error_code;
+        extraReferenceId=data.reference_id||null;
+      }
     }catch{}
     send("error","api_error",message,{url:url.split("?")[0],method:args[1]?.method||"GET",http_status:response.status},{
-      error_code:response.status===401||response.status===403?"KKA-SEC-0001":response.status>=500?"KKA-SYS-0001":"KKA-SYS-0001",http_status:response.status,duration_ms:Math.round(performance.now()-startedAt)
+      error_code:extraErrorCode||(response.status===401||response.status===403?"KKA-SEC-0001":response.status>=500?"KKA-SYS-0001":"KKA-SYS-0001"),
+      reference_id:extraReferenceId,
+      http_status:response.status,duration_ms:Math.round(performance.now()-startedAt)
     });
   }
   return response;
