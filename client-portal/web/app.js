@@ -16,7 +16,7 @@ async function openAdminView(value){
  const routes={
   dashboard:()=>renderDashboard(),
   clients:async()=>{await renderClients();window.KKAClientTableSearch?.()},
-  documents:async()=>{await window.KKADocumentUploaderRender?.();await window.KKAFilingStructureUploaderInit?.();await window.KKADocumentsBrowserRender?.();window.KKAPanAssessmentApply?.()},
+  documents:async()=>{await window.KKADocumentUploaderRender?.();await window.KKAFilingStructureUploaderInit?.();window.KKAOneDriveDirectoryRender?.();await window.KKADocumentsBrowserRender?.();window.KKAPanAssessmentApply?.()},
   storage:()=>window.KKAStorageRender?.(),
   review:()=>window.KKAReviewQueueRender?.(),
   activity:()=>window.KKAAuditTrailRender?.(),
