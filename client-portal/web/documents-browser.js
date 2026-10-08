@@ -22,6 +22,10 @@ async function session(){
 }
 async function openDocument(id){
   const doc=docs.find(d=>d.id===id);if(!doc)throw new Error("Document is no longer available. Refresh and try again.");
+  if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+    location.href="../document-viewer.html?documentId="+encodeURIComponent(id)+"&v=20261008-doc-mobile3";
+    return;
+  }
   const s=await session();
   const r=await fetch(SUPABASE_URL+"/functions/v1/document-view?documentId="+encodeURIComponent(id),{headers:{Authorization:"Bearer "+s.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
   if(!r.ok){const text=await r.text().catch(()=>"");throw new Error(text||"The document could not be opened.");}
