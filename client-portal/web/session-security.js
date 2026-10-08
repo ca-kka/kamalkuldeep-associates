@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
+import { hasActivePortalPeer, registerPortalTab } from "./portal-tab-session.js?v=20261009-multitab1";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const path=location.pathname.replace(/\/+$/,"")||"/";
@@ -13,7 +14,7 @@ const HEARTBEAT_MS=2000;
 const INACTIVITY_MS=5*60*1000;
 const WARNING_MS=30*1000;
 const EVENTS=["pointerdown","keydown","touchstart","wheel"];
-let lastActivity=0,timer=null,warningTimer=null,countdownTimer=null,heartbeatTimer=null,displayTimer=null,loggedOut=false,listenersInstalled=false,tabId=null;
+let lastActivity=0,timer=null,warningTimer=null,countdownTimer=null,heartbeatTimer=null,displayTimer=null,loggedOut=false,listenersInstalled=false,tabId=null,activityKey=null,sessionReady=false;
 
 function clearTimers(){
   if(timer)clearTimeout(timer);
@@ -40,7 +41,7 @@ function clearLifecycleMarkers(){
   }catch{}
 }
 function heartbeat(){
-  if(!tabId||loggedOut||document.hidden)return;
+  if(!tabId||loggedOut)return;
   try{localStorage.setItem(`${TAB_HEARTBEAT_KEY}:${tabId}`,String(Date.now()))}catch{}
 }
 function startHeartbeat(){
@@ -53,14 +54,28 @@ function stopHeartbeat(){
   heartbeatTimer=null;
 }
 function markTabLeaving(){
-  if(loggedOut||!tabId)return;
-  try{localStorage.setItem(TAB_CLOSE_KEY,JSON.stringify({tabId,at:Date.now()}))}catch{}
+  if(loggedOut||!sessionReady||!tabId||hasActivePortalPeer(route,tabId))return;
+  try{localStorage.setItem(TAB_CLOSE_KEY,JSON.stringify({tabId,at:Date.now(),kind:"pagehide"}))}catch{}
 }
 function navigationType(){
   try{return performance.getEntriesByType("navigation")?.[0]?.type||"navigate"}catch{return"navigate"}
 }
-function setActivity(ts=Date.now()){lastActivity=ts;try{sessionStorage.setItem(LAST_ACTIVITY,String(ts))}catch{}}
-function remainingMs(){return Math.max(0,INACTIVITY_MS-(Date.now()-lastActivity))}
+function syncSharedActivity(){
+  if(!activityKey)return;
+  try{
+    const shared=Number(localStorage.getItem(activityKey)||0);
+    if(Number.isFinite(shared)&&shared>lastActivity){
+      lastActivity=shared;
+      sessionStorage.setItem(LAST_ACTIVITY,String(shared));
+    }
+  }catch{}
+}
+function setActivity(ts=Date.now()){
+  lastActivity=ts;
+  try{sessionStorage.setItem(LAST_ACTIVITY,String(ts))}catch{}
+  if(activityKey)try{localStorage.setItem(activityKey,String(ts))}catch{}
+}
+function remainingMs(){syncSharedActivity();return Math.max(0,INACTIVITY_MS-(Date.now()-lastActivity))}
 function touch(){if(loggedOut)return;setActivity();removeWarning();schedule()}
 
 function renderTimer(){
@@ -124,6 +139,7 @@ async function finishLogout(reason){
   loggedOut=true;clearTimers();removeWarning();
   try{sessionStorage.setItem("kka-logout-reason",reason)}catch{}
   try{await supabase.auth.signOut({scope:"local"})}catch{}
+  try{if(activityKey)localStorage.removeItem(activityKey)}catch{}
   clearTabState();
   location.replace("../");
 }
@@ -138,15 +154,27 @@ function installActivityListeners(){
   listenersInstalled=true;
   EVENTS.forEach(e=>document.addEventListener(e,touch,{passive:true,capture:true}));
   document.addEventListener("visibilitychange",()=>{
-    if(document.hidden){markTabLeaving();stopHeartbeat();}
-    else{clearLifecycleMarkers();startHeartbeat();checkIdle();}
+    // A background tab is still open. Keep its lease alive; only pagehide can
+    // mark a tab closed.
+    if(!document.hidden&&sessionReady){clearLifecycleMarkers();startHeartbeat();checkIdle();}
   });
   window.addEventListener("pagehide",event=>{if(!event.persisted)markTabLeaving();});
-  window.addEventListener("focus",()=>{clearLifecycleMarkers();startHeartbeat();checkIdle()});
+  window.addEventListener("focus",()=>{if(!sessionReady)return;clearLifecycleMarkers();startHeartbeat();checkIdle()});
   window.addEventListener("pageshow",event=>{
+    if(!sessionReady)return;
     if(event.persisted)clearLifecycleMarkers();
     startHeartbeat();
     checkIdle();
+  });
+  window.addEventListener("storage",event=>{
+    if(!activityKey||event.key!==activityKey)return;
+    const timestamp=Number(event.newValue||0);
+    if(Number.isFinite(timestamp)&&timestamp>lastActivity){
+      lastActivity=timestamp;
+      try{sessionStorage.setItem(LAST_ACTIVITY,String(timestamp))}catch{}
+      removeWarning();
+      schedule();
+    }
   });
 }
 async function init(){
@@ -158,6 +186,7 @@ async function init(){
   try{tabMarker=sessionStorage.getItem(TAB_MARKER);lastStored=sessionStorage.getItem(LAST_ACTIVITY)}catch{}
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){clearTimers();stopHeartbeat();return}
+  activityKey=`kka-last-activity:${route}:${session.user.id}`;
   const closeRaw=(()=>{try{return localStorage.getItem(TAB_CLOSE_KEY)}catch{return null}})();
   let closeAt=Number.POSITIVE_INFINITY;
   try{
@@ -166,7 +195,8 @@ async function init(){
   }catch{}
   const markerTime=Number(tabMarker||0);
   const signedInAfterClose=markerTime>0&&markerTime>closeAt;
-  if(closeRaw && navigationType()==="navigate"&&!signedInAfterClose){
+  const hasPeer=()=>hasActivePortalPeer(route,tabId);
+  if(closeRaw&&navigationType()==="navigate"&&!signedInAfterClose&&!hasPeer()){
     try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
     await supabase.auth.signOut({scope:"local"}).catch(()=>{});
     clearLifecycleMarkers();
@@ -174,17 +204,29 @@ async function init(){
     location.replace("../");
     return;
   }
+  if(!tabMarker){
+    if(!hasPeer()){
+      try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
+      await supabase.auth.signOut({scope:"local"}).catch(()=>{});
+      clearLifecycleMarkers();
+      clearTabState();
+      location.replace("../");
+      return;
+    }
+    tabId=registerPortalTab(route,{updateMarker:true})||tabId;
+    tabMarker=sessionStorage.getItem(TAB_MARKER);
+  }else{
+    tabId=registerPortalTab(route,{updateMarker:false})||tabId;
+  }
+  sessionReady=true;
   clearLifecycleMarkers();
   startHeartbeat();
-  if(!tabMarker){
-    try{sessionStorage.setItem("kka-logout-reason","browser-closed")}catch{}
-    await supabase.auth.signOut({scope:"local"}).catch(()=>{});
-    clearTabState();
-    location.replace("../");
-    return;
-  }
-  const parsed=Number(lastStored);
-  if(Number.isFinite(parsed)&&parsed>0)lastActivity=parsed;else setActivity();
+  const parsed=Number(lastStored||0);
+  let shared=0;
+  try{shared=Number(localStorage.getItem(activityKey)||0)}catch{}
+  lastActivity=Math.max(Number.isFinite(parsed)?parsed:0,Number.isFinite(shared)?shared:0);
+  if(lastActivity>0){try{sessionStorage.setItem(LAST_ACTIVITY,String(lastActivity))}catch{}}
+  else setActivity();
   if(remainingMs()<=0){await finishLogout("inactivity");return}
   injectTimer();
   if(!displayTimer)displayTimer=setInterval(()=>{if(!loggedOut)renderTimer()},250);
@@ -195,18 +237,39 @@ window.KKASessionSignOut=()=>finishLogout("manual");
 window.KKASessionManualLogout=()=>finishLogout("manual");
 supabase.auth.onAuthStateChange((event,session)=>{
   if(route==="root")return;
-  if(!session?.user){clearTimers();stopHeartbeat();return}
+  if(session?.user)activityKey=`kka-last-activity:${route}:${session.user.id}`;
+  if(!session?.user){
+    clearTimers();stopHeartbeat();
+    if(event==="SIGNED_OUT"&&!loggedOut&&sessionReady){
+      loggedOut=true;
+      clearTabState();
+      try{if(activityKey)localStorage.removeItem(activityKey)}catch{}
+      location.replace("../");
+    }
+    return;
+  }
   if(event==="SIGNED_IN"){
     let hasLoginMarker=false;
     try{hasLoginMarker=Boolean(sessionStorage.getItem(TAB_MARKER))}catch{}
-    if(!hasLoginMarker){void finishLogout("browser-closed");return}
-    if(!loggedOut){clearLifecycleMarkers();startHeartbeat();lastActivity=Date.now();setActivity(lastActivity);injectTimer();schedule()}
+    if(!hasLoginMarker){
+      if(!hasActivePortalPeer(route,tabId)){void finishLogout("browser-closed");return}
+      tabId=registerPortalTab(route,{updateMarker:true})||tabId;
+    }else{
+      tabId=registerPortalTab(route,{updateMarker:false})||tabId;
+    }
+    if(!loggedOut){
+      clearLifecycleMarkers();startHeartbeat();
+      lastActivity=Date.now();setActivity(lastActivity);
+      injectTimer();schedule();
+    }
     return;
   }
   if(!loggedOut&&!lastActivity){
     const stored=Number(sessionStorage.getItem(LAST_ACTIVITY)||0);
-    lastActivity=stored||Date.now();
-    if(!stored)setActivity(lastActivity);
+    let shared=0;
+    try{shared=Number(localStorage.getItem(activityKey)||0)}catch{}
+    lastActivity=Math.max(stored,Number.isFinite(shared)?shared:0)||Date.now();
+    if(!stored&&!shared)setActivity(lastActivity);
     injectTimer();schedule();
   }
 });

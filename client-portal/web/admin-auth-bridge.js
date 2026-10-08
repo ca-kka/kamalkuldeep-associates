@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
+import { hasActivePortalTab, registerPortalTab } from "./portal-tab-session.js?v=20261009-multitab1";
 
 const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const MARKER = "kka-tab-session:admin";
@@ -10,7 +11,7 @@ const featureModules = [
   "./theme.js?v=20261004-issues29b",
   "./operation-feedback.js?v=20261004-issues29b",
   "./session-route-transition.js?v=20261004-issues29b",
-  "./session-security.js?v=20261008-tab-session-guard1",
+  "./session-security.js?v=20261009-multitab1",
   "./session-settings.js?v=20261004-issues29b",
   "./dashboard-live.js?v=20261004-issues29b",
   "./portal-access-admin.js?v=20261004-issues29b",
@@ -104,7 +105,8 @@ async function boot() {
       return;
     }
 
-    if (!hasLoginTabMarker()) return rejectUnownedSession();
+    if (!hasLoginTabMarker() && !hasActivePortalTab("admin")) return rejectUnownedSession();
+    registerPortalTab("admin", { updateMarker: !hasLoginTabMarker() });
 
     for (const path of featureModules) {
       await loadFeatureModule(path);

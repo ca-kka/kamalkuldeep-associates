@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./config.js";
+import { hasActivePortalTab, registerPortalTab } from "./portal-tab-session.js?v=20261009-multitab1";
 import { beginClientLoginOtp } from "./client-login-otp-gate.js?v=20261004-diag1";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -24,8 +25,8 @@ function showSessionReason(){
 function setupPasswordToggle(){const input=document.querySelector("#password"),toggle=document.querySelector("#password-toggle");if(!input||!toggle)return;toggle.addEventListener("click",()=>{const visible=input.type==="text";input.type=visible?"password":"text";toggle.textContent=visible?"Show":"Hide";toggle.setAttribute("aria-label",visible?"Show password":"Hide");toggle.setAttribute("aria-pressed",String(!visible));input.focus()})}
 function clearLoginError(){document.querySelector("#auth-message")?.classList.remove("error");document.querySelector("#email")?.classList.remove("login-input-error");document.querySelector("#password")?.classList.remove("login-input-error")}
 function showLoginError(text="Incorrect email or password. Please try again."){const message=document.querySelector("#auth-message"),email=document.querySelector("#email"),password=document.querySelector("#password");if(message){message.className="message error";message.textContent=text;message.setAttribute("role","alert")}email?.classList.add("login-input-error");password?.classList.add("login-input-error");password?.focus()}
-function markClientTabForLogin(){try{sessionStorage.setItem("kka-tab-session:client",String(Date.now()))}catch{}}
-function markAdminTabForLogin(){try{sessionStorage.setItem("kka-tab-session:admin",String(Date.now()))}catch{}}
+function markClientTabForLogin(){registerPortalTab("client",{updateMarker:true})}
+function markAdminTabForLogin(){registerPortalTab("admin",{updateMarker:true})}
 async function redirectForRole(markSession=true){
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){setMessage("Authentication could not be completed. Please try again.","error");return false}
@@ -73,12 +74,15 @@ async function bootstrap(){
   if(profile?.role==="client"&&profile?.active===true&&session.user.app_metadata?.must_change_password===true){
     return;
   }
-  const marker=profile?.role==="client"
-    ?sessionStorage.getItem("kka-tab-session:client")
-    :profile?.role==="admin"||profile?.role==="staff"
-      ?sessionStorage.getItem("kka-tab-session:admin")
-      :null;
-  if(profile?.active===true&&profile?.role&&marker){
+  const route=profile?.role==="client"?"client":profile?.role==="admin"||profile?.role==="staff"?"admin":null;
+  const marker=route?sessionStorage.getItem(`kka-tab-session:${route}`):null;
+  if(profile?.active===true&&route&&marker){
+    registerPortalTab(route,{updateMarker:false});
+    await redirectForRole(false);
+    return;
+  }
+  if(profile?.active===true&&route&&hasActivePortalTab(route)){
+    registerPortalTab(route,{updateMarker:true});
     await redirectForRole(false);
     return;
   }

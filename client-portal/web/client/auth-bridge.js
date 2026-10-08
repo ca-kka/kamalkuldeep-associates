@@ -1,10 +1,11 @@
 import { createClient as createSupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "../config.js";
+import { hasActivePortalTab, registerPortalTab } from "../portal-tab-session.js?v=20261009-multitab1";
 
 const supabase=createSupabaseClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const MARKER="kka-tab-session:client";
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const SESSION_SECURITY_VERSION="20261008-tab-session-guard1";
+const SESSION_SECURITY_VERSION="20261009-multitab1";
 
 const featureModules=[
   "../diagnostic-logger.js?v=20261009-errors3",
@@ -82,7 +83,8 @@ async function boot(){
       return;
     }
     if(session.user.app_metadata?.must_change_password===true)return root();
-    if(!hasLoginTabMarker())return rejectUnownedSession();
+    if(!hasLoginTabMarker()&&!hasActivePortalTab("client"))return rejectUnownedSession();
+    registerPortalTab("client",{updateMarker:!hasLoginTabMarker()});
     for(const path of featureModules)await loadFeatureModule(path);
     window.dispatchEvent(new CustomEvent("kka:client-ready",{detail:{userId:session.user.id,role:p.role}}));
   }catch(error){
