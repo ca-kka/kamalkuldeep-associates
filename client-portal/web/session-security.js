@@ -13,13 +13,14 @@ const HEARTBEAT_MS=2000;
 const INACTIVITY_MS=5*60*1000;
 const WARNING_MS=30*1000;
 const EVENTS=["pointerdown","keydown","touchstart","wheel"];
-let lastActivity=0,timer=null,warningTimer=null,countdownTimer=null,heartbeatTimer=null,loggedOut=false,listenersInstalled=false,tabId=null;
+let lastActivity=0,timer=null,warningTimer=null,countdownTimer=null,heartbeatTimer=null,displayTimer=null,loggedOut=false,listenersInstalled=false,tabId=null;
 
 function clearTimers(){
   if(timer)clearTimeout(timer);
   if(warningTimer)clearTimeout(warningTimer);
   if(countdownTimer)clearInterval(countdownTimer);
-  timer=warningTimer=countdownTimer=null;
+  if(displayTimer)clearInterval(displayTimer);
+  timer=warningTimer=countdownTimer=displayTimer=null;
 }
 function clearTabState(){try{sessionStorage.removeItem(TAB_MARKER);sessionStorage.removeItem(LAST_ACTIVITY)}catch{}}
 function markTab(){try{sessionStorage.setItem(TAB_MARKER,String(Date.now()))}catch{}}
@@ -180,6 +181,7 @@ async function init(){
   if(Number.isFinite(parsed)&&parsed>0)lastActivity=parsed;else setActivity();
   if(remainingMs()<=0){await finishLogout("inactivity");return}
   injectTimer();
+  if(!displayTimer)displayTimer=setInterval(()=>{if(!loggedOut)renderTimer()},250);
   schedule();
 }
 window.addEventListener("pagehide",event=>{if(!event.persisted)markTabLeaving();});
