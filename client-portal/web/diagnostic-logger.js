@@ -103,15 +103,15 @@ window.addEventListener("unhandledrejection",event=>{
 
 const originalFetch=window.fetch.bind(window);
 window.fetch=async(...args)=>{
+  const url=typeof args[0]==="string"?args[0]:args[0]?.url||"";
   const startedAt=performance.now();
   let response;
   try{
     response=await originalFetch(...args);
   }catch(error){
-    send("error","network_error",error?.message||"Network request failed",{url:String(args[0]||"")},{error_code:"KKA-SYS-0002"});
+    if(!url.includes("/functions/v1/system-log"))send("error","network_error",error?.message||"Network request failed",{url},{error_code:"KKA-SYS-0002"});
     throw error;
   }
-  const url=typeof args[0]==="string"?args[0]:args[0]?.url||"";
   if(!url.includes("/functions/v1/system-log") && !response.ok){
     let message=`HTTP ${response.status}`;
     let extraErrorCode=null;

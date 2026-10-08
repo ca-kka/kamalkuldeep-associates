@@ -6,7 +6,7 @@ const MARKER = "kka-tab-session:admin";
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const featureModules = [
-  "./diagnostic-logger.js?v=20261008-errors2",
+  "./diagnostic-logger.js?v=20261009-errors3",
   "./theme.js?v=20261004-issues29b",
   "./operation-feedback.js?v=20261004-issues29b",
   "./session-route-transition.js?v=20261004-issues29b",
@@ -20,7 +20,7 @@ const featureModules = [
   "./document-uploader.js?v=20261008-docs4",
   "./filing-structure-uploader.js?v=20261008-filing-period1",
   "./documents-browser.js?v=20261008-docs3",
-  "./onedrive-directory.js?v=20261008-docs13",
+  "./onedrive-directory.js?v=20261009-portalpatch1",
   "./pan-assessment.js?v=20261004-issues29b",
   "./review-queue.js?v=20261004-issues29b",
   "./ui-search-lite.js?v=20261004-issues29b",
