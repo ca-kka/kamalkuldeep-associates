@@ -159,8 +159,11 @@ async function init(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){clearTimers();stopHeartbeat();return}
   const closeRaw=(()=>{try{return localStorage.getItem(TAB_CLOSE_KEY)}catch{return null}})();
-  let closeAt=0;
-  try{closeAt=Number(JSON.parse(closeRaw||"null")?.at)||0}catch{closeAt=Number.POSITIVE_INFINITY}
+  let closeAt=Number.POSITIVE_INFINITY;
+  try{
+    const timestamp=Number(JSON.parse(closeRaw||"null")?.at);
+    if(Number.isFinite(timestamp)&&timestamp>0)closeAt=timestamp;
+  }catch{}
   const markerTime=Number(tabMarker||0);
   const signedInAfterClose=markerTime>0&&markerTime>closeAt;
   if(closeRaw && navigationType()==="navigate"&&!signedInAfterClose){
