@@ -10,12 +10,11 @@ const children=id=>nodes.filter(n=>n.parent_id===id).sort((a,b)=>a.sort_order-b.
 const subjectNodes=()=>nodes.filter(n=>n.node_type==="subject").sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name));
 const nodeById=id=>nodes.find(n=>n.id===id);
 function subjectOptions(){return `<option value="">Select filing subject</option>${subjectNodes().map(n=>`<option value="${esc(n.id)}">${esc(n.name)}</option>`).join("")}`}
-function folderOptions(subjectId){const list=children(subjectId);if(!subjectId)return `<option value="">Select subject first</option>`;if(!list.length)return `<option value="">No sub-folder required</option>`;return `<option value="">Select sub-folder</option>${list.map(n=>`<option value="${esc(n.id)}">${esc(n.name)}</option>`).join("")}`}
 function periodOptions(mode){if(mode==="month")return `<option value="">Select month</option>${months.map(x=>{const [v,n]=x.split("|");return `<option value="${v}">${n}</option>`}).join("")}`;if(mode==="quarter")return `<option value="">Select quarter</option><option value="Q1">Q1 (Apr–Jun)</option><option value="Q2">Q2 (Jul–Sep)</option><option value="Q3">Q3 (Oct–Dec)</option><option value="Q4">Q4 (Jan–Mar)</option>`;return `<option value="">No period required</option>`}
 function ensurePeriodInput(mode){const current=document.querySelector("#manual-period");if(!current)return;if(mode==="custom"){if(current.tagName!=="INPUT")current.outerHTML=`<input id="manual-period" placeholder="Enter period" maxlength="80">`;return}if(current.tagName!=="SELECT")current.outerHTML=`<select id="manual-period"><option value="">No period required</option></select>`;const period=document.querySelector("#manual-period");period.innerHTML=periodOptions(mode)}
-function replaceUI(){const area=document.querySelector("#manual-area"),fy=document.querySelector("#manual-fy"),period=document.querySelector("#manual-period");if(!area||!fy||!period)return false;const label=area.closest("label");if(label){label.style.display="none";label.insertAdjacentHTML("afterend",`<label id="manual-filing-subject-label">Filing subject<select id="manual-filing-subject">${subjectOptions()}</select></label><label id="manual-filing-folder-label">Sub-folder<select id="manual-filing-folder" disabled><option value="">Select subject first</option></select></label>`)}const subject=document.querySelector("#manual-filing-subject"),folder=document.querySelector("#manual-filing-folder");if(!subject||!folder)return false;const updateFromSelection=()=>update();subject.addEventListener("change",()=>{folder.innerHTML=folderOptions(subject.value);folder.disabled=!subject.value||children(subject.value).length===0;updateFromSelection()});folder.addEventListener("change",updateFromSelection);fy.innerHTML=`<option value="">Select financial year</option>${fys.map(f=>`<option value="${f}">FY ${f}</option>`).join("")}`;period.innerHTML=periodOptions("none");period.disabled=true;update();return true}
+function replaceUI(){const area=document.querySelector("#manual-area"),fy=document.querySelector("#manual-fy"),period=document.querySelector("#manual-period");if(!area||!fy||!period)return false;const label=area.closest("label");if(label){label.style.display="none";const periodLabel=period.closest("label");if(periodLabel)periodLabel.style.display="none";label.insertAdjacentHTML("afterend",`<label id="manual-filing-subject-label">Filing subject<select id="manual-filing-subject">${subjectOptions()}</select></label>`)}const subject=document.querySelector("#manual-filing-subject");if(!subject)return false;subject.addEventListener("change",update);fy.innerHTML=`<option value="">Select financial year</option>${fys.map(f=>`<option value="${f}">FY ${f}</option>`).join("")}`;period.innerHTML=periodOptions("none");period.disabled=true;update();return true}
 function syncLegacy(n){const area=document.querySelector("#manual-area");if(!area)return;const map={gst:"gst",tds:"tds","income-tax":"income_tax",accounts:"accounts",mca:"mca",other:"other"};const subject=n?.node_type==="subject"?n:n?.parent_id?nodeById(n.parent_id):null;area.value=map[subject?.slug]||"other";area.dispatchEvent(new Event("change",{bubbles:true}));area.disabled=true}
-function selectedStructure(){const subject=nodeById(document.querySelector("#manual-filing-subject")?.value);const folder=nodeById(document.querySelector("#manual-filing-folder")?.value);return{subject,folder,node:folder||subject}}
+function selectedStructure(){const subject=nodeById(document.querySelector("#manual-filing-subject")?.value);return{subject,folder:null,node:subject}}
 function update(){
   const fy=document.querySelector("#manual-fy");
   const period=document.querySelector("#manual-period");
@@ -23,8 +22,7 @@ function update(){
   const upload=document.querySelector("#manual-upload");
   const summary=document.querySelector("#manual-summary");
   const subjectEl=document.querySelector("#manual-filing-subject");
-  const folderEl=document.querySelector("#manual-filing-folder");
-  if(!fy||!period||!summary||!subjectEl||!folderEl)return;
+  if(!fy||!period||!summary||!subjectEl)return;
 
   const selected=selectedStructure();
   const subject=selected.subject;
@@ -34,8 +32,7 @@ function update(){
   const mode=effective?.period_mode||"none";
 
   syncLegacy(effective);
-  const hasChildren=!!subject&&children(subject.id).length>0;
-  folderEl.disabled=!subject||!hasChildren;
+  const hasChildren=false;
 
   fy.disabled=!effective||!needsFY;
   ensurePeriodInput(mode);
@@ -45,17 +42,17 @@ function update(){
   if(mode==="none")p.value="";
 
   const files=window.__kkaManualFiles||[];
-  const valid=!!client?.value&&!!subject&&(!hasChildren||!!folder)&&!!effective&&(!needsFY||!!fy?.value)&&(mode==="none"||!!p?.value)&&files.length>0;
+  const valid=!!client?.value&&!!subject&&!!effective&&(!needsFY||!!fy?.value)&&files.length>0;
 
   if(effective){
     const clientName=client?.selectedOptions?.[0]?.textContent||"Client";
     const subjectName=subject?.name||effective.name;
-    const folderText=folder?" · "+folder.name:"";
+    const folderText="";
     const fyText=fy?.value?" · FY "+fy.value:"";
     const periodText=p?.value?" · "+p.value:"";
     summary.textContent=clientName+" · "+subjectName+folderText+fyText+periodText;
   }else{
-    summary.textContent="Select a client, filing subject and sub-folder where applicable.";
+    summary.textContent="Select a client, filing subject and financial year.";
   }
   upload.disabled=!valid;
 }
