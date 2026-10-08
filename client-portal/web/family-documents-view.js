@@ -15,6 +15,10 @@ async function secureDownload(documentId){const {data:{session}}=await supabase.
 async function openDocument(id){
  const doc=currentDocs.find(item=>item.id===id);
  if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");
+ if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+  location.href="../document-viewer.html?documentId="+encodeURIComponent(id)+"&v=20261008-doc-mobile3";
+  return;
+ }
  const tab=window.open("about:blank","_blank","noopener,noreferrer");
  try{
   const {data:{session}}=await supabase.auth.getSession();
