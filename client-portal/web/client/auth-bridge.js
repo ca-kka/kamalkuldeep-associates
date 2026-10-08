@@ -7,7 +7,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const SESSION_SECURITY_VERSION="20261007-sessionfix2";
 
 const featureModules=[
-  "../diagnostic-logger.js?v=20261008-errors1",
+  "../diagnostic-logger.js?v=20261008-errors2",
   "../theme.js?v=20261004-issues29b",
   "../operation-feedback.js?v=20261004-issues29b",
   "../session-route-transition.js?v=20261004-issues29b",
