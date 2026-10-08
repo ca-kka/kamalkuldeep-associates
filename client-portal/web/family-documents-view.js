@@ -15,35 +15,54 @@ async function secureDownload(documentId){const {data:{session}}=await supabase.
 async function openDocument(id){
  const doc=currentDocs.find(item=>item.id===id);
  if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");
+ const viewerUrl="../document-viewer.html?documentId="+encodeURIComponent(id)+"&v=20261008-doc-openfix1";
  if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
-  location.href="../document-viewer.html?documentId="+encodeURIComponent(id)+"&v=20261008-doc-mobile4";
+  location.assign(viewerUrl);
   return;
  }
- const tab=window.open("about:blank","_blank","noopener,noreferrer");
+ // Open synchronously from the user click. Browsers may return null when
+ // pop-ups are blocked; in that case use the secure in-portal viewer in this tab.
+ const tab=window.open("about:blank","_blank");
+ if(!tab){
+  location.assign(viewerUrl);
+  return;
+ }
+ tab.opener=null;
  try{
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.access_token)throw new Error("Your session has expired. Please sign in again.");
   const endpoint=SUPABASE_URL+"/functions/v1/document-view?documentId="+encodeURIComponent(id);
-  const r=await fetch(endpoint,{headers:{Authorization:"Bearer "+session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
-  if(r.status===401||r.status===403){
-    const refreshed=await supabase.auth.refreshSession();
-    if(refreshed.data.session?.access_token){
-      const retry=await fetch(endpoint,{headers:{Authorization:"Bearer "+refreshed.data.session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
-      if(retry.ok){const bytes=await retry.arrayBuffer();const type=(retry.headers.get("Content-Type")||doc.content_type||"application/octet-stream").split(";")[0];const url=URL.createObjectURL(new Blob([bytes],{type}));if(tab&&!tab.closed){tab.opener=null;tab.location.replace(url);setTimeout(()=>URL.revokeObjectURL(url),120000);return}}
-    }
+  let response=await fetch(endpoint,{headers:{Authorization:"Bearer "+session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
+  if(response.status===401||response.status===403){
+   const refreshed=await supabase.auth.refreshSession();
+   if(refreshed.data.session?.access_token){
+    response=await fetch(endpoint,{headers:{Authorization:"Bearer "+refreshed.data.session.access_token,apikey:SUPABASE_PUBLISHABLE_KEY}});
+   }
   }
-  if(r.status===415){if(tab&&!tab.closed)tab.close();return downloadDocument(id);}
-  if(!r.ok){const text=await r.text().catch(()=>"");throw new Error(text||"The document could not be opened.");}
-  const bytes=await r.arrayBuffer();if(bytes.byteLength<1)throw new Error("The document response was empty.");
-  const type=(r.headers.get("Content-Type")||doc.content_type||"application/octet-stream").split(";")[0];
+  if(response.status===415){
+   if(!tab.closed)tab.close();
+   return downloadDocument(id);
+  }
+  if(!response.ok){
+   const text=await response.text().catch(()=>"");
+   throw new Error(text||"The document could not be opened.");
+  }
+  const bytes=await response.arrayBuffer();
+  if(bytes.byteLength<1)throw new Error("The document response was empty.");
+  const type=(response.headers.get("Content-Type")||doc.content_type||"application/octet-stream").split(";")[0];
   const url=URL.createObjectURL(new Blob([bytes],{type}));
-  if(!tab||tab.closed){URL.revokeObjectURL(url);throw new Error("Your browser blocked the document tab. Allow pop-ups for the KKA portal and try again.");}
-  tab.opener=null;
-  // Navigating the new tab directly to the PDF blob lets Android/iOS use the
-  // native PDF handler instead of relying on an iframe PDF implementation.
+  if(tab.closed){
+   URL.revokeObjectURL(url);
+   location.assign(viewerUrl);
+   return;
+  }
+  // Detach the new tab from the portal immediately to prevent reverse tabnabbing.
   tab.location.replace(url);
   setTimeout(()=>URL.revokeObjectURL(url),120000);
- }catch(error){if(tab&&!tab.closed)tab.close();throw error}
+ }catch(error){
+  if(!tab.closed)tab.close();
+  throw error;
+ }
 }
 async function downloadDocument(id){try{const doc=currentDocs.find(item=>item.id===id);if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");const blob=await secureDownload(id),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=doc.original_filename||"document";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000)}catch(e){alert(e instanceof Error?e.message:"The document could not be downloaded.")}}
 async function shareDocument(id){try{const doc=currentDocs.find(item=>item.id===id);if(!doc)throw new Error("The selected document is no longer available. Refresh and try again.");const d=await secureAccess(id,"view");if(!d.url)throw new Error("The portal document link could not be created.");if(navigator.share){await navigator.share({title:doc.original_filename||"KKA document",url:d.url});return}await navigator.clipboard.writeText(d.url);alert("KKA portal link copied. The recipient must sign in and have permission to this document.")}catch(e){if(e?.name!=="AbortError")alert(e instanceof Error?e.message:"The document could not be shared.")}}
@@ -84,7 +103,7 @@ async function load(){
 }
 async function stopLive(){const old=channel;channel=null;if(old){try{await supabase.removeChannel(old)}catch(error){console.warn("Could not stop family document updates",error)}}}
 async function startLive(){await stopLive();const id=localStorage.getItem(await getStorageKey());if(!id)return;channel=supabase.channel(`kka-family-documents-${id}`).on("postgres_changes",{event:"*",schema:"public",table:"documents",filter:`client_id=eq.${id}`},()=>load().catch(e=>console.warn("family documents realtime",e))).subscribe()}
-async function render(){if(!(await isClient()))return false;const client=await getSelectedClient();if(!client)return false;const main=document.querySelector(".portal-main");if(!main)return true;document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a.dataset.view==="documents"));main.innerHTML=documentsHtml(client);document.querySelector("#family-doc-refresh")?.addEventListener("click",load);document.querySelector(".client-documents-shell")?.addEventListener("click",e=>{const back=e.target.closest("[data-back]");if(back){if(openedFolder?.level==="files")openedFolder=hasPeriods(openedFolder.area)&&openedFolder.period?{level:"period",area:openedFolder.area,fy:openedFolder.fy}: {level:"year",area:openedFolder.area,fy:openedFolder.fy};else if(openedFolder?.level==="period")openedFolder={level:"year",area:openedFolder.area,fy:openedFolder.fy};else openedFolder=null;renderFolders();return}const area=e.target.closest("[data-area]");if(area){openedFolder={level:"year",area:area.dataset.area};renderFolders();return}const year=e.target.closest("[data-year]");if(year){openedFolder={level:hasPeriods(openedFolder.area)?"period":"files",area:openedFolder.area,fy:year.dataset.year};renderFolders();return}const p=e.target.closest("[data-period]");if(p){openedFolder={level:"files",area:openedFolder.area,fy:openedFolder.fy,period:p.dataset.period};renderFolders();return}const open=e.target.closest("[data-open-document]");if(open){openDocument(open.dataset.openDocument);return}const dl=e.target.closest("[data-download-document]");if(dl){downloadDocument(dl.dataset.downloadDocument);return}const sh=e.target.closest("[data-share-document]");if(sh)shareDocument(sh.dataset.shareDocument)});await load();startLive();return true}
+async function render(){if(!(await isClient()))return false;const client=await getSelectedClient();if(!client)return false;const main=document.querySelector(".portal-main");if(!main)return true;document.querySelectorAll(".sidebar nav a").forEach(a=>a.classList.toggle("active",a.dataset.view==="documents"));main.innerHTML=documentsHtml(client);document.querySelector("#family-doc-refresh")?.addEventListener("click",load);document.querySelector(".client-documents-shell")?.addEventListener("click",e=>{const back=e.target.closest("[data-back]");if(back){if(openedFolder?.level==="files")openedFolder=hasPeriods(openedFolder.area)&&openedFolder.period?{level:"period",area:openedFolder.area,fy:openedFolder.fy}: {level:"year",area:openedFolder.area,fy:openedFolder.fy};else if(openedFolder?.level==="period")openedFolder={level:"year",area:openedFolder.area,fy:openedFolder.fy};else openedFolder=null;renderFolders();return}const area=e.target.closest("[data-area]");if(area){openedFolder={level:"year",area:area.dataset.area};renderFolders();return}const year=e.target.closest("[data-year]");if(year){openedFolder={level:hasPeriods(openedFolder.area)?"period":"files",area:openedFolder.area,fy:year.dataset.year};renderFolders();return}const p=e.target.closest("[data-period]");if(p){openedFolder={level:"files",area:openedFolder.area,fy:openedFolder.fy,period:p.dataset.period};renderFolders();return}const open=e.target.closest("[data-open-document]");if(open){void openDocument(open.dataset.openDocument).catch(error=>alert(error instanceof Error?error.message:"The document could not be opened."));return}const dl=e.target.closest("[data-download-document]");if(dl){downloadDocument(dl.dataset.downloadDocument);return}const sh=e.target.closest("[data-share-document]");if(sh)shareDocument(sh.dataset.shareDocument)});await load();startLive();return true}
 async function openForClient(){if(busy)return;busy=true;try{openedFolder=null;await render()}catch(e){console.error("KKA family documents render failed",e);const main=document.querySelector(".portal-main");if(main)main.innerHTML='<div class="panel"><strong>Documents could not be opened.</strong><p class="muted">Please refresh the portal and try again.</p></div>'}finally{busy=false}}
 window.KKAFamilyDocumentsRender=openForClient;
 window.addEventListener("kka-family-profile-change",()=>{if(document.querySelector('[data-view="documents"].active'))setTimeout(openForClient,0)});
