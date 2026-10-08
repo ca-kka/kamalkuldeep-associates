@@ -7,6 +7,12 @@ const requestId=crypto.randomUUID();
 const started=performance.now();
 
 const ERROR_CODE_BY_OPERATION={javascript_error:"KKA-SYS-0001",unhandled_rejection:"KKA-SYS-0001",network_error:"KKA-SYS-0002",api_error:"KKA-SYS-0001"};
+const inferServerCode=(data,status)=>{
+  if(data?.error_code)return String(data.error_code);
+  if(status===401||status===403)return "KKA-SEC-0001";
+  if(status>=500)return "KKA-SYS-0001";
+  return null;
+};
 const severityFor=(code,level="error")=>{
   if(code==="KKA-SEC-0001"||code==="KKA-SEC-0002")return "critical";
   if(code==="KKA-SYS-0001"||code==="KKA-SYS-0002")return level==="error"?"high":"medium";
