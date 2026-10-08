@@ -6,7 +6,7 @@ const MARKER = "kka-tab-session:admin";
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const featureModules = [
-  "./diagnostic-logger.js?v=20261008-errors1",
+  "./diagnostic-logger.js?v=20261008-errors2",
   "./theme.js?v=20261004-issues29b",
   "./operation-feedback.js?v=20261004-issues29b",
   "./session-route-transition.js?v=20261004-issues29b",
