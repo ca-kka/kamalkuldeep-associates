@@ -31,7 +31,7 @@ const featureModules = [
   "./filing-structure-admin.js?v=20261004-issues29b",
   "./mobile-menu.js?v=20261004-issues29b",
   "./admin-portal-feedback.js?v=20261004-issues29b",
-  "./admin/family-client-bridge.js?v=20261004-issues29b",
+  "./admin/family-client-bridge.js?v=20261009-family-manage1",
   "./admin/client-creation.js?v=20261004-issues29b",
   "./app.js?v=20261008-live-directory1"
 ];
