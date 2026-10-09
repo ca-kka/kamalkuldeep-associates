@@ -6,6 +6,7 @@ const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 let familyByClient=new Map();
 let membersByClient=new Map();
 let familyLoaded=false;
+let familyIsAdmin=false;
 let familyLoadPromise=null;
 
 const style=document.createElement("style");
@@ -17,7 +18,9 @@ style.textContent=`
 .family-profile-table th{font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;opacity:.72}
 .family-profile-primary{font-weight:700}
 .family-profile-badge{display:inline-flex;margin-left:7px;font-size:.72rem;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.08)}
-.family-upload-btn{white-space:nowrap}
+.family-upload-btn,.family-manage-btn{white-space:nowrap}
+.family-remove-btn{background:#8f3434!important;color:#fff!important;border-color:#8f3434!important}
+.family-profile-table th:last-child,.family-profile-table td:last-child{white-space:nowrap}
 .family-upload-target{margin:12px 0;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;gap:12px}
 @media(max-width:700px){.family-profile-table{font-size:.9rem}.family-profile-table th:nth-child(2),.family-profile-table td:nth-child(2){display:none}.family-profile-btn{margin-left:0;margin-top:6px}}
 `;
@@ -57,6 +60,7 @@ async function refreshFamilyData(){
     const {data:{user}}=await supabase.auth.getUser();
     if(!user){
       familyLoaded=false;
+      familyIsAdmin=false;
       familyByClient=new Map();
       membersByClient=new Map();
       return false;
@@ -65,10 +69,12 @@ async function refreshFamilyData(){
       .select("role,active").eq("id",user.id).maybeSingle();
     if(profileError||!profile?.active||!["admin","staff"].includes(profile.role)){
       familyLoaded=false;
+      familyIsAdmin=false;
       familyByClient=new Map();
       membersByClient=new Map();
       return false;
     }
+    familyIsAdmin=profile.role==="admin";
     return loadFamilyData();
   })().finally(()=>{familyLoadPromise=null});
   return familyLoadPromise;
@@ -126,9 +132,14 @@ function showFamilyProfiles(members){
     const name=clientName(member);
     const pan=c.pan||"—";
     const status=c.active===false?"Inactive":"Active";
-    return `<tr><td class="${member.is_primary?"family-profile-primary":""}">${esc(name)} ${member.is_primary?`<span class="family-profile-badge">PRIMARY</span>`:`<span class="family-profile-badge">FAMILY</span>`}</td><td>${esc(pan)}</td><td>${esc(relation(member))}</td><td>${esc(status)}</td><td><button type="button" class="primary compact family-upload-btn" data-family-upload="${esc(member.client_id)}">Upload</button></td></tr>`;
+    return `<tr><td class="${member.is_primary?"family-profile-primary":""}">${esc(name)} ${member.is_primary?`<span class="family-profile-badge">PRIMARY</span>`:`<span class="family-profile-badge">FAMILY</span>`}</td><td>${esc(pan)}</td><td>${esc(relation(member))}</td><td>${esc(status)}</td><td><button type="button" class="primary compact family-upload-btn" data-family-upload="${esc(member.client_id)}">Upload</button></td><td>${!member.is_primary&&familyIsAdmin?`<button type="button" class="secondary compact family-manage-btn" data-family-manage="${esc(member.client_id)}">Manage</button>`:"—"}</td></tr>`;
   }).join("");
-  const m=modal(`<div class="modal-head"><div><p class="eyebrow">FAMILY ACCOUNT</p><h2>Family / Profiles</h2><p class="muted">All profiles use the primary holder's single KKA login. No separate family-member login is created.</p></div><button class="modal-close" type="button">×</button></div><table class="family-profile-table"><thead><tr><th>Profile</th><th>PAN</th><th>Relationship</th><th>Status</th><th>Documents</th></tr></thead><tbody>${rows}</tbody></table><div class="modal-actions"><button type="button" class="secondary modal-close">Close</button></div>`);
+  const m=modal(`<div class="modal-head"><div><p class="eyebrow">FAMILY ACCOUNT</p><h2>Family / Profiles</h2><p class="muted">All profiles use the primary holder's single KKA login. No separate family-member login is created.</p></div><button class="modal-close" type="button">×</button></div><table class="family-profile-table"><thead><tr><th>Profile</th><th>PAN</th><th>Relationship</th><th>Status</th><th>Documents</th><th>Manage</th></tr></thead><tbody>${rows}</tbody></table><div class="modal-actions"><button type="button" class="secondary modal-close">Close</button></div>`);
+  m.querySelectorAll("[data-family-manage]").forEach(button=>button.addEventListener("click",e=>{
+    e.preventDefault();e.stopPropagation();
+    const member=members.find(x=>x.client_id===button.dataset.familyManage);
+    if(member)showFamilyMemberManagement(member,members,m);
+  }));
   m.querySelectorAll("[data-family-upload]").forEach(button=>button.addEventListener("click",e=>{
     e.preventDefault();e.stopPropagation();
     const member=members.find(x=>x.client_id===button.dataset.familyUpload);
@@ -165,6 +176,45 @@ function showFamilyProfiles(members){
     function fallbackToDocuments(){
       const nav=document.querySelector('.sidebar nav a[data-view="documents"]');
       if(nav)nav.click();else window.location.hash="#documents";
+    }
+  }));
+}
+
+
+function showFamilyMemberManagement(member,currentMembers,parentModal){
+  if(!familyIsAdmin||member?.is_primary)return;
+  const name=clientName(member);
+  const relationText=relation(member);
+  const m=modal(`<div class="modal-head"><div><p class="eyebrow">FAMILY MEMBER</p><h2>Manage profile</h2><p class="muted">Manage only this family-member link. The primary holder and other profiles will not be deleted.</p></div><button class="modal-close" type="button">×</button></div><div class="message"><strong>${esc(name)}</strong><div class="muted">${esc(relationText)} · PAN ${esc(member.clients?.pan||"—")}</div></div><div class="form-message" data-family-manage-message role="status"></div><div class="modal-actions"><button type="button" class="secondary modal-close">Cancel</button><button type="button" class="secondary" data-family-action="deactivate">Deactivate</button><button type="button" class="family-remove-btn" data-family-action="remove">Remove from family</button></div>`);
+  const message=m.querySelector("[data-family-manage-message]");
+  const buttons=[...m.querySelectorAll("[data-family-action]")];
+  buttons.forEach(button=>button.addEventListener("click",async()=>{
+    const action=button.dataset.familyAction;
+    const actionLabel=action==="remove"?"remove this profile from the family account":"deactivate this family profile";
+    if(!window.confirm(`Are you sure you want to ${actionLabel}? The underlying client record and documents will not be permanently deleted.`))return;
+    buttons.forEach(b=>b.disabled=true);
+    message.textContent=action==="remove"?"Removing family link…":"Deactivating family profile…";
+    try{
+      const {data,error}=await supabase.functions.invoke("manage-client-family",{
+        body:{action:action==="remove"?"remove":"deactivate_member",accountId:member.account_id,clientId:member.client_id}
+      });
+      if(error)throw error;
+      if(data?.error)throw new Error(data.error);
+      if(!data?.success)throw new Error("The family profile operation did not confirm success.");
+      m.remove();
+      parentModal.remove();
+      try{
+        const refreshed=await refreshFamilyData();
+        if(!refreshed)return;
+        const primary=currentMembers.find(x=>x.is_primary);
+        const remaining=primary?familyByClient.get(primary.client_id):null;
+        if(remaining?.length>1)showFamilyProfiles(remaining);
+      }catch(refreshError){
+        console.warn("KKA family profile changed, but the list could not be refreshed automatically",refreshError);
+      }
+    }catch(error){
+      message.textContent=error?.message||"Family profile operation failed. Please try again.";
+      buttons.forEach(b=>b.disabled=false);
     }
   }));
 }
@@ -212,7 +262,7 @@ document.addEventListener("click",event=>{
 supabase.auth.onAuthStateChange((event,session)=>{
   setTimeout(()=>{
     if(session)refreshFamilyData();
-    else{familyLoaded=false;familyByClient=new Map();membersByClient=new Map()}
+    else{familyLoaded=false;familyIsAdmin=false;familyByClient=new Map();membersByClient=new Map()}
   },0);
 });
 
