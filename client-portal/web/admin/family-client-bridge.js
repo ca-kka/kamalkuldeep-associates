@@ -18,7 +18,9 @@ style.textContent=`
 .family-profile-table th{font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;opacity:.72}
 .family-profile-primary{font-weight:700}
 .family-profile-badge{display:inline-flex;margin-left:7px;font-size:.72rem;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.08)}
-.family-upload-btn{white-space:nowrap}
+.family-upload-btn,.family-manage-btn{white-space:nowrap}
+.family-remove-btn{background:#8f3434!important;color:#fff!important;border-color:#8f3434!important}
+.family-profile-table th:last-child,.family-profile-table td:last-child{white-space:nowrap}
 .family-upload-target{margin:12px 0;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;gap:12px}
 @media(max-width:700px){.family-profile-table{font-size:.9rem}.family-profile-table th:nth-child(2),.family-profile-table td:nth-child(2){display:none}.family-profile-btn{margin-left:0;margin-top:6px}}
 `;
@@ -183,7 +185,7 @@ function showFamilyMemberManagement(member,currentMembers,parentModal){
   if(!familyIsAdmin||member?.is_primary)return;
   const name=clientName(member);
   const relationText=relation(member);
-  const m=modal(`<div class="modal-head"><div><p class="eyebrow">FAMILY MEMBER</p><h2>Manage profile</h2><p class="muted">Manage only this family-member link. The primary holder and other profiles will not be deleted.</p></div><button class="modal-close" type="button">×</button></div><div class="message"><strong>${esc(name)}</strong><div class="muted">${esc(relationText)} · PAN ${esc(member.clients?.pan||"—")}</div></div><div class="form-message" data-family-manage-message role="status"></div><div class="modal-actions"><button type="button" class="secondary modal-close">Cancel</button><button type="button" class="secondary" data-family-action="deactivate">Deactivate</button><button type="button" class="danger" data-family-action="remove">Remove from family</button></div>`);
+  const m=modal(`<div class="modal-head"><div><p class="eyebrow">FAMILY MEMBER</p><h2>Manage profile</h2><p class="muted">Manage only this family-member link. The primary holder and other profiles will not be deleted.</p></div><button class="modal-close" type="button">×</button></div><div class="message"><strong>${esc(name)}</strong><div class="muted">${esc(relationText)} · PAN ${esc(member.clients?.pan||"—")}</div></div><div class="form-message" data-family-manage-message role="status"></div><div class="modal-actions"><button type="button" class="secondary modal-close">Cancel</button><button type="button" class="secondary" data-family-action="deactivate">Deactivate</button><button type="button" class="family-remove-btn" data-family-action="remove">Remove from family</button></div>`);
   const message=m.querySelector("[data-family-manage-message]");
   const buttons=[...m.querySelectorAll("[data-family-action]")];
   buttons.forEach(button=>button.addEventListener("click",async()=>{
@@ -201,10 +203,15 @@ function showFamilyMemberManagement(member,currentMembers,parentModal){
       if(!data?.success)throw new Error("The family profile operation did not confirm success.");
       m.remove();
       parentModal.remove();
-      await refreshFamilyData();
-      const primary=currentMembers.find(x=>x.is_primary);
-      const remaining=primary?familyByClient.get(primary.client_id):null;
-      if(remaining?.length>1)showFamilyProfiles(remaining);
+      try{
+        const refreshed=await refreshFamilyData();
+        if(!refreshed)return;
+        const primary=currentMembers.find(x=>x.is_primary);
+        const remaining=primary?familyByClient.get(primary.client_id):null;
+        if(remaining?.length>1)showFamilyProfiles(remaining);
+      }catch(refreshError){
+        console.warn("KKA family profile changed, but the list could not be refreshed automatically",refreshError);
+      }
     }catch(error){
       message.textContent=error?.message||"Family profile operation failed. Please try again.";
       buttons.forEach(b=>b.disabled=false);
