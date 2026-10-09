@@ -58,6 +58,7 @@ async function refreshFamilyData(){
     const {data:{user}}=await supabase.auth.getUser();
     if(!user){
       familyLoaded=false;
+      familyIsAdmin=false;
       familyByClient=new Map();
       membersByClient=new Map();
       return false;
