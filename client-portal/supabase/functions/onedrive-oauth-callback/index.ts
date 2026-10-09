@@ -29,7 +29,7 @@ function b64url(bytes: Uint8Array): string {
     .replace(/=+$/, "");
 }
 
-function fromB64url(value: string): Uint8Array {
+function fromB64url(value: string): Uint8Array<ArrayBuffer> {
   const padded =
     value.replace(/-/g, "+").replace(/_/g, "/") +
     "=".repeat((4 - (value.length % 4)) % 4);
@@ -44,8 +44,8 @@ function fromB64url(value: string): Uint8Array {
   return bytes;
 }
 
-function utf8(value: string): Uint8Array {
-  return new TextEncoder().encode(value);
+function utf8(value: string): Uint8Array<ArrayBuffer> {
+  return new Uint8Array(new TextEncoder().encode(value));
 }
 
 async function hmacSign(payload: string, key: string): Promise<string> {
