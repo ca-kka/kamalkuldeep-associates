@@ -7,14 +7,6 @@ const MONTHS: Record<string, number> = {
 };
 const AREAS = new Set(["gst", "tds", "income_tax", "accounts", "mca", "other"]);
 const ALLOWED_CONTENT_TYPES=new Set(["application/pdf","image/jpeg","image/png","image/gif","image/webp","image/tiff","image/bmp","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-excel","application/vnd.ms-powerpoint","application/vnd.openxmlformats-officedocument.presentationml.presentation","text/csv","text/plain","application/rtf","application/zip"]);
-const ALLOWED_CONTENT_TYPES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-excel",
-  "text/csv",
-]);
 
 const compact = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 const normal = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
@@ -113,7 +105,6 @@ Deno.serve(async req => {
     if (!filename || !/^[a-f0-9]{64}$/.test(sha256) || !Number.isSafeInteger(byteSize) || byteSize < 1 || byteSize > 52428800) {
       return json({ error: "Invalid file metadata." }, 400);
     }
-    if (!ALLOWED_CONTENT_TYPES.has(contentType)) return json({ error: "Unsupported file format. Use PDF, Excel, CSV, JPG or PNG." }, 415);
 
     const { data: clients, error: clientError } = await service.from("clients")
       .select("id,legal_name,pan,tan,cin,gstin,filename_aliases")
