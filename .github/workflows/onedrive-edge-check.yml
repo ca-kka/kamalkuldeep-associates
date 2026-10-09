@@ -1,0 +1,47 @@
+name: OneDrive Edge Function Checks
+
+on:
+  pull_request:
+    paths:
+      - 'client-portal/supabase/functions/onedrive-connect/**'
+      - 'client-portal/supabase/functions/onedrive-oauth-callback/**'
+      - 'client-portal/supabase/functions/onedrive-storage/**'
+      - 'client-portal/supabase/functions/onedrive-recovery/**'
+      - 'client-portal/supabase/functions/onedrive-directory/**'
+      - 'client-portal/supabase/functions/filing-storage/**'
+      - 'client-portal/supabase/functions/onedrive-sync/**'
+      - 'client-portal/supabase/functions/onedrive-sync-bootstrap/**'
+      - '.github/workflows/onedrive-edge-check.yml'
+  push:
+    branches:
+      - fix/shared-onedrive-admin-onedrive
+    paths:
+      - 'client-portal/supabase/functions/onedrive-connect/**'
+      - 'client-portal/supabase/functions/onedrive-oauth-callback/**'
+      - 'client-portal/supabase/functions/onedrive-storage/**'
+      - 'client-portal/supabase/functions/onedrive-recovery/**'
+      - 'client-portal/supabase/functions/onedrive-directory/**'
+      - 'client-portal/supabase/functions/filing-storage/**'
+      - 'client-portal/supabase/functions/onedrive-sync/**'
+      - 'client-portal/supabase/functions/onedrive-sync-bootstrap/**'
+      - '.github/workflows/onedrive-edge-check.yml'
+
+jobs:
+  deno-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check OneDrive Edge Functions
+        run: |
+          deno check \
+            client-portal/supabase/functions/onedrive-connect/index.ts \
+            client-portal/supabase/functions/onedrive-oauth-callback/index.ts \
+            client-portal/supabase/functions/onedrive-storage/index.ts \
+            client-portal/supabase/functions/onedrive-recovery/index.ts \
+            client-portal/supabase/functions/onedrive-directory/index.ts \
+            client-portal/supabase/functions/filing-storage/index.ts \
+            client-portal/supabase/functions/onedrive-sync/index.ts \
+            client-portal/supabase/functions/onedrive-sync-bootstrap/index.ts
