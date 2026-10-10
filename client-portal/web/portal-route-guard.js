@@ -7,7 +7,10 @@ const route=/(?:^|\/)client(?:\/index\.html)?$/i.test(path)?"client":/(?:^|\/)ad
 let redirecting=false;
 
 async function enforceRoute(){
-  if(redirecting)return;
+  // The root login page has a dedicated auth controller (root-auth.js).
+  // Keep this guard focused on protected workspace routes so it cannot race
+  // the login controller while it establishes the per-tab session marker.
+  if(route==="root"||redirecting)return;
   let user=null;
   for(let attempt=0;attempt<3&&!user;attempt++){
     const {data:{session}}=await supabase.auth.getSession();
