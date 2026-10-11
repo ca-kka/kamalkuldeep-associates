@@ -91,8 +91,13 @@ function showAdminClientCreation(){
           setTimeout(()=>showClientCreationSuccess(m,verifiedEmail),450);
           return;
         }
-        restoreCreationForm();
-        message.textContent="Client login created, but the welcome email could not be sent. Check the account before retrying to avoid creating a duplicate.";
+        endCreationProgress();
+        liveTitle.textContent="Client created; email not sent";
+        liveDetail.textContent="The client account was created, but the welcome email failed. Do not submit creation again.";
+        liveNote.textContent="The account creation succeeded. Close this window and manage the existing client record; retrying may create a duplicate account.";
+        form.querySelectorAll("input,select,button").forEach(x=>x.disabled=true);
+        m.querySelectorAll(".modal-close").forEach(x=>x.disabled=false);
+        message.textContent="Client login created, but the welcome email could not be sent. Do not retry client creation.";
       }
       if(linkedAccount){
         setTimeout(()=>{m.remove();document.getElementById("refresh-clients")?.click()},700);
