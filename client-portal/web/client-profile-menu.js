@@ -64,7 +64,7 @@ async function install(){
   t.onclick=e=>{e.stopPropagation();const open=menu.hidden;closeAll();menu.hidden=!open;t.setAttribute("aria-expanded",String(open))};
   wrap.querySelector('[data-action="view"]').onclick=()=>{menu.hidden=true;profileModal(c)};
   wrap.querySelector('[data-action="edit"]').onclick=()=>{menu.hidden=true;editModal(c)};
-  wrap.querySelector('[data-action="switch-profile"]').onclick=()=>{menu.hidden=true;window.KKAFocusClientProfileSelect=true;if(location.hash!=="#overview")location.hash="#overview";else void window.KKAClientDashboardRender?.()};
+  wrap.querySelector('[data-action="switch-profile"]').onclick=()=>{menu.hidden=true;if(location.hash!=="#overview"){window.KKAFocusClientProfileSelect=true;location.hash="#overview"}else{const selector=document.getElementById("client-profile-select");selector?.focus();selector?.scrollIntoView({behavior:"smooth",block:"center"})}};
   wrap.querySelector('[data-action="password"]').onclick=()=>{menu.hidden=true;passwordModal()};
   wrap.querySelector('[data-action="signout"]').onclick=async()=>{if(window.KKASessionSignOut){await window.KKASessionSignOut();return}await supabase.auth.signOut();location.reload()};
   if(!STATE.outsideBound){document.addEventListener("click",closeAll);STATE.outsideBound=true}
