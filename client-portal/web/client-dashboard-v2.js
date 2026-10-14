@@ -78,6 +78,7 @@ async function renderClientDashboard(){
   document.getElementById("client-signout")?.addEventListener("click",async()=>{if(window.KKASessionSignOut){await window.KKASessionSignOut();return}await supabase.auth.signOut();location.reload()});
   document.getElementById("client-documents")?.addEventListener("click",()=>document.querySelector('a[data-view="documents"]')?.click());
   document.getElementById("client-upload")?.addEventListener("click",()=>document.querySelector('a[data-view="upload"]')?.click());
+  if(window.KKAFocusClientProfileSelect){window.KKAFocusClientProfileSelect=false;const selector=document.getElementById("client-profile-select");selector?.focus();selector?.scrollIntoView({behavior:"smooth",block:"center"});}
   return true;
 }
 
