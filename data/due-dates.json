@@ -1,5 +1,5 @@
 {
-  "updated": "14 October 2026",
+  "updated": "19 October 2026",
   "generator_version": "2026-10-05-cbdt-extension",
   "notice": "GST dates are generated from recurring GST Portal filing rules and checked against official GST advisories for extensions. TDS payment dates are shown separately from quarterly TDS return filing dates to avoid confusion. Advance tax instalments are shown on their statutory 15th-of-month dates. Due dates can differ by taxpayer category, State/UT and filing frequency. Verify the applicable date on the official portal before filing.",
   "extension_notice": {
@@ -127,8 +127,8 @@
     {
       "title": "CMP-08",
       "category": "GST",
-      "date": "18 October 2026",
-      "description": "CMP-08 for July-September 2026 for applicable composition taxpayers.",
+      "date": "18 January 2027",
+      "description": "CMP-08 for October–December 2026 for applicable composition taxpayers.",
       "urgent": false,
       "source": "https://www.gst.gov.in/",
       "generated_from_gst_rule": true
