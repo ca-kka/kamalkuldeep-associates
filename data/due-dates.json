@@ -1,5 +1,5 @@
 {
-  "updated": "19 October 2026",
+  "updated": "21 October 2026",
   "generator_version": "2026-10-05-cbdt-extension",
   "notice": "GST dates are generated from recurring GST Portal filing rules and checked against official GST advisories for extensions. TDS payment dates are shown separately from quarterly TDS return filing dates to avoid confusion. Advance tax instalments are shown on their statutory 15th-of-month dates. Due dates can differ by taxpayer category, State/UT and filing frequency. Verify the applicable date on the official portal before filing.",
   "extension_notice": {
@@ -65,7 +65,7 @@
     {
       "title": "GSTR-3B",
       "category": "GST",
-      "date": "20 October 2026",
+      "date": "20 November 2026",
       "description": "Monthly GSTR-3B for the preceding month for regular monthly filers.",
       "urgent": true,
       "source": "https://www.gst.gov.in/",
@@ -74,7 +74,7 @@
     {
       "title": "GSTR-5A",
       "category": "GST",
-      "date": "20 October 2026",
+      "date": "20 November 2026",
       "description": "Monthly GSTR-5A for the preceding month for applicable OIDAR service providers.",
       "urgent": false,
       "source": "https://www.gst.gov.in/",
